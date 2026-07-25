@@ -591,8 +591,9 @@ class OllamaService {
                 top_p: 0.9,
                 repeat_penalty: 1.1,
                 top_k: 7,
-                num_predict: 256,
-                num_ctx: numCtx
+                // limits make no sense. imagine a doc with 50 pages
+                num_predict: -1,
+                num_ctx: 1024 * 32
             }
         };
 
@@ -633,8 +634,7 @@ class OllamaService {
                 custom_fields: responseData.response.custom_fields || null
             };
         } else if (responseData.response) {
-            // Fall back to parsing from text response
-            console.log('Falling back to text response parsing');
+            console.log('No JS object yet, parsing JSON');
             return this._parseResponse(responseData.response);
         } else {
             throw new Error('No response data from Ollama API');
