@@ -620,10 +620,8 @@ class OllamaService {
      * @returns {Object} Parsed response
      */
     _processOllamaResponse(responseData) {
-        // Check if we got a structured response or need to parse from text
         if (responseData.response && typeof responseData.response === 'object') {
-            // We got a structured response directly
-            console.log('Using structured output response');
+            console.log('Using response JS object directly');
             return {
                 tags: Array.isArray(responseData.response.tags) ? responseData.response.tags : [],
                 correspondent: responseData.response.correspondent || null,
