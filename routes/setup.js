@@ -31,6 +31,9 @@ const {
   THUMBNAIL_CACHE_DIR,
   getThumbnailCachePath,
 } = require('../services/thumbnailCachePaths');
+const {
+  sanitizeConfigForBootstrap,
+} = require('../services/bootstrapConfigSanitizer');
 const config = require('../config/config.js');
 require('dotenv').config({ path: '../data/.env' });
 
@@ -4226,24 +4229,6 @@ async function detectQuickstartForSetup({
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-// Helper: Sanitize config for bootstrap (remove secrets)
-function sanitizeConfigForBootstrap(config) {
-  const sanitized = { ...config };
-  const secretFields = [
-    'PAPERLESS_API_TOKEN',
-    'OPENAI_API_KEY',
-    'OLLAMA_API_KEY',
-    'CUSTOM_API_KEY',
-    'AZURE_API_KEY',
-    'OCR_API_KEY',
-    'MISTRAL_API_KEY',
-  ];
-  secretFields.forEach((field) => {
-    delete sanitized[field];
-  });
-  return sanitized;
-}
-
 router.get('/setup', async (req, res) => {
   try {
     // SECURITY: Check setup state first to detect degraded conditions
