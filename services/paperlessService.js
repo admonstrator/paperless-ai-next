@@ -326,11 +326,30 @@ class PaperlessService {
   }
 
   async createCustomFieldSafely(fieldName, fieldType, default_currency) {
+    const normalizedFieldType = String(fieldType || '').trim();
+
+    // Check an already existing field before attempting creation. Paperless
+    // returns 400 for duplicate names, so without this check a configured
+    // type mismatch (e.g. string vs. longtext) would be silently ignored.
+    const existingField = await this.findExistingCustomField(fieldName);
+    if (existingField) {
+      const existingFieldType = String(existingField.data_type || '').trim();
+      if (existingFieldType !== normalizedFieldType) {
+        const error = new Error(
+          `Custom field "${fieldName}" has type "${existingFieldType}" in Paperless, ` +
+          `but configuration requests "${normalizedFieldType}".`
+        );
+        error.code = 'CUSTOM_FIELD_TYPE_MISMATCH';
+        throw error;
+      }
+      return existingField;
+    }
+
     try {
       // Try to create the field first
       const response = await this.client.post('/custom_fields/', { 
         name: fieldName,
-        data_type: fieldType,
+        data_type: normalizedFieldType,
         extra_data: {
           default_currency: default_currency || null
         }
@@ -344,6 +363,15 @@ class PaperlessService {
         await this.refreshCustomFieldCache();
         const existingField = await this.findExistingCustomField(fieldName);
         if (existingField) {
+          const existingFieldType = String(existingField.data_type || '').trim();
+          if (existingFieldType !== normalizedFieldType) {
+            const mismatchError = new Error(
+              `Custom field "${fieldName}" has type "${existingFieldType}" in Paperless, ` +
+              `but configuration requests "${normalizedFieldType}".`
+            );
+            mismatchError.code = 'CUSTOM_FIELD_TYPE_MISMATCH';
+            throw mismatchError;
+          }
           return existingField;
         }
       }
@@ -923,7 +951,7 @@ class PaperlessService {
       includeTagIds = await this.resolveTagIdsByName(includeTagNames);
 
       if (includeTagIds.length === 0) {
-        console.warn('[DEBUG] None of the specified tags were found');
+        console.warn(`[DEBUG] None of the specified tags ${includeTagNames} were found`);
         return [];
       }
 
@@ -1138,7 +1166,7 @@ class PaperlessService {
       }
       
       if (tagIds.length === 0) {
-        console.warn('[DEBUG] None of the specified tags were found');
+        console.warn(`[DEBUG] None of the specified tags ${tagNames} were found`);
         return [];
       }
       
@@ -1199,6 +1227,17 @@ class PaperlessService {
       return response.data;
     } catch (error) {
       console.error(`[ERROR] fetching correspondent ${correspondentId}:`, error.message);
+      return null;
+    }
+  }
+
+  async getDocumentTypeNameById(documentTypeId) {
+    this.initialize();
+    try {
+      const response = await this.client.get(`/document_types/${documentTypeId}/`);
+      return response.data;
+    } catch (error) {
+      console.error(`[ERROR] fetching document type ${documentTypeId}:`, error.message);
       return null;
     }
   }

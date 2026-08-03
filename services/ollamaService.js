@@ -591,8 +591,9 @@ class OllamaService {
                 top_p: 0.9,
                 repeat_penalty: 1.1,
                 top_k: 7,
-                num_predict: 256,
-                num_ctx: numCtx
+                // limits make no sense. imagine a doc with 50 pages
+                num_predict: -1,
+                num_ctx: 1024 * 32
             }
         };
 
@@ -619,10 +620,8 @@ class OllamaService {
      * @returns {Object} Parsed response
      */
     _processOllamaResponse(responseData) {
-        // Check if we got a structured response or need to parse from text
         if (responseData.response && typeof responseData.response === 'object') {
-            // We got a structured response directly
-            console.log('Using structured output response');
+            console.log('Using response JS object directly');
             return {
                 tags: Array.isArray(responseData.response.tags) ? responseData.response.tags : [],
                 correspondent: responseData.response.correspondent || null,
@@ -633,8 +632,7 @@ class OllamaService {
                 custom_fields: responseData.response.custom_fields || null
             };
         } else if (responseData.response) {
-            // Fall back to parsing from text response
-            console.log('Falling back to text response parsing');
+            console.log('No JS object yet, parsing JSON');
             return this._parseResponse(responseData.response);
         } else {
             throw new Error('No response data from Ollama API');

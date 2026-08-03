@@ -23,7 +23,11 @@ const jwt = require('jsonwebtoken');
 const Logger = require('./services/loggerService');
 const { max } = require('date-fns');
 const {
-  validateCustomFieldValue,
+  updateCustomFieldsData,
+  updateDocumentTypeData,
+  updateCorrespondentData
+} = require('./services/dataProcessingUtils');
+const {
   shouldQueueForOcrOnAiError,
   classifyOcrQueueReasonFromAiError,
   isTimeoutError,
@@ -684,88 +688,9 @@ async function buildUpdateData(analysis, doc) {
   // Add created date regardless of settings as it's a core field
   updateData.created = analysis.document.document_date || doc.created;
 
-  // Only process document type if document type classification is activated
-  if (config.limitFunctions?.activateDocumentType !== 'no' && analysis.document.document_type) {
-    try {
-      const documentType = await paperlessService.getOrCreateDocumentType(analysis.document.document_type, options);
-      if (documentType) {
-        updateData.document_type = documentType.id;
-      }
-    } catch (error) {
-      console.error(`[ERROR] Error processing document type: ${error.message}`);
-      console.debug(error);
-    }
-  }
-  
-  // Only process custom fields if custom fields detection is activated
-  if (config.limitFunctions?.activateCustomFields !== 'no' && analysis.document.custom_fields) {
-    const customFields = analysis.document.custom_fields;
-    const processedFields = [];
-    const customFieldsForHistory = [];
-
-    // Get existing custom fields
-    const existingFields = await paperlessService.getExistingCustomFields(doc.id);
-    console.debug('Found existing fields:', existingFields);
-
-    // Keep track of which fields we've processed to avoid duplicates
-    const processedFieldIds = new Set();
-
-    // First, add any new/updated fields
-    for (const key in customFields) {
-      const customField = customFields[key];
-      
-      if (!customField.field_name || (customField.value === null || customField.value === undefined || String(customField.value).trim() === '')) {
-        console.debug('Skipping empty or invalid custom field');
-        continue;
-      }
-
-      const fieldDetails = await paperlessService.findExistingCustomField(customField.field_name);
-      if (fieldDetails?.id) {
-        const validation = validateCustomFieldValue(customField.field_name, customField.value, fieldDetails.data_type);
-        if (validation.skip) {
-          if (validation.warn) console.warn(validation.warn);
-          continue;
-        }
-        processedFields.push({
-          field: fieldDetails.id,
-          value: validation.value
-        });
-        // Capture name + validated value for history at the point where we have both
-        customFieldsForHistory.push({
-          field_name: customField.field_name,
-          value: validation.value
-        });
-        processedFieldIds.add(fieldDetails.id);
-      }
-    }
-
-    // Then add any existing fields that weren't updated
-    for (const existingField of existingFields) {
-      if (!processedFieldIds.has(existingField.field)) {
-        processedFields.push(existingField);
-      }
-    }
-
-    if (processedFields.length > 0) {
-      updateData.custom_fields = processedFields;
-    }
-    if (customFieldsForHistory.length > 0) {
-      updateData._customFieldsForHistory = customFieldsForHistory;
-    }
-  }
-
-  // Only process correspondent if correspondent detection is activated
-  if (config.limitFunctions?.activateCorrespondents !== 'no' && analysis.document.correspondent) {
-    try {
-      const correspondent = await paperlessService.getOrCreateCorrespondent(analysis.document.correspondent, options);
-      if (correspondent) {
-        updateData.correspondent = correspondent.id;
-      }
-    } catch (error) {
-      console.error(`[ERROR] Error processing correspondent: ${error.message}`);
-      console.debug(error);
-    }
-  }
+  await updateDocumentTypeData(analysis, updateData, config, paperlessService, options);
+  await updateCustomFieldsData(analysis, doc, updateData, config, paperlessService);
+  await updateCorrespondentData(analysis, updateData, config, paperlessService, options);
 
   // Always include language if provided as it's a core field
   if (analysis.document.language) {
@@ -794,15 +719,24 @@ async function saveDocumentChanges(docId, updateData, analysis, originalData) {
     throw new Error(`Paperless update failed for document ${docId}`);
   }
 
+  const currentCorrespondentId = updatedDocument.correspondent ?? updateData.correspondent;
+  const currentCorrespondent = currentCorrespondentId
+    ? await paperlessService.getCorrespondentNameById(currentCorrespondentId)
+    : null;
+  const currentDocumentTypeId = updatedDocument.document_type ?? updateData.document_type;
+  const currentDocumentType = currentDocumentTypeId
+    ? await paperlessService.getDocumentTypeNameById(currentDocumentTypeId)
+    : null;
+
   const persistenceTasks = [
     documentModel.addProcessedDocument(docId, updateData.title),
     documentModel.addToHistory(
       docId,
       updateData.tags,
       updateData.title,
-      analysis.document.correspondent,
+      currentCorrespondent?.name ?? null,
       historyCustomFields,
-      historyDocTypeName,
+      currentDocumentType?.name ?? null,
       historyLanguage
     )
   ];

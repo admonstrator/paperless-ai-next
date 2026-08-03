@@ -13,6 +13,11 @@ const popplerService = require('./popplerService');
 const documentModel = require('../models/document');
 const AIServiceFactory = require('./aiServiceFactory');
 const { isTimeoutError, buildTimeoutErrorMessage } = require('./serviceUtils');
+const {
+  updateCustomFieldsData,
+  updateDocumentTypeData,
+  updateCorrespondentData
+} = require('./dataProcessingUtils');
 
 class MistralOcrService {
   constructor() {
@@ -956,8 +961,8 @@ class MistralOcrService {
       throw new Error(analysis.error);
     }
 
-    // Build update data (simplified – reuse paperlessService helpers)
     const updateData = {};
+
     const config = require('../config/config');
     const options = {
       restrictToExistingTags: config.restrictToExistingTags === 'yes',
@@ -967,41 +972,7 @@ class MistralOcrService {
         config.restrictToExistingDocumentTypes === 'yes',
     };
 
-    if (config.limitFunctions?.activateTagging !== 'no') {
-      const { tagIds } = await PaperlessService.processTags(
-        analysis.document.tags,
-        options
-      );
-      updateData.tags = tagIds;
-    }
-    if (config.limitFunctions?.activateTitle !== 'no') {
-      updateData.title = analysis.document.title || originalData.title;
-    }
-    updateData.created =
-      analysis.document.document_date || originalData.created;
-    if (
-      config.limitFunctions?.activateDocumentType !== 'no' &&
-      analysis.document.document_type
-    ) {
-      const dt = await PaperlessService.getOrCreateDocumentType(
-        analysis.document.document_type,
-        options
-      );
-      if (dt) updateData.document_type = dt.id;
-    }
-    if (
-      config.limitFunctions?.activateCorrespondents !== 'no' &&
-      analysis.document.correspondent
-    ) {
-      const corr = await PaperlessService.getOrCreateCorrespondent(
-        analysis.document.correspondent,
-        options
-      );
-      if (corr) updateData.correspondent = corr.id;
-    }
-    if (analysis.document.language) {
-      updateData.language = analysis.document.language;
-    }
+    await this.calculateNewDocumentMetadata(config, analysis, options, updateData, originalData);
 
     // Apply updates to Paperless
     const updatedDocument = await PaperlessService.updateDocument(
@@ -1011,6 +982,15 @@ class MistralOcrService {
     if (!updatedDocument) {
       throw new Error(`Paperless update failed for document ${documentId}`);
     }
+
+    const currentCorrespondentId = updatedDocument.correspondent ?? updateData.correspondent;
+    const currentCorrespondent = currentCorrespondentId
+      ? await PaperlessService.getCorrespondentNameById(currentCorrespondentId)
+      : null;
+    const currentDocumentTypeId = updatedDocument.document_type ?? updateData.document_type;
+    const currentDocumentType = currentDocumentTypeId
+      ? await PaperlessService.getDocumentTypeNameById(currentDocumentTypeId)
+      : null;
 
     // Persist metrics & history
     if (analysis.metrics) {
@@ -1029,13 +1009,41 @@ class MistralOcrService {
       documentId,
       updateData.tags || [],
       updateData.title || originalData.title,
-      analysis.document.correspondent,
+      currentCorrespondent?.name ?? null,
       null,
-      analysis.document.document_type || null,
+      currentDocumentType?.name ?? null,
       analysis.document.language || null
     );
 
     return analysis;
+  }
+
+
+  async calculateNewDocumentMetadata(config, analysis, options,
+                                     updateData, originalData) {
+    if (config.limitFunctions?.activateTagging !== 'no') {
+      const { tagIds } = await PaperlessService.processTags(
+        analysis.document.tags,
+        options
+      );
+      updateData.tags = tagIds;
+    }
+    if (config.limitFunctions?.activateTitle !== 'no') {
+      updateData.title = analysis.document.title || originalData.title;
+    }
+
+    await updateDocumentTypeData(analysis,
+      updateData, config, PaperlessService, options);
+    await updateCorrespondentData(analysis,
+      updateData, config, PaperlessService, options);
+    await updateCustomFieldsData(analysis,
+      originalData, updateData, config, PaperlessService);
+
+    updateData.created =
+      analysis.document.document_date || originalData.created;
+
+    updateData.language =
+      analysis.document.language || updateData.language;
   }
 }
 
