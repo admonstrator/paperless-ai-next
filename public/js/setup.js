@@ -1119,7 +1119,12 @@ class SetupWizard {
       const chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'setup-chip';
-      chip.innerHTML = `<span>${tag}</span><i class="fas fa-xmark"></i>`;
+      // Tag names are user input, so they are added as text nodes.
+      const label = document.createElement('span');
+      label.textContent = tag;
+      const icon = document.createElement('i');
+      icon.className = 'fas fa-xmark';
+      chip.append(label, icon);
       chip.addEventListener('click', () => this.removeExcludeTag(tag));
       this.excludeTagsContainer.appendChild(chip);
     });

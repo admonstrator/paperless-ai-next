@@ -84,6 +84,7 @@ const TESTS = {
   'setup-route-security': 'test-setup-route-security.js',
   'setup-wizard-tag-default': 'test-setup-wizard-tag-default.js',
   'setupservice-ocr-validation': 'test-setupservice-ocr-validation.js',
+  'redirect-guard': 'test-redirect-guard.js',
   'thumbnail-cache-path-sanitization':
     'test-thumbnail-cache-path-sanitization.js',
   'url-base-validation': 'test-url-base-validation.js',
@@ -141,6 +142,7 @@ const AREAS = {
     'quickstart-endpoint-protection',
     'ssrf-url-validation',
     'external-api-ssrf-block',
+    'redirect-guard',
     'ui-xss-hardening',
     'history-xss-hardening',
     'reset-local-overrides-password-guard',

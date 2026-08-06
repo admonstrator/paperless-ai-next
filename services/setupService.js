@@ -4,7 +4,7 @@ const axios = require('axios');
 const { OpenAI } = require('openai');
 const config = require('../config/config');
 const AzureOpenAI = require('openai').AzureOpenAI;
-const { validateApiUrl } = require('./serviceUtils');
+const { validateApiUrl, stripTrailingSlashes } = require('./serviceUtils');
 
 const CUSTOM_PROVIDER_FALLBACK_API_KEY = 'no-auth-required';
 
@@ -727,7 +727,6 @@ class SetupService {
 
       for (const attempt of attempts) {
         try {
-           
           await attempt();
           const detected = {
             resolvedApiUrl: candidate,
@@ -811,7 +810,6 @@ class SetupService {
 
       for (const attempt of attempts) {
         try {
-           
           await attempt();
           const detected = {
             resolvedApiUrl: candidate,
@@ -905,7 +903,6 @@ class SetupService {
     const allModels = [];
     for (const attempt of attempts) {
       try {
-         
         const models = await attempt();
         allModels.push(...models);
       } catch (_error) {
@@ -942,7 +939,6 @@ class SetupService {
 
       for (const targetUrl of targetUrls) {
         try {
-           
           const models = await this.fetchOpenAiCompatibleModels(
             targetUrl,
             apiKey,
@@ -986,7 +982,6 @@ class SetupService {
 
       for (const attempt of attempts) {
         try {
-           
           const models = await attempt();
           allModels.push(...models);
         } catch (_error) {
@@ -1208,7 +1203,6 @@ class SetupService {
     let lastError;
     for (const strategy of requestStrategies) {
       try {
-         
         const output = await strategy();
         if (output) {
           return output;
@@ -1340,7 +1334,6 @@ class SetupService {
       let providerReachable = false;
       for (const probeUrl of this.dedupeStringValues(probeEndpoints)) {
         try {
-           
           const response = await this.withValidationTimeout(
             axios.get(probeUrl, {
               headers,
@@ -1393,9 +1386,9 @@ class SetupService {
 
   async validateConfig(config) {
     // Validate Paperless config
-    const paperlessApiUrl = (config.PAPERLESS_API_URL || '')
-      .replace(/\/+$/, '')
-      .replace(/\/api$/, '');
+    const paperlessApiUrl = stripTrailingSlashes(
+      config.PAPERLESS_API_URL || ''
+    ).replace(/\/api$/, '');
     const paperlessValid = await this.validatePaperlessConfig(
       paperlessApiUrl,
       config.PAPERLESS_API_TOKEN

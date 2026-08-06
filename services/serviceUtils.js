@@ -240,6 +240,26 @@ async function writePromptToFile(
   }
 }
 
+/**
+ * Removes trailing slashes from a string without using a regular expression.
+ *
+ * A pattern such as /\/+$/ backtracks quadratically on inputs that consist of
+ * many slashes, so user-supplied URLs are normalized with a linear scan instead.
+ *
+ * @param {string} value - The value to normalize
+ * @returns {string} The value without trailing slashes
+ */
+function stripTrailingSlashes(value) {
+  const text = typeof value === 'string' ? value : String(value ?? '');
+  let end = text.length;
+
+  while (end > 0 && text.charCodeAt(end - 1) === 47 /* '/' */) {
+    end -= 1;
+  }
+
+  return end === text.length ? text : text.slice(0, end);
+}
+
 const METADATA_ENDPOINTS = [
   '169.254.169.254', // AWS, GCP, Azure metadata
   'metadata.google.internal',
@@ -550,6 +570,87 @@ function validateUrlAgainstBase(urlToValidate, expectedBaseUrl) {
 }
 
 /**
+ * Builds an axios `beforeRedirect` handler that keeps redirects on the host the
+ * request was validated against.
+ *
+ * SSRF validation only inspects the initial URL, so a 3xx response could
+ * otherwise send an authenticated request — including its API token — to an
+ * arbitrary host such as a cloud metadata endpoint. Redirects to the same host
+ * stay allowed, as does an http → https upgrade, because reverse proxies in
+ * front of Paperless-ngx commonly issue one.
+ *
+ * @param {() => string} getExpectedBaseUrl - Resolves the currently configured base URL
+ * @returns {(options: Object) => void} Handler that throws on an unsafe redirect target
+ */
+function createRedirectGuard(getExpectedBaseUrl) {
+  return function beforeRedirect(options) {
+    const expectedBaseUrl =
+      typeof getExpectedBaseUrl === 'function'
+        ? getExpectedBaseUrl()
+        : getExpectedBaseUrl;
+
+    if (!expectedBaseUrl) {
+      return;
+    }
+
+    const target =
+      options?.href ||
+      (options?.protocol && options?.host
+        ? `${options.protocol}//${options.host}${options.path || ''}`
+        : null);
+
+    if (!target) {
+      throw new Error(
+        'Redirect blocked: redirect target could not be determined'
+      );
+    }
+
+    let parsedTarget, parsedBase;
+    try {
+      parsedTarget = new URL(target);
+      parsedBase = new URL(expectedBaseUrl);
+    } catch {
+      throw new Error('Redirect blocked: invalid redirect target');
+    }
+
+    if (!['http:', 'https:'].includes(parsedTarget.protocol)) {
+      throw new Error(
+        `Redirect blocked: protocol ${parsedTarget.protocol} is not allowed`
+      );
+    }
+
+    const targetHost = parsedTarget.hostname.toLowerCase();
+
+    if (
+      METADATA_ENDPOINTS.some(
+        (endpoint) =>
+          targetHost === endpoint || targetHost.endsWith('.' + endpoint)
+      )
+    ) {
+      throw new Error(
+        'Redirect blocked: cloud metadata endpoints are not allowed'
+      );
+    }
+
+    if (targetHost !== parsedBase.hostname.toLowerCase()) {
+      throw new Error(
+        `Redirect blocked: target host ${parsedTarget.hostname} does not match the configured host`
+      );
+    }
+
+    // Allow http → https, but never a downgrade back to plain http.
+    if (
+      parsedBase.protocol === 'https:' &&
+      parsedTarget.protocol !== 'https:'
+    ) {
+      throw new Error(
+        'Redirect blocked: refusing to downgrade an https request to http'
+      );
+    }
+  };
+}
+
+/**
  * Validate and normalize a custom field value based on its Paperless-ngx data_type.
  *
  * @param {string} fieldName - Field name (used in log messages)
@@ -762,9 +863,11 @@ module.exports = {
   calculateTotalPromptTokens,
   truncateToTokenLimit,
   writePromptToFile,
+  stripTrailingSlashes,
   validateUrl,
   validateApiUrl,
   validateUrlAgainstBase,
+  createRedirectGuard,
   validateCustomFieldValue,
   shouldQueueForOcrOnAiError,
   classifyOcrQueueReasonFromAiError,

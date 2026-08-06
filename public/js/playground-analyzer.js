@@ -1070,10 +1070,14 @@ class PlaygroundAnalyzer {
                     } text-${color}-400"></i>
                 </div>
                 <div class="ml-3">
-                    <p class="text-sm">${message}</p>
+                    <p class="text-sm" data-message-text></p>
                 </div>
             </div>
         `;
+
+    // Messages can carry error text from the backend, so they are rendered
+    // as text rather than interpolated into the markup above.
+    messageArea.querySelector('[data-message-text]').textContent = message;
 
     if (type === 'success') {
       setTimeout(() => {

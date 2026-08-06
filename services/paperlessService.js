@@ -4,7 +4,11 @@ const config = require('../config/config');
 const fs = require('fs');
 const path = require('path');
 const { parse, isValid, parseISO, format } = require('date-fns');
-const { validateUrlAgainstBase } = require('./serviceUtils');
+const {
+  validateUrlAgainstBase,
+  stripTrailingSlashes,
+  createRedirectGuard,
+} = require('./serviceUtils');
 
 class PaperlessService {
   constructor() {
@@ -38,12 +42,16 @@ class PaperlessService {
 
   initialize() {
     if (!this.client && config.paperless.apiUrl && config.paperless.apiToken) {
+      const baseUrl = stripTrailingSlashes(config.paperless.apiUrl);
       this.client = axios.create({
-        baseURL: config.paperless.apiUrl.replace(/\/+$/, '') + '/api',
+        baseURL: baseUrl + '/api',
         headers: {
           Authorization: `Token ${config.paperless.apiToken}`,
           'Content-Type': 'application/json',
         },
+        // Requests carry the Paperless API token, so redirects must not leave
+        // the configured host.
+        beforeRedirect: createRedirectGuard(() => baseUrl),
       });
     }
   }
@@ -59,7 +67,7 @@ class PaperlessService {
         return null;
       }
 
-      let basePath = parsedUrl.pathname.replace(/\/+$/, '');
+      let basePath = stripTrailingSlashes(parsedUrl.pathname);
       basePath = basePath.replace(/\/api$/, '');
 
       return `${parsedUrl.origin}${basePath}`;
@@ -247,7 +255,8 @@ class PaperlessService {
       return null;
     } catch (error) {
       console.error(
-        `[ERROR] fetching thumbnail for document ${documentId}:`,
+        '[ERROR] fetching thumbnail for document %s:',
+        documentId,
         error.message
       );
       if (error.response) {
@@ -336,12 +345,14 @@ class PaperlessService {
   }
 
   async initializeWithCredentials(apiUrl, apiToken) {
+    const baseUrl = stripTrailingSlashes(apiUrl);
     this.client = axios.create({
-      baseURL: apiUrl.replace(/\/+$/, '') + '/api',
+      baseURL: baseUrl + '/api',
       headers: {
         Authorization: `Token ${apiToken}`,
         'Content-Type': 'application/json',
       },
+      beforeRedirect: createRedirectGuard(() => baseUrl),
     });
 
     // Test the connection
@@ -395,7 +406,7 @@ class PaperlessService {
       );
       return response.data.custom_fields || [];
     } catch (error) {
-      console.error(`[ERROR] fetching document ${documentId}:`, error.message);
+      console.error('[ERROR] fetching document %s:', documentId, error.message);
       return [];
     }
   }
@@ -428,7 +439,8 @@ class PaperlessService {
       }
     } catch (error) {
       console.warn(
-        `[ERROR] searching for custom field "${fieldName}":`,
+        '[ERROR] searching for custom field "%s":',
+        fieldName,
         error.message
       );
     }
@@ -506,7 +518,7 @@ class PaperlessService {
         return foundTag;
       }
     } catch (error) {
-      console.warn(`[ERROR] searching for tag "${tagName}":`, error.message);
+      console.warn('[ERROR] searching for tag "%s":', tagName, error.message);
     }
 
     return null;
@@ -619,7 +631,7 @@ class PaperlessService {
             processedTags.add(normalizedName);
           }
         } catch (error) {
-          console.error(`[ERROR] processing tag "${tagName}":`, error.message);
+          console.error('[ERROR] processing tag "%s":', tagName, error.message);
           errors.push({ tagName, error: error.message });
         }
       }
@@ -1419,7 +1431,7 @@ class PaperlessService {
       const response = await this.client.get(`/documents/${documentId}/`);
       return response.data;
     } catch (error) {
-      console.error(`[ERROR] fetching document ${documentId}:`, error.message);
+      console.error('[ERROR] fetching document %s:', documentId, error.message);
       throw error;
     }
   }
@@ -1576,7 +1588,8 @@ class PaperlessService {
       }
     } catch (error) {
       console.error(
-        `[ERROR] Failed to process correspondent "${name}":`,
+        '[ERROR] Failed to process correspondent "%s":',
+        name,
         error.message
       );
       throw error;
@@ -1708,7 +1721,8 @@ class PaperlessService {
 
     try {
       console.log(
-        `[DEBUG] Removing unused tags from document ${documentId}, keeping tags:`,
+        '[DEBUG] Removing unused tags from document %s, keeping tags:',
+        documentId,
         keepTagIds
       );
 
@@ -1739,7 +1753,8 @@ class PaperlessService {
       return await this.getDocument(documentId);
     } catch (error) {
       console.error(
-        `[ERROR] Error removing unused tags from document ${documentId}:`,
+        '[ERROR] Error removing unused tags from document %s:',
+        documentId,
         error.message
       );
       throw error;
@@ -1825,7 +1840,8 @@ class PaperlessService {
 
       if (updates.tags) {
         console.log(
-          `[DEBUG] Current tags for document ${documentId}:`,
+          '[DEBUG] Current tags for document %s:',
+          documentId,
           currentDoc.tags
         );
         console.log(`[DEBUG] Adding new tags:`, updates.tags);
@@ -1915,11 +1931,15 @@ class PaperlessService {
 
       console.log('[DEBUG] Final update data:', updateData);
       await this.client.patch(`/documents/${documentId}/`, updateData);
-      console.log(`[SUCCESS] Updated document ${documentId} with:`, updateData);
+      console.log(
+        '[SUCCESS] Updated document %s with:',
+        documentId,
+        updateData
+      );
       return await this.getDocument(documentId);
     } catch (error) {
       console.log(error);
-      console.error(`[ERROR] updating document ${documentId}:`, error.message);
+      console.error('[ERROR] updating document %s:', documentId, error.message);
       return null;
     }
   }

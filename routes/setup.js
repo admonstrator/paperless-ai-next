@@ -18,6 +18,7 @@ const {
   validateCustomFieldValue,
   shouldQueueForOcrOnAiError,
   classifyOcrQueueReasonFromAiError,
+  stripTrailingSlashes,
 } = require('../services/serviceUtils');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -223,7 +224,8 @@ async function removeThumbnailCacheForDocumentIds(ids) {
     } catch (error) {
       if (error.code !== 'ENOENT') {
         console.warn(
-          `[WARN] Failed to delete cached thumbnail ${thumbnailPath}:`,
+          '[WARN] Failed to delete cached thumbnail %s:',
+          thumbnailPath,
           error.message
         );
       }
@@ -648,7 +650,9 @@ function generateBase32Secret(length = 32) {
   let output = '';
 
   for (let i = 0; i < length; i += 1) {
-    output += alphabet[bytes[i] % alphabet.length];
+    // The alphabet holds exactly 32 characters, so masking the low 5 bits maps
+    // each random byte onto it uniformly instead of relying on a biased modulo.
+    output += alphabet[bytes[i] & 0x1f];
   }
 
   return output;
@@ -3569,10 +3573,7 @@ function cleanupExpiredSetupMfaChallenges() {
 }
 
 function normalizeSetupBaseUrl(url) {
-  return String(url || '')
-    .trim()
-    .replace(/\/+$/, '')
-    .replace(/\/api$/, '');
+  return stripTrailingSlashes(String(url || '').trim()).replace(/\/api$/, '');
 }
 
 function parseBooleanInput(value, defaultValue = false) {

@@ -494,7 +494,11 @@ class HistoryManager {
     }
 
     const lower = trimmed.toLowerCase();
-    if (lower.startsWith('javascript:') || lower.startsWith('data:')) {
+    if (
+      lower.startsWith('javascript:') ||
+      lower.startsWith('data:') ||
+      lower.startsWith('vbscript:')
+    ) {
       return false;
     }
 

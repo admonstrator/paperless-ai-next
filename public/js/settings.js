@@ -3974,15 +3974,20 @@ function createFieldElement(fieldName, data_type, currency = null) {
             <i class="fas fa-grip-vertical"></i>
         </div>
         <div class="flex-1">
-            <p class="font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}">${fieldName}</p>
-            <p class="text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}">${typeDisplay}</p>
+            <p class="font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}" data-field-name></p>
+            <p class="text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}" data-field-type></p>
         </div>
-        <button type="button" 
+        <button type="button"
                 onclick="removeCustomField(this)"
                 class="text-gray-400 hover:text-red-500 transition-colors">
             <i class="fas fa-trash"></i>
         </button>
     `;
+
+  // Field name and type come from user input, so they are assigned as text
+  // instead of being interpolated into the markup above.
+  div.querySelector('[data-field-name]').textContent = fieldName;
+  div.querySelector('[data-field-type]').textContent = typeDisplay;
 
   return div;
 }
