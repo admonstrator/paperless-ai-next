@@ -1,8 +1,6 @@
 // services/paperlessService.js
 const axios = require('axios');
 const config = require('../config/config');
-const fs = require('fs');
-const path = require('path');
 const { parse, isValid, parseISO, format } = require('date-fns');
 const {
   validateUrlAgainstBase,
@@ -71,7 +69,7 @@ class PaperlessService {
       basePath = basePath.replace(/\/api$/, '');
 
       return `${parsedUrl.origin}${basePath}`;
-    } catch (_) {
+    } catch {
       return null;
     }
   }
@@ -178,7 +176,7 @@ class PaperlessService {
       process.env.PAPERLESS_PUBLIC_URL || ''
     );
 
-    let resolvedPublicUrl = '';
+    let resolvedPublicUrl;
     let source = 'unavailable';
 
     if (manualOverrideUrl) {
@@ -670,7 +668,9 @@ class PaperlessService {
       };
     } catch (error) {
       console.error('[ERROR] in processTags:', error);
-      throw new Error(`[ERROR] Failed to process tags: ${error.message}`);
+      throw new Error(`[ERROR] Failed to process tags: ${error.message}`, {
+        cause: error,
+      });
     }
   }
 
@@ -1197,30 +1197,6 @@ class PaperlessService {
         error.message
       );
       return 0;
-    }
-  }
-
-  async getAllDocumentIds() {
-    /**
-     * Get all Document IDs from the Paperless API.
-     *
-     * @returns    An array of all Document IDs.
-     * @throws     An error if the request fails.
-     * @note       This method is used to get all Document IDs for further processing.
-     */
-    this.initialize();
-    try {
-      const response = await this.client.get('/documents/', {
-        params: {
-          page,
-          page_size: 100,
-          fields: 'id',
-        },
-      });
-      return response.data.results.map((doc) => doc.id);
-    } catch (error) {
-      console.error('[ERROR] fetching document IDs:', error.message);
-      return [];
     }
   }
 

@@ -130,7 +130,7 @@ class SetupService {
       try {
         const decoded = JSON.parse(trimmed);
         return decoded == null ? '' : String(decoded);
-      } catch (_error) {
+      } catch {
         return trimmed;
       }
     }
@@ -734,7 +734,7 @@ class SetupService {
           };
           this.setupAiDetectionCache.set(cacheKey, detected);
           return detected;
-        } catch (_error) {
+        } catch {
           // Try next probe candidate.
         }
       }
@@ -817,7 +817,7 @@ class SetupService {
           };
           this.setupOcrDetectionCache.set(cacheKey, detected);
           return detected;
-        } catch (_error) {
+        } catch {
           // Try alternate local flavor and URL variant.
         }
       }
@@ -905,7 +905,7 @@ class SetupService {
       try {
         const models = await attempt();
         allModels.push(...models);
-      } catch (_error) {
+      } catch {
         // Try next provider flavor for custom endpoints.
       }
     }
@@ -945,7 +945,7 @@ class SetupService {
             this.getMistralUrlValidationOptions(targetUrl)
           );
           allModels.push(...models);
-        } catch (_error) {
+        } catch {
           // Try alternate base URL variant, e.g. with or without /v1.
         }
       }
@@ -984,7 +984,7 @@ class SetupService {
         try {
           const models = await attempt();
           allModels.push(...models);
-        } catch (_error) {
+        } catch {
           // Try next local provider flavor or /v1 variant.
         }
       }
@@ -1347,7 +1347,7 @@ class SetupService {
             providerReachable = true;
             break;
           }
-        } catch (_error) {
+        } catch {
           // Try the alternative probe endpoint.
         }
       }
@@ -1449,17 +1449,6 @@ class SetupService {
       if (!options.skipValidation) {
         await this.validateConfig(configValues);
       }
-
-      const JSON_STANDARD_PROMPT = `
-        Return the result EXCLUSIVELY as a JSON object. The Tags and Title MUST be in the language that is used in the document.:
-        
-        {
-          "title": "xxxxx",
-          "correspondent": "xxxxxxxx",
-          "tags": ["Tag1", "Tag2", "Tag3", "Tag4"],
-          "document_date": "YYYY-MM-DD",
-          "language": "en/de/es/..."
-        }`;
 
       // Ensure data directory exists
       const dataDir = path.dirname(this.envPath);
@@ -1598,7 +1587,7 @@ class SetupService {
       if (this.isLegacyConfigSourceMode()) {
         try {
           await fs.access(this.envPath, fs.constants.F_OK);
-        } catch (_err) {
+        } catch {
           console.log('No .env file found. Starting setup process...');
           this.configured = false;
           return false;

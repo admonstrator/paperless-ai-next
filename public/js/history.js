@@ -1,3 +1,5 @@
+/* global $ */
+
 class HistoryManager {
   constructor() {
     this.confirmModal = document.getElementById('confirmModal');
@@ -508,7 +510,7 @@ class HistoryManager {
         parsed.origin === window.location.origin &&
         parsed.pathname.startsWith('/')
       );
-    } catch (error) {
+    } catch {
       return false;
     }
   }
@@ -703,7 +705,6 @@ class HistoryManager {
         data.history.language || '\u2013';
 
       // --- Custom Fields ---
-      const cfSection = document.getElementById('infoModalCustomFieldsSection');
       const cfEl = document.getElementById('infoModalCustomFields');
       const cf = data.history.custom_fields;
 
