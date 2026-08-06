@@ -1,123 +1,128 @@
 // Prompt Rating System and Analyzer combined in one file
 class PromptRatingSystem {
-    constructor() {
-        this.localStorageKey = 'savedPrompts';
-        this.savedPrompts = this.loadSavedPrompts();
-        this.currentPrompt = '';
-        
-        // Erst Modal erstellen, dann UI Setup
-        this.createRatingModal();
-        this.setupUI();
-        this.setupEventListeners();
-    }
+  constructor() {
+    this.localStorageKey = 'savedPrompts';
+    this.savedPrompts = this.loadSavedPrompts();
+    this.currentPrompt = '';
 
-    loadSavedPrompts() {
-        try {
-            const saved = localStorage.getItem(this.localStorageKey);
-            return saved ? JSON.parse(saved) : [];
-        } catch (error) {
-            console.error('Error loading saved prompts:', error);
-            return [];
-        }
-    }
+    // Erst Modal erstellen, dann UI Setup
+    this.createRatingModal();
+    this.setupUI();
+    this.setupEventListeners();
+  }
 
-    setupUI() {
-        try {
-            // Rate Button hinzufügen
-            const analyzeButton = document.getElementById('analyzeButton');
-            if (!analyzeButton) {
-                console.error('Analyze button not found');
-                return;
+  loadSavedPrompts() {
+    try {
+      const saved = localStorage.getItem(this.localStorageKey);
+      return saved ? JSON.parse(saved) : [];
+    } catch (error) {
+      console.error('Error loading saved prompts:', error);
+      return [];
+    }
+  }
+
+  setupUI() {
+    try {
+      // Rate Button hinzufügen
+      const analyzeButton = document.getElementById('analyzeButton');
+      if (!analyzeButton) {
+        console.error('Analyze button not found');
+        return;
+      }
+
+      const rateButton = document.createElement('button');
+      rateButton.id = 'rateButton';
+      rateButton.className =
+        'hidden toolbar-btn toolbar-btn--success toolbar-btn--sm';
+      rateButton.innerHTML = '<i class="fas fa-star mr-2"></i>Rate Prompt';
+      const actionsContainer =
+        document.getElementById('analysisActions') || analyzeButton.parentNode;
+      actionsContainer.appendChild(rateButton);
+
+      // Saved Prompts Section erstellen
+      this.createSavedPromptsSection();
+      this.addStyles();
+    } catch (error) {
+      console.error('Error setting up UI:', error);
+    }
+  }
+
+  setupEventListeners() {
+    try {
+      // Rate Button Click
+      const rateButton = document.getElementById('rateButton');
+      if (rateButton) {
+        rateButton.addEventListener('click', () => this.showRatingModal());
+      }
+
+      // Modal Event Listeners
+      const modal = document.getElementById('ratingModal');
+      if (modal) {
+        const stars = modal.querySelectorAll('.star-rating button');
+        const saveButton = modal.querySelector('#saveRating');
+        const closeButton = modal.querySelector('.modal-close');
+        let selectedRating = 0;
+
+        stars.forEach((star) => {
+          star.addEventListener('click', (e) => {
+            const rating = parseInt(e.currentTarget.dataset.rating);
+            selectedRating = rating;
+            stars.forEach((s) => {
+              s.classList.toggle(
+                'active',
+                parseInt(s.dataset.rating) <= rating
+              );
+            });
+          });
+        });
+
+        if (saveButton) {
+          saveButton.addEventListener('click', () => {
+            if (selectedRating === 0) {
+              alert('Please select a rating');
+              return;
             }
 
-            const rateButton = document.createElement('button');
-            rateButton.id = 'rateButton';
-            rateButton.className = 'hidden toolbar-btn toolbar-btn--success toolbar-btn--sm';
-            rateButton.innerHTML = '<i class="fas fa-star mr-2"></i>Rate Prompt';
-            const actionsContainer = document.getElementById('analysisActions') || analyzeButton.parentNode;
-            actionsContainer.appendChild(rateButton);
-
-            // Saved Prompts Section erstellen
-            this.createSavedPromptsSection();
-            this.addStyles();
-        } catch (error) {
-            console.error('Error setting up UI:', error);
+            const comment = modal.querySelector('#ratingComment')?.value || '';
+            this.savePromptRating(selectedRating, comment);
+            this.hideRatingModal();
+            this.refreshSavedPrompts();
+            selectedRating = 0; // Reset rating
+          });
         }
+
+        if (closeButton) {
+          closeButton.addEventListener('click', () => this.hideRatingModal());
+        }
+
+        // Click outside to close
+        modal.addEventListener('click', (e) => {
+          if (e.target === modal) {
+            this.hideRatingModal();
+          }
+        });
+      }
+
+      // Clear All Button
+      const clearButton = document.getElementById('clearPrompts');
+      if (clearButton) {
+        clearButton.addEventListener('click', () => {
+          if (confirm('Are you sure you want to delete all saved prompts?')) {
+            this.clearAllPrompts();
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Error setting up event listeners:', error);
+    }
+  }
+
+  createRatingModal() {
+    if (document.getElementById('ratingModal')) {
+      return; // Modal already exists
     }
 
-    setupEventListeners() {
-        try {
-            // Rate Button Click
-            const rateButton = document.getElementById('rateButton');
-            if (rateButton) {
-                rateButton.addEventListener('click', () => this.showRatingModal());
-            }
-
-            // Modal Event Listeners
-            const modal = document.getElementById('ratingModal');
-            if (modal) {
-                const stars = modal.querySelectorAll('.star-rating button');
-                const saveButton = modal.querySelector('#saveRating');
-                const closeButton = modal.querySelector('.modal-close');
-                let selectedRating = 0;
-
-                stars.forEach(star => {
-                    star.addEventListener('click', (e) => {
-                        const rating = parseInt(e.currentTarget.dataset.rating);
-                        selectedRating = rating;
-                        stars.forEach(s => {
-                            s.classList.toggle('active', parseInt(s.dataset.rating) <= rating);
-                        });
-                    });
-                });
-
-                if (saveButton) {
-                    saveButton.addEventListener('click', () => {
-                        if (selectedRating === 0) {
-                            alert('Please select a rating');
-                            return;
-                        }
-
-                        const comment = modal.querySelector('#ratingComment')?.value || '';
-                        this.savePromptRating(selectedRating, comment);
-                        this.hideRatingModal();
-                        this.refreshSavedPrompts();
-                        selectedRating = 0; // Reset rating
-                    });
-                }
-
-                if (closeButton) {
-                    closeButton.addEventListener('click', () => this.hideRatingModal());
-                }
-
-                // Click outside to close
-                modal.addEventListener('click', (e) => {
-                    if (e.target === modal) {
-                        this.hideRatingModal();
-                    }
-                });
-            }
-
-            // Clear All Button
-            const clearButton = document.getElementById('clearPrompts');
-            if (clearButton) {
-                clearButton.addEventListener('click', () => {
-                    if (confirm('Are you sure you want to delete all saved prompts?')) {
-                        this.clearAllPrompts();
-                    }
-                });
-            }
-        } catch (error) {
-            console.error('Error setting up event listeners:', error);
-        }
-    }
-
-    createRatingModal() {
-        if (document.getElementById('ratingModal')) {
-            return; // Modal already exists
-        }
-
-        const modalHtml = `
+    const modalHtml = `
             <div id="ratingModal" class="fixed inset-0 z-50 hidden">
                 <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
                 <div class="fixed inset-0 flex items-center justify-center p-4">
@@ -133,11 +138,14 @@ class PromptRatingSystem {
                                 <code class="text-sm break-all whitespace-pre-wrap"></code>
                             </div>
                             <div class="star-rating flex justify-center gap-2" id="starRating">
-                                ${Array.from({length: 10}, (_, i) => `
+                                ${Array.from(
+                                  { length: 10 },
+                                  (_, i) => `
                                     <button data-rating="${i + 1}" class="text-2xl focus:outline-none hover:scale-110 transition-transform">
                                         <i class="fas fa-star"></i>
                                     </button>
-                                `).join('')}
+                                `
+                                ).join('')}
                             </div>
                             <textarea
                                 id="ratingComment"
@@ -155,18 +163,18 @@ class PromptRatingSystem {
             </div>
         `;
 
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+  }
+
+  createSavedPromptsSection() {
+    const existingSection = document.querySelector('.saved-prompts-section');
+    if (existingSection) {
+      existingSection.remove();
     }
 
-    createSavedPromptsSection() {
-        const existingSection = document.querySelector('.saved-prompts-section');
-        if (existingSection) {
-            existingSection.remove();
-        }
-
-        const promptsSection = document.createElement('div');
-        promptsSection.className = 'material-card mb-8 saved-prompts-section';
-        promptsSection.innerHTML = `
+    const promptsSection = document.createElement('div');
+    promptsSection.className = 'material-card mb-8 saved-prompts-section';
+    promptsSection.innerHTML = `
             <h2 class="card-title flex justify-between items-center">
                 Saved Prompts
                 <button id="clearPrompts" class="toolbar-btn toolbar-btn--danger toolbar-btn--sm text-sm">
@@ -176,18 +184,21 @@ class PromptRatingSystem {
             <div id="savedPromptsList"></div>
         `;
 
-        // Nach der Analyse-Sektion einfügen
-        const analysisSection = document.querySelector('.material-card');
-        if (analysisSection) {
-            analysisSection.parentNode.insertBefore(promptsSection, analysisSection.nextSibling);
-        }
-
-        this.refreshSavedPrompts();
+    // Nach der Analyse-Sektion einfügen
+    const analysisSection = document.querySelector('.material-card');
+    if (analysisSection) {
+      analysisSection.parentNode.insertBefore(
+        promptsSection,
+        analysisSection.nextSibling
+      );
     }
 
-    addStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
+    this.refreshSavedPrompts();
+  }
+
+  addStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
             #ratingModal {
                 transition: opacity 0.2s ease-in-out;
             }
@@ -263,81 +274,89 @@ class PromptRatingSystem {
                 word-break: break-all;
             }
         `;
-        document.head.appendChild(style);
+    document.head.appendChild(style);
+  }
+
+  showRatingModal() {
+    const modal = document.getElementById('ratingModal');
+    if (!modal) {
+      console.error('Rating modal not found');
+      return;
     }
 
-    showRatingModal() {
-        const modal = document.getElementById('ratingModal');
-        if (!modal) {
-            console.error('Rating modal not found');
-            return;
-        }
-        
-        // Debug-Ausgabe
-        console.log('Current prompt:', this.currentPrompt);
-        
-        // Setze den Prompt-Text
-        const codeElement = modal.querySelector('.prompt-preview code');
-        if (codeElement) {
-            codeElement.textContent = this.currentPrompt;
-        }
-        
-        // Reset state
-        modal.querySelectorAll('.star-rating button').forEach(star => star.classList.remove('active'));
-        const commentField = modal.querySelector('#ratingComment');
-        if (commentField) {
-            commentField.value = '';
-        }
-        
-        modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
+    // Debug-Ausgabe
+    console.log('Current prompt:', this.currentPrompt);
+
+    // Setze den Prompt-Text
+    const codeElement = modal.querySelector('.prompt-preview code');
+    if (codeElement) {
+      codeElement.textContent = this.currentPrompt;
     }
 
-    hideRatingModal() {
-        const modal = document.getElementById('ratingModal');
-        if (modal) {
-            modal.classList.add('hidden');
-            document.body.style.overflow = '';
-        }
+    // Reset state
+    modal
+      .querySelectorAll('.star-rating button')
+      .forEach((star) => star.classList.remove('active'));
+    const commentField = modal.querySelector('#ratingComment');
+    if (commentField) {
+      commentField.value = '';
     }
 
-    savePromptRating(rating, comment) {
-        // Debug-Ausgabe
-        console.log('Saving prompt:', this.currentPrompt);
-        
-        // Sicherstellen, dass wir einen Prompt haben
-        if (!this.currentPrompt) {
-            console.error('No prompt to save');
-            return;
-        }
-    
-        const promptData = {
-            prompt: this.currentPrompt,
-            rating: rating,
-            comment: comment,
-            date: new Date().toISOString(),
-            id: Date.now()
-        };
-    
-        // Debug-Ausgabe
-        console.log('Saving prompt data:', promptData);
-    
-        this.savedPrompts.unshift(promptData);
-        try {
-            localStorage.setItem(this.localStorageKey, JSON.stringify(this.savedPrompts));
-        } catch (error) {
-            console.error('Error saving to localStorage:', error);
-        }
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+  }
+
+  hideRatingModal() {
+    const modal = document.getElementById('ratingModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      document.body.style.overflow = '';
+    }
+  }
+
+  savePromptRating(rating, comment) {
+    // Debug-Ausgabe
+    console.log('Saving prompt:', this.currentPrompt);
+
+    // Sicherstellen, dass wir einen Prompt haben
+    if (!this.currentPrompt) {
+      console.error('No prompt to save');
+      return;
     }
 
-    refreshSavedPrompts() {
-        const container = document.getElementById('savedPromptsList');
-        if (!container) return;
+    const promptData = {
+      prompt: this.currentPrompt,
+      rating: rating,
+      comment: comment,
+      date: new Date().toISOString(),
+      id: Date.now(),
+    };
 
-        container.innerHTML = this.savedPrompts.map(prompt => `
+    // Debug-Ausgabe
+    console.log('Saving prompt data:', promptData);
+
+    this.savedPrompts.unshift(promptData);
+    try {
+      localStorage.setItem(
+        this.localStorageKey,
+        JSON.stringify(this.savedPrompts)
+      );
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+  }
+
+  refreshSavedPrompts() {
+    const container = document.getElementById('savedPromptsList');
+    if (!container) return;
+
+    container.innerHTML =
+      this.savedPrompts
+        .map(
+          (prompt) => `
             <div class="saved-prompt-card" data-id="${prompt.id}">
                 <div class="rating text-lg mb-2">
-                    ${Array.from({length: prompt.rating}, () => '<i class="fas fa-star"></i>').join('')}
+                    ${Array.from({ length: prompt.rating }, () => '<i class="fas fa-star"></i>').join('')}
                     <span class="ml-2 text-sm">${prompt.rating}/10</span>
                 </div>
                 <div class="prompt-text text-sm">${prompt.prompt}</div>
@@ -356,113 +375,128 @@ class PromptRatingSystem {
                     </button>
                 </div>
             </div>
-        `).join('') || '<p class="text-gray-500 italic p-4">No saved prompts yet</p>';
-    }
+        `
+        )
+        .join('') ||
+      '<p class="text-gray-500 italic p-4">No saved prompts yet</p>';
+  }
 
-    usePrompt(id) {
-        const prompt = this.savedPrompts.find(p => p.id === id);
-        if (prompt) {
-            const textarea = document.getElementById('analysisPrompt');
-            if (textarea) {
-                textarea.value = prompt.prompt;
-                // Scroll zum Textarea
-                textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Optional: Fokussiere das Textarea
-                textarea.focus();
-            }
-        }
+  usePrompt(id) {
+    const prompt = this.savedPrompts.find((p) => p.id === id);
+    if (prompt) {
+      const textarea = document.getElementById('analysisPrompt');
+      if (textarea) {
+        textarea.value = prompt.prompt;
+        // Scroll zum Textarea
+        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Optional: Fokussiere das Textarea
+        textarea.focus();
+      }
     }
+  }
 
-    deletePrompt(id) {
-        if (confirm('Are you sure you want to delete this prompt?')) {
-            this.savedPrompts = this.savedPrompts.filter(p => p.id !== id);
-            localStorage.setItem(this.localStorageKey, JSON.stringify(this.savedPrompts));
-            this.refreshSavedPrompts();
-        }
+  deletePrompt(id) {
+    if (confirm('Are you sure you want to delete this prompt?')) {
+      this.savedPrompts = this.savedPrompts.filter((p) => p.id !== id);
+      localStorage.setItem(
+        this.localStorageKey,
+        JSON.stringify(this.savedPrompts)
+      );
+      this.refreshSavedPrompts();
     }
+  }
 
-    clearAllPrompts() {
-        this.savedPrompts = [];
-        localStorage.removeItem(this.localStorageKey);
-        this.refreshSavedPrompts();
-    }
+  clearAllPrompts() {
+    this.savedPrompts = [];
+    localStorage.removeItem(this.localStorageKey);
+    this.refreshSavedPrompts();
+  }
 
-    setCurrentPrompt(prompt) {
-        this.currentPrompt = prompt;
-        const rateButton = document.getElementById('rateButton');
-        if (rateButton) {
-            rateButton.classList.remove('hidden');
-        }
+  setCurrentPrompt(prompt) {
+    this.currentPrompt = prompt;
+    const rateButton = document.getElementById('rateButton');
+    if (rateButton) {
+      rateButton.classList.remove('hidden');
     }
+  }
 }
 
 // Playground Document Analyzer
 class PlaygroundAnalyzer {
-    constructor() {
-        this.analysisPrompt = document.getElementById('analysisPrompt');
-        this.analyzeButton = document.getElementById('analyzeButton');
-        this.documentsGrid = document.getElementById('documentsGrid');
-        this.initialLoadingBlock = document.getElementById('playgroundInitialLoading');
-        this.initialLoadingStatus = document.getElementById('playgroundInitialLoadingStatus');
-        this.analysisOverlay = document.getElementById('playgroundAnalysisOverlay');
-        this.analysisOverlayStatus = document.getElementById('playgroundAnalysisStatus');
-        this.isAnalyzing = false;
-        this.maxBootstrapWaitMs = 20000;
-        this.promptRating = new PromptRatingSystem(); // Initialize rating system here
+  constructor() {
+    this.analysisPrompt = document.getElementById('analysisPrompt');
+    this.analyzeButton = document.getElementById('analyzeButton');
+    this.documentsGrid = document.getElementById('documentsGrid');
+    this.initialLoadingBlock = document.getElementById(
+      'playgroundInitialLoading'
+    );
+    this.initialLoadingStatus = document.getElementById(
+      'playgroundInitialLoadingStatus'
+    );
+    this.analysisOverlay = document.getElementById('playgroundAnalysisOverlay');
+    this.analysisOverlayStatus = document.getElementById(
+      'playgroundAnalysisStatus'
+    );
+    this.isAnalyzing = false;
+    this.maxBootstrapWaitMs = 20000;
+    this.promptRating = new PromptRatingSystem(); // Initialize rating system here
 
-        this.initialize();
-    }
+    this.initialize();
+  }
 
-    async initialize() {
-        this.analyzeButton.addEventListener('click', () => this.startAnalysis());
-        this.analyzeButton.disabled = true;
-        this.setupStyles();
-        await this.loadBootstrapData();
-    }
+  async initialize() {
+    this.analyzeButton.addEventListener('click', () => this.startAnalysis());
+    this.analyzeButton.disabled = true;
+    this.setupStyles();
+    await this.loadBootstrapData();
+  }
 
-    setInitialLoadingStatus(message) {
-        if (!this.initialLoadingStatus) return;
-        this.initialLoadingStatus.textContent = message;
-    }
+  setInitialLoadingStatus(message) {
+    if (!this.initialLoadingStatus) return;
+    this.initialLoadingStatus.textContent = message;
+  }
 
-    escapeHtml(value) {
-        return `${value ?? ''}`
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
-    }
+  escapeHtml(value) {
+    return `${value ?? ''}`
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
-    formatDocumentDate(dateValue) {
-        if (!dateValue) return 'Unknown date';
-        const parsed = new Date(dateValue);
-        if (Number.isNaN(parsed.getTime())) return 'Unknown date';
-        return parsed.toLocaleDateString();
-    }
+  formatDocumentDate(dateValue) {
+    if (!dateValue) return 'Unknown date';
+    const parsed = new Date(dateValue);
+    if (Number.isNaN(parsed.getTime())) return 'Unknown date';
+    return parsed.toLocaleDateString();
+  }
 
-    renderDocuments(documents, tagNames = {}, correspondentNames = {}) {
-        if (!this.documentsGrid) return;
+  renderDocuments(documents, tagNames = {}, correspondentNames = {}) {
+    if (!this.documentsGrid) return;
 
-        const cardsMarkup = (Array.isArray(documents) ? documents : []).map((doc) => {
-            const safeTitle = this.escapeHtml(doc?.title || 'Untitled');
-            const documentId = Number(doc?.id);
-            const createdAt = this.formatDocumentDate(doc?.created);
-            const tags = Array.isArray(doc?.tags) ? doc.tags : [];
+    const cardsMarkup = (Array.isArray(documents) ? documents : [])
+      .map((doc) => {
+        const safeTitle = this.escapeHtml(doc?.title || 'Untitled');
+        const documentId = Number(doc?.id);
+        const createdAt = this.formatDocumentDate(doc?.created);
+        const tags = Array.isArray(doc?.tags) ? doc.tags : [];
 
-            const tagsMarkup = tags.map((tagId) => {
-                const normalizedTagId = Number(tagId);
-                const tagName = tagNames?.[normalizedTagId] || 'Unknown';
-                return `<span class="tag text-xs px-2 py-1 rounded-full bg-blue-600 text-white" data-tag-id="${this.escapeHtml(normalizedTagId)}">${this.escapeHtml(tagName)}</span>`;
-            }).join('');
+        const tagsMarkup = tags
+          .map((tagId) => {
+            const normalizedTagId = Number(tagId);
+            const tagName = tagNames?.[normalizedTagId] || 'Unknown';
+            return `<span class="tag text-xs px-2 py-1 rounded-full bg-blue-600 text-white" data-tag-id="${this.escapeHtml(normalizedTagId)}">${this.escapeHtml(tagName)}</span>`;
+          })
+          .join('');
 
-            const correspondentId = Number(doc?.correspondent);
-            const hasCorrespondent = Number.isInteger(correspondentId);
-            const correspondentName = hasCorrespondent
-                ? (correspondentNames?.[correspondentId] || 'Unknown')
-                : '';
+        const correspondentId = Number(doc?.correspondent);
+        const hasCorrespondent = Number.isInteger(correspondentId);
+        const correspondentName = hasCorrespondent
+          ? correspondentNames?.[correspondentId] || 'Unknown'
+          : '';
 
-            return `
+        return `
                 <div class="material-card document-card" data-document-id="${this.escapeHtml(documentId)}">
                     <div class="relative aspect-[3/4]">
                         <div class="thumbnail-skeleton" data-thumb-skeleton aria-hidden="true"></div>
@@ -482,171 +516,197 @@ class PlaygroundAnalyzer {
                     </div>
                 </div>
             `;
-        }).join('');
+      })
+      .join('');
 
-        this.documentsGrid.innerHTML = cardsMarkup;
+    this.documentsGrid.innerHTML = cardsMarkup;
+  }
+
+  async loadBootstrapData() {
+    if (!this.documentsGrid) {
+      this.setInitialLoadingStatus('Document grid unavailable.');
+      return;
     }
 
-    async loadBootstrapData() {
-        if (!this.documentsGrid) {
-            this.setInitialLoadingStatus('Document grid unavailable.');
-            return;
-        }
+    this.setInitialLoadingStatus('Loading document metadata...');
 
-        this.setInitialLoadingStatus('Loading document metadata...');
+    try {
+      const abortController = new AbortController();
+      const timeoutId = setTimeout(
+        () => abortController.abort(),
+        this.maxBootstrapWaitMs
+      );
+      const response = await fetch('/api/playground/bootstrap', {
+        signal: abortController.signal,
+      });
+      clearTimeout(timeoutId);
 
-        try {
-            const abortController = new AbortController();
-            const timeoutId = setTimeout(() => abortController.abort(), this.maxBootstrapWaitMs);
-            const response = await fetch('/api/playground/bootstrap', {
-                signal: abortController.signal
-            });
-            clearTimeout(timeoutId);
+      if (!response.ok) {
+        throw new Error('Failed to load playground data');
+      }
 
-            if (!response.ok) {
-                throw new Error('Failed to load playground data');
-            }
+      const payload = await response.json();
+      if (!payload?.success) {
+        throw new Error(
+          payload?.error || 'Invalid playground bootstrap response'
+        );
+      }
 
-            const payload = await response.json();
-            if (!payload?.success) {
-                throw new Error(payload?.error || 'Invalid playground bootstrap response');
-            }
+      const documents = Array.isArray(payload.documents)
+        ? payload.documents
+        : [];
+      this.renderDocuments(
+        documents,
+        payload.tagNames || {},
+        payload.correspondentNames || {}
+      );
 
-            const documents = Array.isArray(payload.documents) ? payload.documents : [];
-            this.renderDocuments(documents, payload.tagNames || {}, payload.correspondentNames || {});
+      if (documents.length === 0) {
+        this.setInitialLoadingStatus('No documents available.');
+        this.initialLoadingBlock?.setAttribute('aria-busy', 'false');
+        setTimeout(
+          () => this.initialLoadingBlock?.classList.add('hidden'),
+          250
+        );
+        this.analyzeButton.disabled = false;
+        return;
+      }
 
-            if (documents.length === 0) {
-                this.setInitialLoadingStatus('No documents available.');
-                this.initialLoadingBlock?.setAttribute('aria-busy', 'false');
-                setTimeout(() => this.initialLoadingBlock?.classList.add('hidden'), 250);
-                this.analyzeButton.disabled = false;
-                return;
-            }
+      this.setInitialLoadingStatus(
+        `Loaded ${documents.length} documents. Loading thumbnails...`
+      );
+      await this.initializeThumbnailLoadingState();
+      this.analyzeButton.disabled = false;
+    } catch (error) {
+      console.error('Error loading playground bootstrap data:', error);
+      this.setInitialLoadingStatus(
+        'Failed to load playground data. Please refresh the page.'
+      );
+      this.initialLoadingBlock?.setAttribute('aria-busy', 'false');
+      this.analyzeButton.disabled = false;
+    }
+  }
 
-            this.setInitialLoadingStatus(`Loaded ${documents.length} documents. Loading thumbnails...`);
-            await this.initializeThumbnailLoadingState();
-            this.analyzeButton.disabled = false;
-        } catch (error) {
-            console.error('Error loading playground bootstrap data:', error);
-            this.setInitialLoadingStatus('Failed to load playground data. Please refresh the page.');
-            this.initialLoadingBlock?.setAttribute('aria-busy', 'false');
-            this.analyzeButton.disabled = false;
-        }
+  async initializeThumbnailLoadingState() {
+    if (!this.documentsGrid || !this.initialLoadingBlock) return;
+
+    const images = Array.from(
+      this.documentsGrid.querySelectorAll('.playground-thumb[data-thumb-src]')
+    );
+    if (images.length === 0) {
+      this.initialLoadingBlock.classList.add('hidden');
+      this.initialLoadingBlock.setAttribute('aria-busy', 'false');
+      return;
     }
 
-    async initializeThumbnailLoadingState() {
-        if (!this.documentsGrid || !this.initialLoadingBlock) return;
+    const total = images.length;
+    let loaded = 0;
+    let failed = 0;
+    const concurrency = Math.min(6, total);
 
-        const images = Array.from(this.documentsGrid.querySelectorAll('.playground-thumb[data-thumb-src]'));
-        if (images.length === 0) {
-            this.initialLoadingBlock.classList.add('hidden');
-            this.initialLoadingBlock.setAttribute('aria-busy', 'false');
-            return;
+    const updateInitialStatus = () => {
+      if (!this.initialLoadingStatus) return;
+      const finished = loaded + failed;
+      if (finished >= total) {
+        this.initialLoadingStatus.textContent = `Loaded ${loaded}/${total} thumbnails.`;
+        return;
+      }
+      this.initialLoadingStatus.textContent = `Loading thumbnails ${finished}/${total}...`;
+    };
+
+    const revealThumbnail = (image, success = true) => {
+      const skeleton = image.parentElement?.querySelector(
+        '[data-thumb-skeleton]'
+      );
+      if (skeleton) {
+        skeleton.classList.add('hidden');
+      }
+
+      if (success) {
+        image.classList.add('is-ready');
+      }
+    };
+
+    const loadThumbnail = (image) => {
+      return new Promise((resolve) => {
+        const source = image.dataset.thumbSrc;
+        if (!source) {
+          failed += 1;
+          revealThumbnail(image, false);
+          updateInitialStatus();
+          resolve();
+          return;
         }
 
-        const total = images.length;
-        let loaded = 0;
-        let failed = 0;
-        const concurrency = Math.min(6, total);
-
-        const updateInitialStatus = () => {
-            if (!this.initialLoadingStatus) return;
-            const finished = loaded + failed;
-            if (finished >= total) {
-                this.initialLoadingStatus.textContent = `Loaded ${loaded}/${total} thumbnails.`;
-                return;
-            }
-            this.initialLoadingStatus.textContent = `Loading thumbnails ${finished}/${total}...`;
+        const onLoad = () => {
+          clearTimeout(timeoutId);
+          loaded += 1;
+          revealThumbnail(image, true);
+          updateInitialStatus();
+          resolve();
         };
 
-        const revealThumbnail = (image, success = true) => {
-            const skeleton = image.parentElement?.querySelector('[data-thumb-skeleton]');
-            if (skeleton) {
-                skeleton.classList.add('hidden');
-            }
-
-            if (success) {
-                image.classList.add('is-ready');
-            }
+        const onError = () => {
+          clearTimeout(timeoutId);
+          failed += 1;
+          revealThumbnail(image, false);
+          updateInitialStatus();
+          resolve();
         };
 
-        const loadThumbnail = (image) => {
-            return new Promise((resolve) => {
-                const source = image.dataset.thumbSrc;
-                if (!source) {
-                    failed += 1;
-                    revealThumbnail(image, false);
-                    updateInitialStatus();
-                    resolve();
-                    return;
-                }
+        const timeoutId = setTimeout(() => {
+          failed += 1;
+          revealThumbnail(image, false);
+          updateInitialStatus();
+          resolve();
+        }, 15000);
 
-                const onLoad = () => {
-                    clearTimeout(timeoutId);
-                    loaded += 1;
-                    revealThumbnail(image, true);
-                    updateInitialStatus();
-                    resolve();
-                };
+        image.addEventListener('load', onLoad, { once: true });
+        image.addEventListener('error', onError, { once: true });
+        image.src = source;
+      });
+    };
 
-                const onError = () => {
-                    clearTimeout(timeoutId);
-                    failed += 1;
-                    revealThumbnail(image, false);
-                    updateInitialStatus();
-                    resolve();
-                };
+    const runWorkers = async () => {
+      let nextIndex = 0;
 
-                const timeoutId = setTimeout(() => {
-                    failed += 1;
-                    revealThumbnail(image, false);
-                    updateInitialStatus();
-                    resolve();
-                }, 15000);
-
-                image.addEventListener('load', onLoad, { once: true });
-                image.addEventListener('error', onError, { once: true });
-                image.src = source;
-            });
-        };
-
-        const runWorkers = async () => {
-            let nextIndex = 0;
-
-            const workers = Array.from({ length: concurrency }, async () => {
-                while (nextIndex < images.length) {
-                    const currentIndex = nextIndex;
-                    nextIndex += 1;
-                    await loadThumbnail(images[currentIndex]);
-                }
-            });
-
-            await Promise.all(workers);
-        };
-
-        updateInitialStatus();
-        await runWorkers();
-
-        this.initialLoadingBlock.setAttribute('aria-busy', 'false');
-        setTimeout(() => {
-            this.initialLoadingBlock.classList.add('hidden');
-        }, 200);
-    }
-
-    setAnalysisLoadingState(isLoading, statusText = 'Analyzing documents...') {
-        if (!this.analysisOverlay) return;
-
-        this.analysisOverlay.classList.toggle('hidden', !isLoading);
-        this.analysisOverlay.setAttribute('aria-busy', isLoading ? 'true' : 'false');
-
-        if (this.analysisOverlayStatus) {
-            this.analysisOverlayStatus.textContent = statusText;
+      const workers = Array.from({ length: concurrency }, async () => {
+        while (nextIndex < images.length) {
+          const currentIndex = nextIndex;
+          nextIndex += 1;
+          await loadThumbnail(images[currentIndex]);
         }
-    }
+      });
 
-    setupStyles() {
-        const style = document.createElement('style');
-        style.textContent = `
+      await Promise.all(workers);
+    };
+
+    updateInitialStatus();
+    await runWorkers();
+
+    this.initialLoadingBlock.setAttribute('aria-busy', 'false');
+    setTimeout(() => {
+      this.initialLoadingBlock.classList.add('hidden');
+    }, 200);
+  }
+
+  setAnalysisLoadingState(isLoading, statusText = 'Analyzing documents...') {
+    if (!this.analysisOverlay) return;
+
+    this.analysisOverlay.classList.toggle('hidden', !isLoading);
+    this.analysisOverlay.setAttribute(
+      'aria-busy',
+      isLoading ? 'true' : 'false'
+    );
+
+    if (this.analysisOverlayStatus) {
+      this.analysisOverlayStatus.textContent = statusText;
+    }
+  }
+
+  setupStyles() {
+    const style = document.createElement('style');
+    style.textContent = `
             /* Kartendesign */
             .document-card {
                 display: flex;
@@ -764,219 +824,250 @@ class PlaygroundAnalyzer {
                 100% { opacity: 0.6; }
             }
         `;
-        document.head.appendChild(style);
+    document.head.appendChild(style);
+  }
+
+  async startAnalysis() {
+    if (this.isAnalyzing) return;
+
+    const prompt = this.analysisPrompt.value.trim();
+    if (!prompt) {
+      this.showMessage('Please enter an analysis prompt', 'error');
+      return;
     }
 
-    async startAnalysis() {
-        if (this.isAnalyzing) return;
-        
-        const prompt = this.analysisPrompt.value.trim();
-        if (!prompt) {
-            this.showMessage('Please enter an analysis prompt', 'error');
-            return;
-        }
-    
-        this.isAnalyzing = true;
-        this.analyzeButton.disabled = true;
-        this.setAnalysisLoadingState(true, 'Starting analysis...');
-        this.showMessage('Starting document analysis...', 'info');
-    
-        try {
-            const documents = Array.from(this.documentsGrid.children);
-            for (const [index, docCard] of documents.entries()) {
-                this.setAnalysisLoadingState(true, `Analyzing document ${index + 1} of ${documents.length}...`);
-                this.showMessage(`Analyzing document ${index + 1} of ${documents.length}...`, 'info');
-                
-                docCard.scrollIntoView({ 
-                    behavior: 'smooth', 
-                    block: 'center' 
-                });
-                
-                docCard.classList.add('processing');
-                await this.analyzeDocument(docCard, prompt);
-                docCard.classList.remove('processing');
-                
-                await new Promise(resolve => setTimeout(resolve, 500));
-            }
-            
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
-            
-            // Hier ist die wichtige Änderung - speichere den Prompt direkt
-            window.promptRating.currentPrompt = prompt;  // Direkter Zugriff
-            window.promptRating.setCurrentPrompt(prompt);  // Aktiviere den Rate Button
-            
-            this.showMessage('Analysis completed successfully', 'success');
-        } catch (error) {
-            console.error('Analysis error:', error);
-            this.showMessage('Error during analysis: ' + error.message, 'error');
-        } finally {
-            this.isAnalyzing = false;
-            this.analyzeButton.disabled = false;
-            this.setAnalysisLoadingState(false);
-        }
+    this.isAnalyzing = true;
+    this.analyzeButton.disabled = true;
+    this.setAnalysisLoadingState(true, 'Starting analysis...');
+    this.showMessage('Starting document analysis...', 'info');
+
+    try {
+      const documents = Array.from(this.documentsGrid.children);
+      for (const [index, docCard] of documents.entries()) {
+        this.setAnalysisLoadingState(
+          true,
+          `Analyzing document ${index + 1} of ${documents.length}...`
+        );
+        this.showMessage(
+          `Analyzing document ${index + 1} of ${documents.length}...`,
+          'info'
+        );
+
+        docCard.scrollIntoView({
+          behavior: 'smooth',
+          block: 'center',
+        });
+
+        docCard.classList.add('processing');
+        await this.analyzeDocument(docCard, prompt);
+        docCard.classList.remove('processing');
+
+        await new Promise((resolve) => setTimeout(resolve, 500));
+      }
+
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth',
+      });
+
+      // Hier ist die wichtige Änderung - speichere den Prompt direkt
+      window.promptRating.currentPrompt = prompt; // Direkter Zugriff
+      window.promptRating.setCurrentPrompt(prompt); // Aktiviere den Rate Button
+
+      this.showMessage('Analysis completed successfully', 'success');
+    } catch (error) {
+      console.error('Analysis error:', error);
+      this.showMessage('Error during analysis: ' + error.message, 'error');
+    } finally {
+      this.isAnalyzing = false;
+      this.analyzeButton.disabled = false;
+      this.setAnalysisLoadingState(false);
+    }
+  }
+
+  async analyzeDocument(docCard, prompt) {
+    const docId = docCard.dataset.documentId;
+    if (!docId) return;
+
+    try {
+      // Dokument-Content abrufen
+      const contentResponse = await fetch(`/manual/preview/${docId}`);
+      if (!contentResponse.ok)
+        throw new Error('Failed to fetch document content');
+      const contentData = await contentResponse.json();
+
+      // Bestehende Tags und Correspondent erfassen
+      const existingTags = Array.from(docCard.querySelectorAll('.tag')).map(
+        (tag) => ({
+          id: tag.dataset.tagId,
+          name: tag.textContent.trim(),
+        })
+      );
+
+      const existingCorrespondent = docCard.querySelector(
+        '[data-correspondent]'
+      )?.dataset.correspondent;
+      const existingTitle = docCard.querySelector('h3').textContent;
+
+      // Analyse durchführen
+      const analysisResponse = await fetch('/manual/playground', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          content: contentData.content,
+          existingTags: existingTags.map((t) => t.id),
+          correspondent: existingCorrespondent,
+          prompt: prompt,
+          documentId: docId,
+        }),
+      });
+
+      if (!analysisResponse.ok) {
+        const errorData = await analysisResponse.json();
+        throw new Error(errorData.error || 'Analysis failed');
+      }
+
+      const result = await analysisResponse.json();
+
+      // Karte aktualisieren
+      await this.updateDocumentCard(docCard, result.document, {
+        existingTags,
+        existingCorrespondent,
+        existingTitle,
+      });
+    } catch (error) {
+      console.error(`Error analyzing document ${docId}:`, error);
+      this.showMessage(
+        `Error analyzing document ${docId}: ${error.message}`,
+        'warning'
+      );
+    }
+  }
+
+  async updateDocumentCard(docCard, analysisResult, existing) {
+    // Tags aktualisieren
+    console.log('Existing Data:', existing);
+    if (analysisResult.tags && analysisResult.tags.length > 0) {
+      const tagsContainer = docCard.querySelector(
+        '.tags-container, div[class*="flex flex-wrap gap"]'
+      );
+      if (tagsContainer) {
+        const existingTagIds = existing.existingTags.map((t) => t.id);
+
+        // Neue Tags hinzufügen
+        analysisResult.tags.forEach((tagId) => {
+          if (!existingTagIds.includes(tagId)) {
+            const tagSpan = document.createElement('span');
+            tagSpan.className =
+              'tag new-tag text-xs px-2 py-1 rounded-full text-white';
+            tagSpan.dataset.tagId = tagId;
+            tagSpan.textContent = tagId;
+            tagsContainer.appendChild(tagSpan);
+          }
+        });
+      }
     }
 
-    async analyzeDocument(docCard, prompt) {
-        const docId = docCard.dataset.documentId;
-        if (!docId) return;
+    // Correspondent aktualisieren
+    if (
+      analysisResult.correspondent &&
+      analysisResult.correspondent !== existing.existingCorrespondent
+    ) {
+      const correspondentElem = docCard.querySelector('[data-correspondent]');
+      if (correspondentElem) {
+        // Speichere den ursprünglichen Namen statt der ID
+        const oldCorrespondentName = correspondentElem.textContent.trim();
+        const infoContainer = document.createElement('div');
+        infoContainer.className = 'info-item';
 
-        try {
-            // Dokument-Content abrufen
-            const contentResponse = await fetch(`/manual/preview/${docId}`);
-            if (!contentResponse.ok) throw new Error('Failed to fetch document content');
-            const contentData = await contentResponse.json();
+        const newValue = document.createElement('span');
+        newValue.className = 'updated-text truncate';
+        // Hier müssen wir den neuen Namen aus correspondentNames holen
+        newValue.textContent =
+          window.correspondentNames?.[analysisResult.correspondent] ||
+          analysisResult.correspondent;
 
-            // Bestehende Tags und Correspondent erfassen
-            const existingTags = Array.from(docCard.querySelectorAll('.tag'))
-                .map(tag => ({
-                    id: tag.dataset.tagId,
-                    name: tag.textContent.trim()
-                }));
-            
-            const existingCorrespondent = docCard.querySelector('[data-correspondent]')?.dataset.correspondent;
-            const existingTitle = docCard.querySelector('h3').textContent;
+        const oldValue = document.createElement('span');
+        oldValue.className = 'old-value';
+        // Verwende den gespeicherten Namen
+        oldValue.textContent = oldCorrespondentName;
 
-            // Analyse durchführen
-            const analysisResponse = await fetch('/manual/playground', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    content: contentData.content,
-                    existingTags: existingTags.map(t => t.id),
-                    correspondent: existingCorrespondent,
-                    prompt: prompt,
-                    documentId: docId
-                })
-            });
+        infoContainer.appendChild(newValue);
+        infoContainer.appendChild(oldValue);
 
-            if (!analysisResponse.ok) {
-                const errorData = await analysisResponse.json();
-                throw new Error(errorData.error || 'Analysis failed');
-            }
-
-            const result = await analysisResponse.json();
-            
-            // Karte aktualisieren
-            await this.updateDocumentCard(docCard, result.document, {
-                existingTags,
-                existingCorrespondent,
-                existingTitle
-            });
-
-        } catch (error) {
-            console.error(`Error analyzing document ${docId}:`, error);
-            this.showMessage(`Error analyzing document ${docId}: ${error.message}`, 'warning');
-        }
+        correspondentElem.parentNode.replaceChild(
+          infoContainer,
+          correspondentElem
+        );
+        infoContainer.dataset.correspondent = analysisResult.correspondent;
+      }
     }
 
-    async updateDocumentCard(docCard, analysisResult, existing) {
-        // Tags aktualisieren
-        console.log('Existing Data:', existing);
-        if (analysisResult.tags && analysisResult.tags.length > 0) {
-            const tagsContainer = docCard.querySelector('.tags-container, div[class*="flex flex-wrap gap"]');
-            if (tagsContainer) {
-                const existingTagIds = existing.existingTags.map(t => t.id);
-                
-                // Neue Tags hinzufügen
-                analysisResult.tags.forEach(tagId => {
-                    if (!existingTagIds.includes(tagId)) {
-                        const tagSpan = document.createElement('span');
-                        tagSpan.className = 'tag new-tag text-xs px-2 py-1 rounded-full text-white';
-                        tagSpan.dataset.tagId = tagId;
-                        tagSpan.textContent = tagId;
-                        tagsContainer.appendChild(tagSpan);
-                    }
-                });
-            }
-        }
-    
-        // Correspondent aktualisieren
-        if (analysisResult.correspondent && analysisResult.correspondent !== existing.existingCorrespondent) {
-            const correspondentElem = docCard.querySelector('[data-correspondent]');
-            if (correspondentElem) {
-                // Speichere den ursprünglichen Namen statt der ID
-                const oldCorrespondentName = correspondentElem.textContent.trim();
-                const infoContainer = document.createElement('div');
-                infoContainer.className = 'info-item';
-                
-                const newValue = document.createElement('span');
-                newValue.className = 'updated-text truncate';
-                // Hier müssen wir den neuen Namen aus correspondentNames holen
-                newValue.textContent = window.correspondentNames?.[analysisResult.correspondent] || analysisResult.correspondent;
-                
-                const oldValue = document.createElement('span');
-                oldValue.className = 'old-value';
-                // Verwende den gespeicherten Namen
-                oldValue.textContent = oldCorrespondentName;
-                
-                infoContainer.appendChild(newValue);
-                infoContainer.appendChild(oldValue);
-                
-                correspondentElem.parentNode.replaceChild(infoContainer, correspondentElem);
-                infoContainer.dataset.correspondent = analysisResult.correspondent;
-            }
-        }
-    
-        // Titel aktualisieren
-        if (analysisResult.title && analysisResult.title !== existing.existingTitle) {
-            const titleElem = docCard.querySelector('h3');
-            if (titleElem) {
-                const infoContainer = document.createElement('div');
-                infoContainer.className = 'info-item';
-                
-                const newValue = document.createElement('span');
-                newValue.className = 'updated-text text-sm font-medium truncate';
-                newValue.textContent = analysisResult.title;
-                
-                const oldValue = document.createElement('span');
-                oldValue.className = 'old-value';
-                oldValue.textContent = existing.existingTitle;
-                
-                infoContainer.appendChild(newValue);
-                infoContainer.appendChild(oldValue);
-                
-                titleElem.parentNode.replaceChild(infoContainer, titleElem);
-            }
-        }
-    
-        // Highlight-Effekt
-        docCard.classList.add('updated');
-        setTimeout(() => {
-            docCard.classList.remove('updated');
-        }, 2000);
+    // Titel aktualisieren
+    if (
+      analysisResult.title &&
+      analysisResult.title !== existing.existingTitle
+    ) {
+      const titleElem = docCard.querySelector('h3');
+      if (titleElem) {
+        const infoContainer = document.createElement('div');
+        infoContainer.className = 'info-item';
+
+        const newValue = document.createElement('span');
+        newValue.className = 'updated-text text-sm font-medium truncate';
+        newValue.textContent = analysisResult.title;
+
+        const oldValue = document.createElement('span');
+        oldValue.className = 'old-value';
+        oldValue.textContent = existing.existingTitle;
+
+        infoContainer.appendChild(newValue);
+        infoContainer.appendChild(oldValue);
+
+        titleElem.parentNode.replaceChild(infoContainer, titleElem);
+      }
     }
 
-    showMessage(message, type = 'info') {
-        let messageArea = document.getElementById('messageArea');
-        if (!messageArea) {
-            messageArea = document.createElement('div');
-            messageArea.id = 'messageArea';
-            const analysisSection = document.querySelector('.material-card');
-            analysisSection.parentNode.insertBefore(messageArea, analysisSection);
-        }
+    // Highlight-Effekt
+    docCard.classList.add('updated');
+    setTimeout(() => {
+      docCard.classList.remove('updated');
+    }, 2000);
+  }
 
-        const colors = {
-            error: 'red',
-            success: 'green',
-            info: 'blue',
-            warning: 'yellow'
-        };
+  showMessage(message, type = 'info') {
+    let messageArea = document.getElementById('messageArea');
+    if (!messageArea) {
+      messageArea = document.createElement('div');
+      messageArea.id = 'messageArea';
+      const analysisSection = document.querySelector('.material-card');
+      analysisSection.parentNode.insertBefore(messageArea, analysisSection);
+    }
 
-        const color = colors[type] || colors.info;
+    const colors = {
+      error: 'red',
+      success: 'green',
+      info: 'blue',
+      warning: 'yellow',
+    };
 
-        messageArea.className = `mb-4 p-4 rounded-md bg-${color}-50 border border-${color}-200 text-${color}-700`;
-        messageArea.innerHTML = `
+    const color = colors[type] || colors.info;
+
+    messageArea.className = `mb-4 p-4 rounded-md bg-${color}-50 border border-${color}-200 text-${color}-700`;
+    messageArea.innerHTML = `
             <div class="flex">
                 <div class="flex-shrink-0">
-                    <i class="fas fa-${type === 'error' ? 'exclamation-circle' : 
-                                    type === 'success' ? 'check-circle' : 
-                                    type === 'warning' ? 'exclamation-triangle' : 
-                                    'info-circle'} text-${color}-400"></i>
+                    <i class="fas fa-${
+                      type === 'error'
+                        ? 'exclamation-circle'
+                        : type === 'success'
+                          ? 'check-circle'
+                          : type === 'warning'
+                            ? 'exclamation-triangle'
+                            : 'info-circle'
+                    } text-${color}-400"></i>
                 </div>
                 <div class="ml-3">
                     <p class="text-sm">${message}</p>
@@ -984,16 +1075,16 @@ class PlaygroundAnalyzer {
             </div>
         `;
 
-        if (type === 'success') {
-            setTimeout(() => {
-                messageArea.remove();
-            }, 5000);
-        }
+    if (type === 'success') {
+      setTimeout(() => {
+        messageArea.remove();
+      }, 5000);
     }
+  }
 }
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    window.playgroundAnalyzer = new PlaygroundAnalyzer();
-    window.promptRating = window.playgroundAnalyzer.promptRating;
+  window.playgroundAnalyzer = new PlaygroundAnalyzer();
+  window.promptRating = window.playgroundAnalyzer.promptRating;
 });

@@ -1215,9 +1215,7 @@ function initializeFormHandlers() {
         populateModelSelect(
           quickstartOcrModelSelect,
           ocrCandidateModels,
-          ocrCandidateModels.length > 0
-            ? 'Select OCR model'
-            : 'No models found'
+          ocrCandidateModels.length > 0 ? 'Select OCR model' : 'No models found'
         );
         if (
           quickstartDetection?.suggestedOcrModel &&
@@ -1228,7 +1226,8 @@ function initializeFormHandlers() {
         }
 
         if (quickstartEnableOcrCheckbox) {
-          quickstartEnableOcrCheckbox.disabled = ocrCandidateModels.length === 0;
+          quickstartEnableOcrCheckbox.disabled =
+            ocrCandidateModels.length === 0;
           quickstartEnableOcrCheckbox.checked = ocrCandidateModels.length > 0;
         }
 
