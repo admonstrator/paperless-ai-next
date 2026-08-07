@@ -352,11 +352,7 @@
     });
 </script>
 <script>
-    function formatTimeAgo(dateString) {
-        const date = new Date(dateString + 'Z');
-        const now = new Date();
-        const seconds = Math.floor((now - date) / 1000);
-
+    function describeElapsed(seconds) {
         if (seconds < 5) {
             return 'just now';
         } else if (seconds < 60) {
@@ -371,6 +367,60 @@
             const days = Math.floor(seconds / 86400);
             return `${days} day${days > 1 ? 's' : ''} ago`;
         }
+    }
+
+    // Database timestamps come without a timezone marker and are UTC.
+    function formatTimeAgo(dateString) {
+        const date = new Date(dateString + 'Z');
+        return describeElapsed(Math.floor((new Date() - date) / 1000));
+    }
+
+    // Health timestamps are already full ISO strings with a timezone.
+    function formatIsoTimeAgo(isoString) {
+        const date = new Date(isoString);
+        if (Number.isNaN(date.getTime())) {
+            return 'unknown';
+        }
+        return describeElapsed(Math.floor((new Date() - date) / 1000));
+    }
+
+    function buildScannerHealthMessage(scanner, paperless) {
+        if (!scanner.armed) {
+            return 'The scan scheduler is not armed. Check the server logs and restart the application.';
+        }
+
+        const parts = [];
+        if (paperless && paperless.reachable === false) {
+            parts.push(`Paperless-ngx is not reachable${paperless.error ? ` (${paperless.error})` : ''}.`);
+        } else if (scanner.lastError) {
+            parts.push(`Last scan error: ${scanner.lastError}.`);
+        }
+
+        const failures = Number(scanner.consecutiveFailures) || 0;
+        parts.push(`${failures} consecutive failed scan${failures === 1 ? '' : 's'}.`);
+        parts.push(scanner.lastSuccessfulRunAt
+            ? `Last successful scan: ${formatIsoTimeAgo(scanner.lastSuccessfulRunAt)}.`
+            : 'No successful scan yet.');
+
+        return parts.join(' ');
+    }
+
+    function updateScannerHealthBanner(data) {
+        const banner = document.getElementById('scannerHealthBanner');
+        if (!banner) {
+            return;
+        }
+
+        const scanner = data.scanner;
+        if (!scanner || !scanner.degraded) {
+            banner.classList.add('hidden');
+            return;
+        }
+
+        // textContent only — the message carries server-side error strings.
+        document.getElementById('scannerHealthMessage').textContent =
+            buildScannerHealthMessage(scanner, data.paperless);
+        banner.classList.remove('hidden');
     }
 
     let lastSeenProcessedDocId = null;
@@ -420,7 +470,8 @@
                 }
 
                 setScanButtonsState(isScanning, stopRequested);
-                
+                updateScannerHealthBanner(data);
+
                 document.getElementById('processedToday').textContent = data.processedToday;
                 
                 document.getElementById('statusLastUpdated').textContent = 

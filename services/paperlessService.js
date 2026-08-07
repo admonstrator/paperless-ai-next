@@ -8,6 +8,9 @@ const {
   createRedirectGuard,
 } = require('./serviceUtils');
 
+/** Timeout for the connectivity probe so a hanging host cannot stall a scan. */
+const CONNECTION_PROBE_TIMEOUT_MS = 10000;
+
 class PaperlessService {
   constructor() {
     this.client = null;
@@ -1748,6 +1751,57 @@ class PaperlessService {
         error.message
       );
       return null;
+    }
+  }
+
+  /**
+   * Lightweight probe against the configured Paperless-ngx instance.
+   *
+   * Used by the startup retry loop and by every scan run: most read helpers in
+   * this service swallow transport errors and return empty results, which makes
+   * an unreachable Paperless indistinguishable from "nothing to do". This call
+   * makes that distinction explicit and never throws.
+   *
+   * @returns {Promise<{reachable: boolean, authorized: boolean, status: number|null, error: string|null}>}
+   *   reachable: an HTTP response was received (the host answered).
+   *   authorized: the API token is accepted (not 401/403).
+   */
+  async checkConnection() {
+    this.initialize();
+
+    if (!this.client) {
+      return {
+        reachable: false,
+        authorized: false,
+        status: null,
+        error: 'Paperless-ngx client is not configured',
+      };
+    }
+
+    try {
+      const response = await this.client.get('/users/', {
+        params: { current_user: true, page_size: 1 },
+        timeout: CONNECTION_PROBE_TIMEOUT_MS,
+      });
+
+      return {
+        reachable: true,
+        authorized: true,
+        status: response.status || 200,
+        error: null,
+      };
+    } catch (error) {
+      const status = error.response?.status ?? null;
+
+      // A status code means the host answered, so it is reachable — only the
+      // credentials or permissions may be wrong. Without a status the request
+      // never got through, so authorization is unknown and reported as false.
+      return {
+        reachable: status !== null,
+        authorized: status !== null && status !== 401 && status !== 403,
+        status,
+        error: error.message || 'Unknown connection error',
+      };
     }
   }
 

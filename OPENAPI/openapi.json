@@ -431,16 +431,127 @@
             "type": "string",
             "enum": [
               "healthy",
-              "not_configured",
+              "degraded",
+              "database_error",
               "error"
             ],
-            "description": "System health status",
+            "description": "Overall system health. `degraded` means the database is fine but\nthe document scanner cannot work (scheduler not armed, or repeated\nfailed runs, e.g. an unreachable Paperless-ngx).\n",
             "example": "healthy"
+          },
+          "database": {
+            "type": "string",
+            "description": "Result of the local database check",
+            "example": "ok"
           },
           "message": {
             "type": "string",
             "description": "Additional status information (for non-healthy states)",
-            "example": "Application setup not completed"
+            "example": "Document scan failed 3 time(s) in a row: connect ECONNREFUSED 172.18.0.2:8000"
+          },
+          "scanner": {
+            "$ref": "#/components/schemas/ScannerHealth"
+          },
+          "paperless": {
+            "$ref": "#/components/schemas/PaperlessHealth"
+          }
+        }
+      },
+      "ScannerHealth": {
+        "type": "object",
+        "description": "State of the periodic document scan loop",
+        "properties": {
+          "automaticProcessingEnabled": {
+            "type": "boolean",
+            "description": "False when DISABLE_AUTOMATIC_PROCESSING=yes",
+            "example": true
+          },
+          "armed": {
+            "type": "boolean",
+            "description": "Whether the scan cron job is scheduled",
+            "example": true
+          },
+          "running": {
+            "type": "boolean",
+            "description": "Whether a scan is currently in progress",
+            "example": false
+          },
+          "scanInterval": {
+            "type": "string",
+            "nullable": true,
+            "description": "Cron expression the scheduler was armed with",
+            "example": "0 * * * *"
+          },
+          "lastRunStartedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastRunFinishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "lastRunSource": {
+            "type": "string",
+            "nullable": true,
+            "description": "Trigger of the last run (initial, scheduler, api-manual, ...)",
+            "example": "scheduler"
+          },
+          "lastRunStatus": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "ok",
+              "paperless_unreachable",
+              "error"
+            ],
+            "example": "ok"
+          },
+          "lastSuccessfulRunAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "consecutiveFailures": {
+            "type": "integer",
+            "description": "Number of consecutive failed scan runs",
+            "example": 0
+          },
+          "failureThreshold": {
+            "type": "integer",
+            "description": "Failures required before the scanner counts as degraded",
+            "example": 3
+          },
+          "degraded": {
+            "type": "boolean",
+            "example": false
+          },
+          "lastError": {
+            "type": "string",
+            "nullable": true,
+            "description": "Error message of the last failed run"
+          }
+        }
+      },
+      "PaperlessHealth": {
+        "type": "object",
+        "description": "Result of the most recent Paperless-ngx connectivity probe",
+        "properties": {
+          "reachable": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Null until the first probe has run",
+            "example": true
+          },
+          "lastCheckedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "error": {
+            "type": "string",
+            "nullable": true,
+            "example": "connect ECONNREFUSED 172.18.0.2:8000"
           }
         }
       }
@@ -558,82 +669,6 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/health": {
-      "get": {
-        "summary": "System health check endpoint",
-        "description": "Provides information about the current system health status.\nThis endpoint checks database connectivity and returns system operational status.\nUsed for monitoring and automated health checks.\n",
-        "tags": [
-          "System"
-        ],
-        "responses": {
-          "200": {
-            "description": "System is healthy and operational",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "example": "healthy",
-                      "description": "Health status of the system"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "description": "Status indicating an error",
-                      "example": "error"
-                    },
-                    "message": {
-                      "type": "string",
-                      "description": "Error message details",
-                      "example": "Internal server error"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Service unavailable",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "status": {
-                      "type": "string",
-                      "enum": [
-                        "not_configured",
-                        "error"
-                      ],
-                      "example": "database_error",
-                      "description": "Status indicating database error"
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "Database check failed",
-                      "description": "Details about the service unavailability"
-                    }
-                  }
                 }
               }
             }
@@ -4352,6 +4387,59 @@
         }
       }
     },
+    "/health": {
+      "get": {
+        "summary": "System health check endpoint",
+        "description": "Reports database connectivity **and** whether the document scanner is\nactually able to work. Used by the Docker healthcheck and monitoring.\n\n`status` is `healthy` when the database is reachable and the scanner is\noperational, `degraded` when automatic processing is enabled but the\nscan loop is not armed or has failed `failureThreshold` runs in a row\n(for example because Paperless-ngx is unreachable), and `database_error`\nwhen the local database cannot be queried.\n\nA `degraded` state answers with HTTP 503 unless `HEALTHCHECK_STRICT=no`\nis configured, in which case the details are reported with HTTP 200.\nWhen automatic processing is switched off via\n`DISABLE_AUTOMATIC_PROCESSING=yes`, a missing scan loop is expected and\nnever reported as degraded.\n",
+        "tags": [
+          "System"
+        ],
+        "responses": {
+          "200": {
+            "description": "System is healthy and operational",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "Status indicating an error",
+                      "example": "error"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Error message details",
+                      "example": "Internal server error"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable — either the database check failed\n(`database_error`) or the scanner is degraded (`degraded`).\n",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/processing-status": {
       "get": {
         "summary": "Get document processing status",
@@ -4391,6 +4479,12 @@
                       "type": "boolean",
                       "description": "Whether a graceful stop has been requested",
                       "example": false
+                    },
+                    "scanner": {
+                      "$ref": "#/components/schemas/ScannerHealth"
+                    },
+                    "paperless": {
+                      "$ref": "#/components/schemas/PaperlessHealth"
                     },
                     "currentlyProcessing": {
                       "type": "object",

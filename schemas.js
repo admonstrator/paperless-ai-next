@@ -8,35 +8,35 @@
  *       bearerFormat: JWT
  *       description: |
  *         JWT-based authentication for web app users. The token is obtained by authenticating via the login endpoint.
- *         
+ *
  *         ### How to authenticate:
  *         1. Send a POST request to `/login` with your username and password
  *         2. The server will respond with a JWT token (also set as a cookie in browsers)
  *         3. Include this token in the `Authorization` header as `Bearer {token}`
- *         
+ *
  *         Example:
  *         ```
  *         Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
  *         ```
- *         
+ *
  *         JWT tokens are valid for 24 hours after issuance.
- *     
+ *
  *     ApiKeyAuth:
  *       type: apiKey
  *       in: header
  *       name: x-api-key
  *       description: |
  *         API key authentication for programmatic access. The API key can be generated or regenerated using the /api/key-regenerate endpoint.
- *         
+ *
  *         ### How to authenticate:
  *         1. Access the API key from your application settings
  *         2. Include the API key in the `x-api-key` HTTP header for all requests
- *         
+ *
  *         Example:
  *         ```
  *         x-api-key: 7c1f3f5e2b0a9d8c6e4b2a1d3f5e8c9b2a1d3f5e
  *         ```
- *         
+ *
  *         API keys do not expire unless regenerated.
  */
 
@@ -51,7 +51,7 @@
  *           type: string
  *           description: Error message
  *           example: Error resetting documents
- *           
+ *
  *     User:
  *       type: object
  *       required:
@@ -72,7 +72,7 @@
  *           description: User ID (auto-generated)
  *           example: 1
  *           readOnly: true
- *           
+ *
  *     LoginRequest:
  *       type: object
  *       required:
@@ -88,7 +88,7 @@
  *           format: password
  *           description: User's password
  *           example: securePassword123
- *           
+ *
  *     LoginResponse:
  *       type: object
  *       properties:
@@ -100,7 +100,7 @@
  *           type: string
  *           description: Token expiration time
  *           example: 24h
- *           
+ *
  *     Document:
  *       type: object
  *       properties:
@@ -144,7 +144,7 @@
  *           items:
  *             $ref: '#/components/schemas/CustomField'
  *           description: Custom field values for the document
- *           
+ *
  *     DocumentUpdateRequest:
  *       type: object
  *       properties:
@@ -175,7 +175,7 @@
  *           items:
  *             $ref: '#/components/schemas/CustomField'
  *           description: Custom field values for the document
- *           
+ *
  *     CustomField:
  *       type: object
  *       required:
@@ -190,7 +190,7 @@
  *           type: string
  *           description: Custom field value
  *           example: "123.45"
- *           
+ *
  *     AnalysisResult:
  *       type: object
  *       properties:
@@ -256,7 +256,7 @@
  *           type: string
  *           description: Error message if analysis failed
  *           example: null
- *           
+ *
  *     Tag:
  *       type: object
  *       properties:
@@ -277,7 +277,7 @@
  *           enum: [ANY, ALL, LITERAL, REGEX]
  *           description: Tag matching algorithm
  *           example: ANY
- *           
+ *
  *     HistoryItem:
  *       type: object
  *       properties:
@@ -306,7 +306,7 @@
  *           type: string
  *           description: Link to the document in Paperless-ngx
  *           example: http://paperless.example.com/documents/123/
- *           
+ *
  *     HistoryResponse:
  *       type: object
  *       properties:
@@ -326,7 +326,7 @@
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/HistoryItem'
- *             
+ *
  *     APIKeyResponse:
  *       type: object
  *       properties:
@@ -334,20 +334,108 @@
  *           type: string
  *           description: The newly generated API key
  *           example: 7c1f3f5e2b0a9d8c6e4b2a1d3f5e8c9b2a1d3f5e
- *           
+ *
  *     HealthResponse:
  *       type: object
  *       properties:
  *         status:
  *           type: string
- *           enum: [healthy, not_configured, error]
- *           description: System health status
+ *           enum: [healthy, degraded, database_error, error]
+ *           description: |
+ *             Overall system health. `degraded` means the database is fine but
+ *             the document scanner cannot work (scheduler not armed, or repeated
+ *             failed runs, e.g. an unreachable Paperless-ngx).
  *           example: healthy
+ *         database:
+ *           type: string
+ *           description: Result of the local database check
+ *           example: ok
  *         message:
  *           type: string
  *           description: Additional status information (for non-healthy states)
- *           example: Application setup not completed
+ *           example: "Document scan failed 3 time(s) in a row: connect ECONNREFUSED 172.18.0.2:8000"
+ *         scanner:
+ *           $ref: '#/components/schemas/ScannerHealth'
+ *         paperless:
+ *           $ref: '#/components/schemas/PaperlessHealth'
+ *
+ *     ScannerHealth:
+ *       type: object
+ *       description: State of the periodic document scan loop
+ *       properties:
+ *         automaticProcessingEnabled:
+ *           type: boolean
+ *           description: False when DISABLE_AUTOMATIC_PROCESSING=yes
+ *           example: true
+ *         armed:
+ *           type: boolean
+ *           description: Whether the scan cron job is scheduled
+ *           example: true
+ *         running:
+ *           type: boolean
+ *           description: Whether a scan is currently in progress
+ *           example: false
+ *         scanInterval:
+ *           type: string
+ *           nullable: true
+ *           description: Cron expression the scheduler was armed with
+ *           example: "0 * * * *"
+ *         lastRunStartedAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         lastRunFinishedAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         lastRunSource:
+ *           type: string
+ *           nullable: true
+ *           description: Trigger of the last run (initial, scheduler, api-manual, ...)
+ *           example: scheduler
+ *         lastRunStatus:
+ *           type: string
+ *           nullable: true
+ *           enum: [ok, paperless_unreachable, error]
+ *           example: ok
+ *         lastSuccessfulRunAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         consecutiveFailures:
+ *           type: integer
+ *           description: Number of consecutive failed scan runs
+ *           example: 0
+ *         failureThreshold:
+ *           type: integer
+ *           description: Failures required before the scanner counts as degraded
+ *           example: 3
+ *         degraded:
+ *           type: boolean
+ *           example: false
+ *         lastError:
+ *           type: string
+ *           nullable: true
+ *           description: Error message of the last failed run
+ *
+ *     PaperlessHealth:
+ *       type: object
+ *       description: Result of the most recent Paperless-ngx connectivity probe
+ *       properties:
+ *         reachable:
+ *           type: boolean
+ *           nullable: true
+ *           description: Null until the first probe has run
+ *           example: true
+ *         lastCheckedAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         error:
+ *           type: string
+ *           nullable: true
+ *           example: "connect ECONNREFUSED 172.18.0.2:8000"
  */
 
 // This file only contains JSDoc comments for Swagger schema definitions
-// No actual code is needed 
+// No actual code is needed
