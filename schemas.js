@@ -340,13 +340,101 @@
  *       properties:
  *         status:
  *           type: string
- *           enum: [healthy, not_configured, error]
- *           description: System health status
+ *           enum: [healthy, degraded, database_error, error]
+ *           description: |
+ *             Overall system health. `degraded` means the database is fine but
+ *             the document scanner cannot work (scheduler not armed, or repeated
+ *             failed runs, e.g. an unreachable Paperless-ngx).
  *           example: healthy
+ *         database:
+ *           type: string
+ *           description: Result of the local database check
+ *           example: ok
  *         message:
  *           type: string
  *           description: Additional status information (for non-healthy states)
- *           example: Application setup not completed
+ *           example: "Document scan failed 3 time(s) in a row: connect ECONNREFUSED 172.18.0.2:8000"
+ *         scanner:
+ *           $ref: '#/components/schemas/ScannerHealth'
+ *         paperless:
+ *           $ref: '#/components/schemas/PaperlessHealth'
+ *
+ *     ScannerHealth:
+ *       type: object
+ *       description: State of the periodic document scan loop
+ *       properties:
+ *         automaticProcessingEnabled:
+ *           type: boolean
+ *           description: False when DISABLE_AUTOMATIC_PROCESSING=yes
+ *           example: true
+ *         armed:
+ *           type: boolean
+ *           description: Whether the scan cron job is scheduled
+ *           example: true
+ *         running:
+ *           type: boolean
+ *           description: Whether a scan is currently in progress
+ *           example: false
+ *         scanInterval:
+ *           type: string
+ *           nullable: true
+ *           description: Cron expression the scheduler was armed with
+ *           example: "0 * * * *"
+ *         lastRunStartedAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         lastRunFinishedAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         lastRunSource:
+ *           type: string
+ *           nullable: true
+ *           description: Trigger of the last run (initial, scheduler, api-manual, ...)
+ *           example: scheduler
+ *         lastRunStatus:
+ *           type: string
+ *           nullable: true
+ *           enum: [ok, paperless_unreachable, error]
+ *           example: ok
+ *         lastSuccessfulRunAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         consecutiveFailures:
+ *           type: integer
+ *           description: Number of consecutive failed scan runs
+ *           example: 0
+ *         failureThreshold:
+ *           type: integer
+ *           description: Failures required before the scanner counts as degraded
+ *           example: 3
+ *         degraded:
+ *           type: boolean
+ *           example: false
+ *         lastError:
+ *           type: string
+ *           nullable: true
+ *           description: Error message of the last failed run
+ *
+ *     PaperlessHealth:
+ *       type: object
+ *       description: Result of the most recent Paperless-ngx connectivity probe
+ *       properties:
+ *         reachable:
+ *           type: boolean
+ *           nullable: true
+ *           description: Null until the first probe has run
+ *           example: true
+ *         lastCheckedAt:
+ *           type: string
+ *           format: date-time
+ *           nullable: true
+ *         error:
+ *           type: string
+ *           nullable: true
+ *           example: "connect ECONNREFUSED 172.18.0.2:8000"
  */
 
 // This file only contains JSDoc comments for Swagger schema definitions

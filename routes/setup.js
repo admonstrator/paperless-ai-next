@@ -28,6 +28,7 @@ const customService = require('../services/customService.js');
 const mistralOcrService = require('../services/mistralOcrService');
 const quickstartService = require('../services/quickstartService');
 const reconciliationService = require('../services/reconciliationService');
+const scanHealthService = require('../services/scanHealthService');
 const {
   THUMBNAIL_CACHE_DIR,
   getThumbnailCachePath,
@@ -7622,14 +7623,57 @@ router.post('/manual/updateDocument', express.json(), async (req, res) => {
 });
 
 /**
+ * Builds the scanner/Paperless section of the health payload.
+ * Shared by /health and /api/processing-status so both report the same state.
+ */
+function buildScannerHealthSnapshot() {
+  const scanner = scanHealthService.getState();
+  const scanState = global.__paperlessAiScanControl || {};
+
+  return {
+    scanner: {
+      automaticProcessingEnabled: scanner.automaticProcessingEnabled,
+      armed: scanner.armed,
+      running: Boolean(scanState.running),
+      scanInterval: scanner.scanInterval,
+      lastRunStartedAt: scanner.lastRunStartedAt,
+      lastRunFinishedAt: scanner.lastRunFinishedAt,
+      lastRunSource: scanner.lastRunSource,
+      lastRunStatus: scanner.lastRunStatus,
+      lastSuccessfulRunAt: scanner.lastSuccessfulRunAt,
+      consecutiveFailures: scanner.consecutiveFailures,
+      failureThreshold: scanner.failureThreshold,
+      degraded: scanner.degraded,
+      lastError: scanner.lastError,
+    },
+    paperless: {
+      reachable: scanner.paperless.reachable,
+      lastCheckedAt: scanner.paperless.lastCheckedAt,
+      error: scanner.paperless.error,
+    },
+  };
+}
+
+/**
  * @swagger
  * /health:
  *   get:
  *     summary: System health check endpoint
  *     description: |
- *       Provides information about the current system health status.
- *       This endpoint checks database connectivity and returns system operational status.
- *       Used for monitoring and automated health checks.
+ *       Reports database connectivity **and** whether the document scanner is
+ *       actually able to work. Used by the Docker healthcheck and monitoring.
+ *
+ *       `status` is `healthy` when the database is reachable and the scanner is
+ *       operational, `degraded` when automatic processing is enabled but the
+ *       scan loop is not armed or has failed `failureThreshold` runs in a row
+ *       (for example because Paperless-ngx is unreachable), and `database_error`
+ *       when the local database cannot be queried.
+ *
+ *       A `degraded` state answers with HTTP 503 unless `HEALTHCHECK_STRICT=no`
+ *       is configured, in which case the details are reported with HTTP 200.
+ *       When automatic processing is switched off via
+ *       `DISABLE_AUTOMATIC_PROCESSING=yes`, a missing scan loop is expected and
+ *       never reported as degraded.
  *     tags:
  *       - System
  *     responses:
@@ -7638,12 +7682,7 @@ router.post('/manual/updateDocument', express.json(), async (req, res) => {
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   description: Health status of the system
- *                   example: "healthy"
+ *               $ref: '#/components/schemas/HealthResponse'
  *       500:
  *         description: Internal server error
  *         content:
@@ -7660,30 +7699,16 @@ router.post('/manual/updateDocument', express.json(), async (req, res) => {
  *                   description: Error message details
  *                   example: "Internal server error"
  *       503:
- *         description: Service unavailable
+ *         description: |
+ *           Service unavailable — either the database check failed
+ *           (`database_error`) or the scanner is degraded (`degraded`).
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   description: Status indicating database error
- *                   example: "database_error"
- *                 message:
- *                   type: string
- *                   description: Details about the service unavailability
- *                   example: "Database check failed"
+ *               $ref: '#/components/schemas/HealthResponse'
  */
 router.get('/health', async (req, res) => {
   try {
-    // const isConfigured = await setupService.isConfigured();
-    // if (!isConfigured) {
-    //   return res.status(503).json({
-    //     status: 'not_configured',
-    //     message: 'Application setup not completed'
-    //   });
-    // }
     try {
       await documentModel.isDocumentProcessed(1);
     } catch {
@@ -7693,7 +7718,25 @@ router.get('/health', async (req, res) => {
       });
     }
 
-    res.json({ status: 'healthy' });
+    const snapshot = buildScannerHealthSnapshot();
+    const degraded = snapshot.scanner.degraded;
+    const payload = {
+      status: degraded ? 'degraded' : 'healthy',
+      database: 'ok',
+      ...snapshot,
+    };
+
+    if (degraded) {
+      payload.message = snapshot.scanner.armed
+        ? `Document scan failed ${snapshot.scanner.consecutiveFailures} time(s) in a row: ${snapshot.scanner.lastError || 'unknown error'}`
+        : 'Document scan scheduler is not armed';
+
+      if (scanHealthService.strictHealthEnabled) {
+        return res.status(503).json(payload);
+      }
+    }
+
+    res.json(payload);
   } catch (error) {
     console.error('Health check failed:', error);
     res.status(500).json({
@@ -8583,6 +8626,10 @@ router.post('/settings', express.json(), async (req, res) => {
  *                   type: boolean
  *                   description: Whether a graceful stop has been requested
  *                   example: false
+ *                 scanner:
+ *                   $ref: '#/components/schemas/ScannerHealth'
+ *                 paperless:
+ *                   $ref: '#/components/schemas/PaperlessHealth'
  *                 currentlyProcessing:
  *                   type: object
  *                   description: Details about the document currently being processed (if any)
@@ -8628,6 +8675,7 @@ router.get('/api/processing-status', isAuthenticated, async (req, res) => {
       ...status,
       isScanning: Boolean(scanState.running),
       stopRequested: Boolean(scanState.stopRequested),
+      ...buildScannerHealthSnapshot(),
     });
   } catch {
     res.status(500).json({ error: 'Failed to fetch processing status' });

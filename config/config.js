@@ -473,6 +473,25 @@ module.exports = {
     'yes'
   ),
   useExistingData: process.env.USE_EXISTING_DATA || 'no',
+  // Startup behaviour when Paperless-ngx is not reachable yet (e.g. both
+  // containers starting at the same time). The scan scheduler is armed
+  // regardless; this only controls how long the initial scan keeps retrying.
+  startup: {
+    paperlessRetryMinutes: parseInt(
+      process.env.STARTUP_PAPERLESS_RETRY_MINUTES || '30',
+      10
+    ),
+  },
+  // Health reporting: /health reflects scanner health, not just the database.
+  // strict=yes makes /health answer 503 while the scanner is degraded so the
+  // Docker healthcheck and monitoring can detect a stalled scan loop.
+  health: {
+    strict: parseEnvBoolean(process.env.HEALTHCHECK_STRICT, 'yes'),
+    scanFailureThreshold: parseInt(
+      process.env.HEALTH_SCAN_FAILURE_THRESHOLD || '3',
+      10
+    ),
+  },
   // Cache configuration (in seconds)
   // Recommended: 300 (5 min) for balanced performance, 60-900 (1-15 min) for custom needs
   tagCacheTTL: parseInt(process.env.TAG_CACHE_TTL_SECONDS || '300', 10),

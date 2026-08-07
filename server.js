@@ -14,6 +14,8 @@ const setupRoutes = require('./routes/setup');
 const { isAuthenticated } = require('./routes/auth');
 const mistralOcrService = require('./services/mistralOcrService');
 const reconciliationService = require('./services/reconciliationService');
+const scanHealthService = require('./services/scanHealthService');
+const { RUN_STATUS } = scanHealthService;
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const { doubleCsrf } = require('csrf-csrf');
@@ -21,7 +23,6 @@ const rateLimit = require('express-rate-limit');
 const { ipKeyGenerator } = require('express-rate-limit');
 const jwt = require('jsonwebtoken');
 const Logger = require('./services/loggerService');
-const { max } = require('date-fns');
 const {
   validateCustomFieldValue,
   shouldQueueForOcrOnAiError,
@@ -278,7 +279,7 @@ const apiGlobalLimiter = rateLimit({
         if (userIdentifier) {
           return `user:${userIdentifier}`;
         }
-      } catch (error) {
+      } catch {
         // Ignore invalid token and fallback to IP
       }
     }
@@ -582,8 +583,7 @@ async function processDocument(
   doc,
   existingTags,
   existingCorrespondentList,
-  existingDocumentTypesList,
-  ownUserId
+  existingDocumentTypesList
 ) {
   const isProcessed = await documentModel.isDocumentProcessed(doc.id);
   if (isProcessed) return null;
@@ -969,68 +969,9 @@ async function saveDocumentChanges(docId, updateData, analysis, originalData) {
   await Promise.all(persistenceTasks);
 }
 
-// Main scanning functions
-async function scanInitial() {
-  try {
-    const isConfigured = await setupService.isConfigured();
-    if (!isConfigured) {
-      console.log('[ERROR] Setup not completed. Skipping document scan.');
-      return;
-    }
-
-    let [
-      existingTags,
-      documents,
-      ownUserId,
-      existingCorrespondentList,
-      existingDocumentTypes,
-    ] = await Promise.all([
-      paperlessService.getTags(),
-      paperlessService.getAllDocuments(),
-      paperlessService.getOwnUserID(),
-      paperlessService.listCorrespondentsNames(),
-      paperlessService.listDocumentTypesNames(),
-    ]);
-    //get existing correspondent list
-    existingCorrespondentList = existingCorrespondentList.map(
-      (correspondent) => correspondent.name
-    );
-    let existingDocumentTypesList = existingDocumentTypes.map(
-      (docType) => docType.name
-    );
-
-    // Extract tag names from tag objects
-    const existingTagNames = existingTags.map((tag) => tag.name);
-
-    for (const doc of documents) {
-      try {
-        const result = await processDocument(
-          doc,
-          existingTagNames,
-          existingCorrespondentList,
-          existingDocumentTypesList,
-          ownUserId
-        );
-        if (!result) continue;
-
-        const { analysis, originalData } = result;
-        const updateData = await buildUpdateData(analysis, doc);
-        await saveDocumentChanges(doc.id, updateData, analysis, originalData);
-        await documentModel.setProcessingStatus(doc.id, doc.title, 'complete');
-      } catch (error) {
-        await documentModel.setProcessingStatus(doc.id, doc.title, 'failed');
-        console.error(
-          `[ERROR] processing document ${doc.id}: ${error.message}`
-        );
-        console.debug(error);
-      }
-    }
-  } catch (error) {
-    console.error(`[ERROR] during initial document scan: ${error.message}`);
-    console.debug(error);
-  }
-}
-
+// Main scanning function
+// The initial scan runs through here as well (source='initial') so it shares the
+// concurrency guard, the stop support and the health reporting below.
 async function scanDocuments(source = 'scheduler') {
   if (scanControl.running) {
     console.info('Scan request ignored because a task is already running');
@@ -1045,6 +986,7 @@ async function scanDocuments(source = 'scheduler') {
     skipped: 0,
     failed: 0,
     stopRequested: false,
+    abortReason: null,
   };
 
   scanControl.running = true;
@@ -1052,20 +994,40 @@ async function scanDocuments(source = 'scheduler') {
   scanControl.source = source;
   scanControl.startedAt = new Date().toISOString();
   scanControl.stopRequestedAt = null;
+  scanHealthService.recordRunStart(source);
 
   console.info(`Scan started (source=${source})`);
 
   try {
+    // Probe first: the read helpers below swallow transport errors and return
+    // empty lists, which would make an unreachable Paperless-ngx look like a
+    // successful scan with nothing to do.
+    const connection = await paperlessService.checkConnection();
+    scanHealthService.recordConnectivity(connection);
+
+    if (!connection.reachable || !connection.authorized) {
+      scanStats.abortReason = connection.reachable
+        ? 'paperless_unauthorized'
+        : 'paperless_unreachable';
+      scanHealthService.recordRunResult({
+        status: RUN_STATUS.PAPERLESS_UNREACHABLE,
+        error: connection.error,
+      });
+      console.error(
+        `[ERROR] Scan aborted: Paperless-ngx is not usable (${connection.error}). ` +
+          `The scheduler stays armed and retries at the next interval (${config.scanInterval}).`
+      );
+      return;
+    }
+
     let [
       existingTags,
       documents,
-      ownUserId,
       existingCorrespondentList,
       existingDocumentTypes,
     ] = await Promise.all([
       paperlessService.getTags(),
       paperlessService.getAllDocuments(),
-      paperlessService.getOwnUserID(),
       paperlessService.listCorrespondentsNames(),
       paperlessService.listDocumentTypesNames(),
     ]);
@@ -1099,8 +1061,7 @@ async function scanDocuments(source = 'scheduler') {
           doc,
           existingTagNames,
           existingCorrespondentList,
-          existingDocumentTypesList,
-          ownUserId
+          existingDocumentTypesList
         );
         if (!result) {
           scanStats.skipped += 1;
@@ -1121,13 +1082,25 @@ async function scanDocuments(source = 'scheduler') {
         console.debug(error);
       }
     }
+
+    // Documents that fail individually are not an infrastructure problem, so
+    // the run itself still counts as successful for health reporting.
+    scanHealthService.recordRunResult({ status: RUN_STATUS.OK });
   } catch (error) {
+    scanHealthService.recordRunResult({
+      status: RUN_STATUS.ERROR,
+      error: error.message,
+    });
+    scanStats.abortReason = 'error';
     console.error(`[ERROR] during document scan: ${error.message}`);
     console.debug(error);
   } finally {
     const durationMs = Date.now() - scanStartedAtMs;
+    const abortSuffix = scanStats.abortReason
+      ? `, aborted=${scanStats.abortReason}`
+      : '';
     console.info(
-      `Scan completed (source=${scanStats.source}, total=${scanStats.total}, processed=${scanStats.processed}, skipped=${scanStats.skipped}, failed=${scanStats.failed}, stopRequested=${scanStats.stopRequested}, durationMs=${durationMs})`
+      `Scan completed (source=${scanStats.source}, total=${scanStats.total}, processed=${scanStats.processed}, skipped=${scanStats.skipped}, failed=${scanStats.failed}, stopRequested=${scanStats.stopRequested}${abortSuffix}, durationMs=${durationMs})`
     );
 
     scanControl.running = false;
@@ -1176,74 +1149,87 @@ app.get('/', async (req, res) => {
   }
 });
 
-/**
- * @swagger
- * /health:
- *   get:
- *     summary: System health check endpoint
- *     description: |
- *       Checks if the application is properly configured and the database is reachable.
- *       This endpoint can be used by monitoring systems to verify service health.
- *
- *       The endpoint returns a 200 status code with a "healthy" status if everything is
- *       working correctly, or a 503 status code with error details if there are issues.
- *     tags: [System]
- *     responses:
- *       200:
- *         description: System is healthy and operational
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   example: "healthy"
- *                   description: Health status indication
- *       503:
- *         description: System is not fully configured or database is unreachable
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 status:
- *                   type: string
- *                   enum: [not_configured, error]
- *                   example: "not_configured"
- *                   description: Error status type
- *                 message:
- *                   type: string
- *                   example: "Application setup not completed"
- *                   description: Detailed error message
- */
-app.get('/health', async (req, res) => {
-  try {
-    const isConfigured = await setupService.isConfigured();
-    if (!isConfigured) {
-      return res.status(503).json({
-        status: 'not_configured',
-        message: 'Application setup not completed',
-      });
-    }
-
-    await documentModel.isDocumentProcessed(1);
-    res.json({ status: 'healthy' });
-  } catch (error) {
-    console.error(`Health check failed: ${error.message}`);
-    console.debug(error);
-    res.status(503).json({
-      status: 'error',
-      message: error.message,
-    });
-  }
-});
+// /health is served by routes/setup.js, which is mounted above this file's
+// routes. A second handler here was never reachable and has been removed so the
+// OpenAPI spec documents the handler that actually answers.
 
 // Error handler
+// Express detects error middleware by its four-argument signature, so `next`
+// must stay even though it is unused.
+// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).send('Something broke!');
 });
+
+// Backoff schedule for the startup connectivity retry, in milliseconds.
+// The last value repeats until the retry window configured via
+// STARTUP_PAPERLESS_RETRY_MINUTES is exhausted.
+const INITIAL_CONNECT_BACKOFF_MS = [5000, 15000, 30000, 60000, 120000, 300000];
+const DEFAULT_STARTUP_RETRY_MINUTES = 30;
+
+function initialConnectDelayMs(attempt) {
+  const index = Math.min(attempt - 1, INITIAL_CONNECT_BACKOFF_MS.length - 1);
+  return INITIAL_CONNECT_BACKOFF_MS[Math.max(index, 0)];
+}
+
+function startupRetryWindowMs() {
+  const configured = Number(config.startup?.paperlessRetryMinutes);
+  const minutes =
+    Number.isFinite(configured) && configured >= 0
+      ? configured
+      : DEFAULT_STARTUP_RETRY_MINUTES;
+  return minutes * 60 * 1000;
+}
+
+/**
+ * Waits for Paperless-ngx to become usable and then runs the initial scan.
+ *
+ * Runs detached from startup: the scan scheduler is already armed at this
+ * point, so giving up here only means the first scan waits for the next cron
+ * tick instead of never happening (issue #272).
+ */
+async function runInitialScanWhenReachable() {
+  const deadlineMs = Date.now() + startupRetryWindowMs();
+  let attempt = 0;
+
+  for (;;) {
+    const isConfigured = await setupService.isConfigured();
+    if (!isConfigured) {
+      console.warn(
+        'Initial scan skipped: setup is not completed yet. The scheduled scan stays armed.'
+      );
+      return;
+    }
+
+    const connection = await paperlessService.checkConnection();
+    scanHealthService.recordConnectivity(connection);
+
+    if (connection.reachable && connection.authorized) {
+      console.log(`Starting initial scan at ${new Date().toISOString()}`);
+      await scanDocuments('initial');
+      return;
+    }
+
+    attempt += 1;
+    const delayMs = initialConnectDelayMs(attempt);
+
+    if (Date.now() + delayMs > deadlineMs) {
+      console.error(
+        `[STARTUP] Paperless-ngx still not usable after ${attempt} attempt(s): ${connection.error}. ` +
+          `Skipping the initial scan — the scheduled scan (${config.scanInterval}) stays armed and keeps retrying.`
+      );
+      return;
+    }
+
+    console.warn(
+      `[STARTUP] Paperless-ngx not usable yet: ${connection.error}. ` +
+        `Retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt}). ` +
+        `The scheduled scan (${config.scanInterval}) is armed regardless.`
+    );
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+}
 
 // Start scanning
 async function startScanning() {
@@ -1255,25 +1241,10 @@ async function startScanning() {
       );
     }
 
-    const userId = await paperlessService.getOwnUserID();
-    if (!userId) {
-      console.error('Failed to get own user ID. Abort scanning.');
-      return;
-    }
-
-    console.log('Configured scan interval:', config.scanInterval);
-    console.log(`Starting initial scan at ${new Date().toISOString()}`);
-    if (config.disableAutomaticProcessing != 'yes') {
-      await scanInitial();
-
-      cron.schedule(config.scanInterval, async () => {
-        console.log(`Starting scheduled scan at ${new Date().toISOString()}`);
-        await scanDocuments();
-      });
-    }
-
-    // Reconciliation: remove stale documents deleted in Paperless-ngx
-    if (config.reconciliationEnabled) {
+    // Reconciliation: remove stale documents deleted in Paperless-ngx.
+    // Armed independently of Paperless-ngx reachability so a temporary outage
+    // cannot leave the app without any scheduled work.
+    if (config.reconciliationEnabled === 'yes') {
       console.log(
         'Configured reconciliation interval:',
         config.reconciliationInterval
@@ -1289,6 +1260,35 @@ async function startScanning() {
         '[RECONCILIATION] Automatic reconciliation is disabled (RECONCILIATION_ENABLED=no).'
       );
     }
+
+    if (config.disableAutomaticProcessing === 'yes') {
+      scanHealthService.markAutomaticProcessingDisabled();
+      console.info(
+        'Automatic document processing is disabled (DISABLE_AUTOMATIC_PROCESSING=yes). No scan is scheduled.'
+      );
+      return;
+    }
+
+    // Arm the scheduler before talking to Paperless-ngx. A connection failure
+    // at startup must never leave the app running without a scan loop —
+    // every scheduled run re-checks connectivity on its own.
+    console.log('Configured scan interval:', config.scanInterval);
+    cron.schedule(config.scanInterval, async () => {
+      console.log(`Starting scheduled scan at ${new Date().toISOString()}`);
+      if (!(await setupService.isConfigured())) {
+        console.warn('Scheduled scan skipped: setup is not completed.');
+        return;
+      }
+      await scanDocuments();
+    });
+    scanHealthService.markArmed(config.scanInterval);
+
+    // Detached on purpose: startup must not block while Paperless-ngx is still
+    // coming up. unhandledRejection terminates the process, so catch here.
+    runInitialScanWhenReachable().catch((error) => {
+      console.error(`[ERROR] during initial scan: ${error.message}`);
+      console.debug(error);
+    });
   } catch (error) {
     console.error(`[ERROR] in startScanning: ${error.message}`);
     console.debug(error);
