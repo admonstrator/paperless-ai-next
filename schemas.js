@@ -8,35 +8,35 @@
  *       bearerFormat: JWT
  *       description: |
  *         JWT-based authentication for web app users. The token is obtained by authenticating via the login endpoint.
- *         
+ *
  *         ### How to authenticate:
  *         1. Send a POST request to `/login` with your username and password
  *         2. The server will respond with a JWT token (also set as a cookie in browsers)
  *         3. Include this token in the `Authorization` header as `Bearer {token}`
- *         
+ *
  *         Example:
  *         ```
  *         Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
  *         ```
- *         
+ *
  *         JWT tokens are valid for 24 hours after issuance.
- *     
+ *
  *     ApiKeyAuth:
  *       type: apiKey
  *       in: header
  *       name: x-api-key
  *       description: |
  *         API key authentication for programmatic access. The API key can be generated or regenerated using the /api/key-regenerate endpoint.
- *         
+ *
  *         ### How to authenticate:
  *         1. Access the API key from your application settings
  *         2. Include the API key in the `x-api-key` HTTP header for all requests
- *         
+ *
  *         Example:
  *         ```
  *         x-api-key: 7c1f3f5e2b0a9d8c6e4b2a1d3f5e8c9b2a1d3f5e
  *         ```
- *         
+ *
  *         API keys do not expire unless regenerated.
  */
 
@@ -51,7 +51,7 @@
  *           type: string
  *           description: Error message
  *           example: Error resetting documents
- *           
+ *
  *     User:
  *       type: object
  *       required:
@@ -72,7 +72,7 @@
  *           description: User ID (auto-generated)
  *           example: 1
  *           readOnly: true
- *           
+ *
  *     LoginRequest:
  *       type: object
  *       required:
@@ -88,7 +88,7 @@
  *           format: password
  *           description: User's password
  *           example: securePassword123
- *           
+ *
  *     LoginResponse:
  *       type: object
  *       properties:
@@ -100,7 +100,7 @@
  *           type: string
  *           description: Token expiration time
  *           example: 24h
- *           
+ *
  *     Document:
  *       type: object
  *       properties:
@@ -144,7 +144,7 @@
  *           items:
  *             $ref: '#/components/schemas/CustomField'
  *           description: Custom field values for the document
- *           
+ *
  *     DocumentUpdateRequest:
  *       type: object
  *       properties:
@@ -175,7 +175,7 @@
  *           items:
  *             $ref: '#/components/schemas/CustomField'
  *           description: Custom field values for the document
- *           
+ *
  *     CustomField:
  *       type: object
  *       required:
@@ -190,7 +190,7 @@
  *           type: string
  *           description: Custom field value
  *           example: "123.45"
- *           
+ *
  *     AnalysisResult:
  *       type: object
  *       properties:
@@ -256,7 +256,7 @@
  *           type: string
  *           description: Error message if analysis failed
  *           example: null
- *           
+ *
  *     Tag:
  *       type: object
  *       properties:
@@ -277,7 +277,7 @@
  *           enum: [ANY, ALL, LITERAL, REGEX]
  *           description: Tag matching algorithm
  *           example: ANY
- *           
+ *
  *     HistoryItem:
  *       type: object
  *       properties:
@@ -306,7 +306,7 @@
  *           type: string
  *           description: Link to the document in Paperless-ngx
  *           example: http://paperless.example.com/documents/123/
- *           
+ *
  *     HistoryResponse:
  *       type: object
  *       properties:
@@ -326,7 +326,7 @@
  *           type: array
  *           items:
  *             $ref: '#/components/schemas/HistoryItem'
- *             
+ *
  *     APIKeyResponse:
  *       type: object
  *       properties:
@@ -334,7 +334,7 @@
  *           type: string
  *           description: The newly generated API key
  *           example: 7c1f3f5e2b0a9d8c6e4b2a1d3f5e8c9b2a1d3f5e
- *           
+ *
  *     HealthResponse:
  *       type: object
  *       properties:
@@ -350,4 +350,4 @@
  */
 
 // This file only contains JSDoc comments for Swagger schema definitions
-// No actual code is needed 
+// No actual code is needed
