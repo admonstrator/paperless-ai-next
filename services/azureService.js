@@ -3,18 +3,26 @@ const {
   calculateTotalPromptTokens,
   truncateToTokenLimit,
   writePromptToFile,
-  extractChatMessageContent
+  extractChatMessageContent,
+  toNameList,
 } = require('./serviceUtils');
 const axios = require('axios');
-const OpenAI = require('openai');
 const AzureOpenAI = require('openai').AzureOpenAI;
 const config = require('../config/config');
 const paperlessService = require('./paperlessService');
 const fs = require('fs').promises;
 const path = require('path');
-const { THUMBNAIL_CACHE_DIR, getThumbnailCachePath } = require('./thumbnailCachePaths');
+const {
+  THUMBNAIL_CACHE_DIR,
+  getThumbnailCachePath,
+} = require('./thumbnailCachePaths');
 const RestrictionPromptService = require('./restrictionPromptService');
-const responseLogPath = path.join(process.cwd(), 'data', 'logs', 'response.txt');
+const responseLogPath = path.join(
+  process.cwd(),
+  'data',
+  'logs',
+  'response.txt'
+);
 
 class AzureOpenAIService {
   constructor() {
@@ -27,17 +35,28 @@ class AzureOpenAIService {
         apiKey: config.azure.apiKey,
         endpoint: config.azure.endpoint,
         deploymentName: config.azure.deploymentName,
-        apiVersion: config.azure.apiVersion
+        apiVersion: config.azure.apiVersion,
       });
     }
   }
 
-  async analyzeDocument(content, existingTags = [], existingCorrespondentList = [], existingDocumentTypesList = [], id, customPrompt = null, options = {}) {
+  async analyzeDocument(
+    content,
+    existingTags = [],
+    existingCorrespondentList = [],
+    existingDocumentTypesList = [],
+    id,
+    customPrompt = null,
+    options = {}
+  ) {
     const cachePath = getThumbnailCachePath(id);
     try {
       this.initialize();
       const now = new Date();
-      const timestamp = now.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+      const timestamp = now.toLocaleString('de-DE', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      });
 
       if (!this.client) {
         throw new Error('AzureOpenAI client not initialized');
@@ -47,7 +66,7 @@ class AzureOpenAIService {
       try {
         await fs.access(cachePath);
         console.log('[DEBUG] Thumbnail already cached');
-      } catch (err) {
+      } catch {
         console.log('Thumbnail not cached, fetching from Paperless');
 
         const thumbnailData = await paperlessService.getThumbnailImage(id);
@@ -61,8 +80,14 @@ class AzureOpenAIService {
         await fs.writeFile(cachePath, thumbnailData);
       }
 
-      // Format existing tags
-      let existingTagsList = existingTags.join(', ');
+      // Format existing data - callers may hand over entity objects or plain names
+      const existingTagNames = toNameList(existingTags).join(', ');
+      const existingCorrespondentNames = toNameList(
+        existingCorrespondentList
+      ).join(', ');
+      const existingDocumentTypeNames = toNameList(
+        existingDocumentTypesList
+      ).join(', ');
 
       // Get external API data if available and validate it
       let externalApiData = options.externalApiData || null;
@@ -70,10 +95,14 @@ class AzureOpenAIService {
 
       if (externalApiData) {
         try {
-          validatedExternalApiData = await this._validateAndTruncateExternalApiData(externalApiData);
+          validatedExternalApiData =
+            await this._validateAndTruncateExternalApiData(externalApiData);
           console.log('[DEBUG] External API data validated and included');
         } catch (error) {
-          console.warn('[WARNING] External API data validation failed:', error.message);
+          console.warn(
+            '[WARNING] External API data validation failed:',
+            error.message
+          );
           validatedExternalApiData = null;
         }
       }
@@ -87,7 +116,8 @@ class AzureOpenAIService {
       try {
         customFieldsObj = JSON.parse(process.env.CUSTOM_FIELDS);
       } catch (error) {
-        console.error(`Failed to parse CUSTOM_FIELDS: ${error.message}`); console.debug(error);
+        console.error(`Failed to parse CUSTOM_FIELDS: ${error.message}`);
+        console.debug(error);
         customFieldsObj = { custom_fields: [] };
       }
 
@@ -97,34 +127,48 @@ class AzureOpenAIService {
       customFieldsObj.custom_fields.forEach((field, index) => {
         let valueHint;
         if (field.data_type === 'date') {
-          valueHint = "Fill in the date in ISO 8601 format (YYYY-MM-DD) based on your analysis";
+          valueHint =
+            'Fill in the date in ISO 8601 format (YYYY-MM-DD) based on your analysis';
         } else if (field.data_type === 'boolean') {
           valueHint = "Fill in 'true' or 'false' based on your analysis";
         } else {
-          valueHint = "Fill in the value based on your analysis";
+          valueHint = 'Fill in the value based on your analysis';
         }
         customFieldsTemplate[index] = {
           field_name: field.value,
-          value: valueHint
+          value: valueHint,
         };
       });
 
       // Convert template to string for replacement and wrap in custom_fields
-      const customFieldsStr = '"custom_fields": ' + JSON.stringify(customFieldsTemplate, null, 2)
-        .split('\n')
-        .map(line => '    ' + line)  // Add proper indentation
-        .join('\n');
+      const customFieldsStr =
+        '"custom_fields": ' +
+        JSON.stringify(customFieldsTemplate, null, 2)
+          .split('\n')
+          .map((line) => '    ' + line) // Add proper indentation
+          .join('\n');
 
       // Get system prompt and model
-      if (config.useExistingData === 'yes' && config.restrictToExistingTags === 'no' && config.restrictToExistingCorrespondents === 'no') {
-        systemPrompt = `
-        Pre-existing tags: ${existingTagsList}\n\n
-        Pre-existing correspondents: ${existingCorrespondentList}\n\n
-        Pre-existing document types: ${existingDocumentTypesList.join(', ')}\n\n
-        ` + process.env.SYSTEM_PROMPT + '\n\n' + config.mustHavePrompt.replace('%CUSTOMFIELDS%', customFieldsStr);
+      if (
+        config.useExistingData === 'yes' &&
+        config.restrictToExistingTags === 'no' &&
+        config.restrictToExistingCorrespondents === 'no'
+      ) {
+        systemPrompt =
+          `
+        Pre-existing tags: ${existingTagNames}\n\n
+        Pre-existing correspondents: ${existingCorrespondentNames}\n\n
+        Pre-existing document types: ${existingDocumentTypeNames}\n\n
+        ` +
+          process.env.SYSTEM_PROMPT +
+          '\n\n' +
+          config.mustHavePrompt.replace('%CUSTOMFIELDS%', customFieldsStr);
         promptTags = '';
       } else {
-        const mustHavePrompt = config.mustHavePrompt.replace('%CUSTOMFIELDS%', customFieldsStr);
+        const mustHavePrompt = config.mustHavePrompt.replace(
+          '%CUSTOMFIELDS%',
+          customFieldsStr
+        );
         systemPrompt = process.env.SYSTEM_PROMPT + '\n\n' + mustHavePrompt;
         promptTags = '';
       }
@@ -133,8 +177,7 @@ class AzureOpenAIService {
       systemPrompt = RestrictionPromptService.processRestrictionsInPrompt(
         systemPrompt,
         existingTags,
-        existingCorrespondentList,
-        config
+        existingCorrespondentList
       );
 
       // Include validated external API data if available
@@ -144,14 +187,20 @@ class AzureOpenAIService {
 
       if (process.env.USE_PROMPT_TAGS === 'yes') {
         promptTags = process.env.PROMPT_TAGS;
-        systemPrompt = `
+        systemPrompt =
+          `
         Take these tags and try to match one or more to the document content.\n\n
         ` + config.specialPromptPreDefinedTags;
       }
 
       if (customPrompt) {
-        console.log('[DEBUG] Replace system prompt with custom prompt via WebHook');
-        systemPrompt = customPrompt + '\n\n' + config.mustHavePrompt.replace('%CUSTOMFIELDS%', customFieldsStr);
+        console.log(
+          '[DEBUG] Replace system prompt with custom prompt via WebHook'
+        );
+        systemPrompt =
+          customPrompt +
+          '\n\n' +
+          config.mustHavePrompt.replace('%CUSTOMFIELDS%', customFieldsStr);
       }
 
       // Calculate tokens AFTER all prompt modifications are complete
@@ -167,15 +216,29 @@ class AzureOpenAIService {
 
       // Validate that we have positive available tokens
       if (availableTokens <= 0) {
-        console.warn(`[WARNING] No available tokens for content. Reserved: ${reservedTokens}, Max: ${maxTokens}`);
-        throw new Error('Token limit exceeded: prompt too large for available token limit');
+        console.warn(
+          `[WARNING] No available tokens for content. Reserved: ${reservedTokens}, Max: ${maxTokens}`
+        );
+        throw new Error(
+          'Token limit exceeded: prompt too large for available token limit'
+        );
       }
 
-      console.log(`[DEBUG] Token calculation - Prompt: ${totalPromptTokens}, Reserved: ${reservedTokens}, Available: ${availableTokens}`);
-      console.log(`[DEBUG] Use existing data: ${config.useExistingData}, Restrictions applied based on useExistingData setting`);
-      console.log(`[DEBUG] External API data: ${validatedExternalApiData ? 'included' : 'none'}`);
+      console.log(
+        `[DEBUG] Token calculation - Prompt: ${totalPromptTokens}, Reserved: ${reservedTokens}, Available: ${availableTokens}`
+      );
+      console.log(
+        `[DEBUG] Use existing data: ${config.useExistingData}, Restrictions applied based on useExistingData setting`
+      );
+      console.log(
+        `[DEBUG] External API data: ${validatedExternalApiData ? 'included' : 'none'}`
+      );
 
-      const truncatedContent = await truncateToTokenLimit(content, availableTokens, model);
+      const truncatedContent = await truncateToTokenLimit(
+        content,
+        availableTokens,
+        model
+      );
 
       await writePromptToFile(systemPrompt, truncatedContent);
 
@@ -183,13 +246,13 @@ class AzureOpenAIService {
         model: model,
         messages: [
           {
-            role: "system",
-            content: systemPrompt
+            role: 'system',
+            content: systemPrompt,
           },
           {
-            role: "user",
-            content: truncatedContent
-          }
+            role: 'user',
+            content: truncatedContent,
+          },
         ],
         temperature: 0.3,
       });
@@ -201,25 +264,31 @@ class AzureOpenAIService {
       }
 
       console.log(`[DEBUG] [${timestamp}] AzureOpenAI request sent`);
-      console.log(`[DEBUG] [${timestamp}] Total tokens: ${response.usage.total_tokens}`);
+      console.log(
+        `[DEBUG] [${timestamp}] Total tokens: ${response.usage.total_tokens}`
+      );
 
       const usage = response.usage;
       const mappedUsage = {
         promptTokens: usage.prompt_tokens,
         completionTokens: usage.completion_tokens,
-        totalTokens: usage.total_tokens
+        totalTokens: usage.total_tokens,
       };
 
       // Strip <think>...</think> reasoning tags from models like Qwen3, DeepSeek-R1
       jsonContent = jsonContent.replace(/<think>[\s\S]*?<\/think>/g, '');
-      jsonContent = jsonContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      jsonContent = jsonContent
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
 
       let parsedResponse;
       try {
         parsedResponse = JSON.parse(jsonContent);
       } catch (error) {
-        console.error(`Failed to parse JSON response: ${error.message}`); console.debug(error);
-        throw new Error('Invalid JSON response from API');
+        console.error(`Failed to parse JSON response: ${error.message}`);
+        console.debug(error);
+        throw new Error('Invalid JSON response from API', { cause: error });
       }
 
       try {
@@ -229,14 +298,21 @@ class AzureOpenAIService {
         console.warn('Failed to write AI response log:', logError.message);
       }
 
-      if (!parsedResponse || !Array.isArray(parsedResponse.tags) || (typeof parsedResponse.correspondent !== 'string' && parsedResponse.correspondent !== null)) {
-        throw new Error('AI could not determine assignable metadata: no tags or correspondent found');
+      if (
+        !parsedResponse ||
+        !Array.isArray(parsedResponse.tags) ||
+        (typeof parsedResponse.correspondent !== 'string' &&
+          parsedResponse.correspondent !== null)
+      ) {
+        throw new Error(
+          'AI could not determine assignable metadata: no tags or correspondent found'
+        );
       }
 
       return {
         document: parsedResponse,
         metrics: mappedUsage,
-        truncated: truncatedContent.length < content.length
+        truncated: truncatedContent.length < content.length,
       };
     } catch (error) {
       console.error(`Failed to analyze document: ${error.message}`);
@@ -244,7 +320,7 @@ class AzureOpenAIService {
       return {
         document: { tags: [], correspondent: null },
         metrics: null,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -260,16 +336,26 @@ class AzureOpenAIService {
       return null;
     }
 
-    const dataString = typeof apiData === 'object'
-      ? JSON.stringify(apiData, null, 2)
-      : String(apiData);
+    const dataString =
+      typeof apiData === 'object'
+        ? JSON.stringify(apiData, null, 2)
+        : String(apiData);
 
     // Calculate tokens for the data
-    const dataTokens = await calculateTokens(dataString, process.env.AZURE_DEPLOYMENT_NAME);
+    const dataTokens = await calculateTokens(
+      dataString,
+      process.env.AZURE_DEPLOYMENT_NAME
+    );
 
     if (dataTokens > maxTokens) {
-      console.warn(`[WARNING] External API data (${dataTokens} tokens) exceeds limit (${maxTokens}), truncating`);
-      return await truncateToTokenLimit(dataString, maxTokens, process.env.AZURE_DEPLOYMENT_NAME);
+      console.warn(
+        `[WARNING] External API data (${dataTokens} tokens) exceeds limit (${maxTokens}), truncating`
+      );
+      return await truncateToTokenLimit(
+        dataString,
+        maxTokens,
+        process.env.AZURE_DEPLOYMENT_NAME
+      );
     }
 
     console.log(`[DEBUG] External API data validated: ${dataTokens} tokens`);
@@ -290,7 +376,10 @@ class AzureOpenAIService {
     try {
       this.initialize();
       const now = new Date();
-      const timestamp = now.toLocaleString('de-DE', { dateStyle: 'short', timeStyle: 'short' });
+      const timestamp = now.toLocaleString('de-DE', {
+        dateStyle: 'short',
+        timeStyle: 'short',
+      });
 
       if (!this.client) {
         throw new Error('AzureOpenAI client not initialized - missing API key');
@@ -307,20 +396,23 @@ class AzureOpenAIService {
       const availableTokens = maxTokens - reservedTokens;
 
       // Truncate content if necessary
-      const truncatedContent = await truncateToTokenLimit(content, availableTokens);
+      const truncatedContent = await truncateToTokenLimit(
+        content,
+        availableTokens
+      );
 
       // Make API request
       const response = await this.client.chat.completions.create({
         model: process.env.AZURE_DEPLOYMENT_NAME,
         messages: [
           {
-            role: "system",
-            content: prompt + musthavePrompt
+            role: 'system',
+            content: prompt + musthavePrompt,
           },
           {
-            role: "user",
-            content: truncatedContent
-          }
+            role: 'user',
+            content: truncatedContent,
+          },
         ],
         temperature: 0.3,
       });
@@ -334,36 +426,49 @@ class AzureOpenAIService {
 
       // Log token usage
       console.log(`[DEBUG] [${timestamp}] AzureOpenAI request sent`);
-      console.log(`[DEBUG] [${timestamp}] Total tokens: ${response.usage.total_tokens}`);
+      console.log(
+        `[DEBUG] [${timestamp}] Total tokens: ${response.usage.total_tokens}`
+      );
 
       const usage = response.usage;
       const mappedUsage = {
         promptTokens: usage.prompt_tokens,
         completionTokens: usage.completion_tokens,
-        totalTokens: usage.total_tokens
+        totalTokens: usage.total_tokens,
       };
 
       // Strip <think>...</think> reasoning tags from models like Qwen3, DeepSeek-R1
       jsonContent = jsonContent.replace(/<think>[\s\S]*?<\/think>/g, '');
-      jsonContent = jsonContent.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      jsonContent = jsonContent
+        .replace(/```json\n?/g, '')
+        .replace(/```\n?/g, '')
+        .trim();
 
       let parsedResponse;
       try {
         parsedResponse = JSON.parse(jsonContent);
       } catch (error) {
-        console.error(`Failed to parse JSON response: ${error.message}`); console.debug(error);
-        throw new Error('Invalid JSON response from API');
+        console.error(`Failed to parse JSON response: ${error.message}`);
+        console.debug(error);
+        throw new Error('Invalid JSON response from API', { cause: error });
       }
 
       // Validate response structure
-      if (!parsedResponse || !Array.isArray(parsedResponse.tags) || (typeof parsedResponse.correspondent !== 'string' && parsedResponse.correspondent !== null)) {
-        throw new Error('AI could not determine assignable metadata: no tags or correspondent found');
+      if (
+        !parsedResponse ||
+        !Array.isArray(parsedResponse.tags) ||
+        (typeof parsedResponse.correspondent !== 'string' &&
+          parsedResponse.correspondent !== null)
+      ) {
+        throw new Error(
+          'AI could not determine assignable metadata: no tags or correspondent found'
+        );
       }
 
       return {
         document: parsedResponse,
         metrics: mappedUsage,
-        truncated: truncatedContent.length < content.length
+        truncated: truncatedContent.length < content.length,
       };
     } catch (error) {
       console.error(`Failed to analyze document: ${error.message}`);
@@ -371,7 +476,7 @@ class AzureOpenAIService {
       return {
         document: { tags: [], correspondent: null },
         metrics: null,
-        error: error.message
+        error: error.message,
       };
     }
   }
@@ -395,22 +500,26 @@ class AzureOpenAIService {
         model: model,
         messages: [
           {
-            role: "user",
-            content: prompt
-          }
+            role: 'user',
+            content: prompt,
+          },
         ],
         temperature: 0.7,
-        max_tokens: 1000
+        max_tokens: 1000,
       });
 
-      const generatedText = extractChatMessageContent(response?.choices?.[0]?.message, 'AzureOpenAI');
+      const generatedText = extractChatMessageContent(
+        response?.choices?.[0]?.message,
+        'AzureOpenAI'
+      );
       if (!generatedText) {
         throw new Error('Invalid API response structure');
       }
 
       return generatedText;
     } catch (error) {
-      console.error(`Error generating text with AzureOpenAI: ${error.message}`); console.debug(error);
+      console.error(`Error generating text with AzureOpenAI: ${error.message}`);
+      console.debug(error);
       throw error;
     }
   }
@@ -420,7 +529,9 @@ class AzureOpenAIService {
       this.initialize();
 
       if (!this.client) {
-        throw new Error('Azure OpenAI client not initialized - missing API key');
+        throw new Error(
+          'Azure OpenAI client not initialized - missing API key'
+        );
       }
 
       const model = process.env.AZURE_DEPLOYMENT_NAME;
@@ -429,15 +540,17 @@ class AzureOpenAIService {
       const endpoint = (config.azure.endpoint || '').replace(/\/$/, '');
       const apiVersion = config.azure.apiVersion;
       if (!endpoint || !apiVersion || !model) {
-        throw new Error('Azure endpoint, apiVersion, or deployment name missing');
+        throw new Error(
+          'Azure endpoint, apiVersion, or deployment name missing'
+        );
       }
 
       const url = `${endpoint}/openai/deployments/${model}?api-version=${encodeURIComponent(apiVersion)}`;
       const response = await axios.get(url, {
         headers: {
-          'api-key': config.azure.apiKey
+          'api-key': config.azure.apiKey,
         },
-        timeout: 10000
+        timeout: 10000,
       });
 
       if (response.status < 200 || response.status >= 300) {
@@ -446,7 +559,10 @@ class AzureOpenAIService {
 
       return { status: 'ok', model: model };
     } catch (error) {
-      console.error(`Error generating text with Azure OpenAI: ${error.message}`); console.debug(error);
+      console.error(
+        `Error generating text with Azure OpenAI: ${error.message}`
+      );
+      console.debug(error);
       return { status: 'error', error: error.message };
     }
   }

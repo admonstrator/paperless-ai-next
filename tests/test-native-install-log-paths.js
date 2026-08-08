@@ -13,6 +13,14 @@ function assertNotIncludes(content, snippet, message) {
   }
 }
 
+// Whitespace-tolerant so the check survives Prettier reflowing a long
+// path.join(...) call across multiple lines.
+function assertMatches(content, regex, message) {
+  if (!regex.test(content)) {
+    throw new Error(message);
+  }
+}
+
 function run() {
   console.log('\n=== Native Install Log Path Checks ===');
 
@@ -31,9 +39,9 @@ function run() {
       "path.join('/app'",
       `${relativePath} must not hardcode the Docker '/app' path for AI response logging`
     );
-    assertIncludes(
+    assertMatches(
       content,
-      'path.join(process.cwd()',
+      /path\.join\(\s*process\.cwd\(\)/,
       `${relativePath} must resolve the AI response log path relative to process.cwd()`
     );
   });

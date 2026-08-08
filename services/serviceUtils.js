@@ -260,6 +260,38 @@ function stripTrailingSlashes(value) {
   return end === text.length ? text : text.slice(0, end);
 }
 
+/**
+ * Normalizes a list of Paperless-ngx entities (tags, correspondents, document
+ * types) into plain names.
+ *
+ * The paperlessService list helpers return objects ({ id, name, ... }) even
+ * though some of them are called list*Names(), while several call sites already
+ * map them to plain strings before handing them to an AI service. Accepting
+ * both shapes here keeps the prompt builders from rendering "[object Object]"
+ * when they receive raw entities, and from dropping every entry when they
+ * receive strings.
+ *
+ * @param {Array<string|{name?: string}>|string|null|undefined} items - Entities or names
+ * @returns {string[]} Trimmed names, in input order, with empty entries removed
+ */
+function toNameList(items) {
+  if (!items) {
+    return [];
+  }
+
+  const list = Array.isArray(items) ? items : [items];
+
+  return list
+    .map((item) => {
+      if (typeof item === 'string') {
+        return item.trim();
+      }
+      const name = item?.name;
+      return typeof name === 'string' ? name.trim() : '';
+    })
+    .filter((name) => name.length > 0);
+}
+
 const METADATA_ENDPOINTS = [
   '169.254.169.254', // AWS, GCP, Azure metadata
   'metadata.google.internal',
@@ -863,6 +895,7 @@ module.exports = {
   calculateTotalPromptTokens,
   truncateToTokenLimit,
   writePromptToFile,
+  toNameList,
   stripTrailingSlashes,
   validateUrl,
   validateApiUrl,

@@ -58,6 +58,8 @@ const TESTS = {
   'thumbnail-startup-migration': 'test-thumbnail-startup-migration.js',
   'restriction-service': 'test-restriction-service.js',
   'updated-service': 'test-updated-service.js',
+  'prompt-existing-data-serialization':
+    'test-prompt-existing-data-serialization.js',
   'ssrf-url-validation': 'test-ssrf-url-validation.js',
   'external-api-ssrf-block': 'test-external-api-ssrf-block.js',
   'ui-xss-hardening': 'test-ui-xss-hardening.js',
@@ -128,7 +130,11 @@ const AREAS = {
     'reconciliation-service',
     'settings-paperless-url-fallback',
   ],
-  prompts: ['restriction-service', 'updated-service'],
+  prompts: [
+    'restriction-service',
+    'updated-service',
+    'prompt-existing-data-serialization',
+  ],
   quickstart: [
     'quickstart-model-classification',
     'setup-wizard-quickstart',

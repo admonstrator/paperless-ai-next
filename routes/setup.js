@@ -19,6 +19,7 @@ const {
   shouldQueueForOcrOnAiError,
   classifyOcrQueueReasonFromAiError,
   stripTrailingSlashes,
+  toNameList,
 } = require('../services/serviceUtils');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
@@ -5827,9 +5828,12 @@ async function processQueue(customPrompt) {
       paperlessService.getOwnUserID(),
     ]);
 
-    const existingDocumentTypesList = existingDocumentTypes.map(
-      (docType) => docType.name
-    );
+    // The paperlessService helpers return entity objects, so every list has to
+    // be reduced to plain names before it reaches the AI services — otherwise
+    // the "Pre-existing ..." prompt blocks render as "[object Object]".
+    const existingTagNames = toNameList(existingTags);
+    const existingCorrespondentNames = toNameList(existingCorrespondentList);
+    const existingDocumentTypesList = toNameList(existingDocumentTypes);
 
     while (documentQueue.length > 0) {
       const doc = documentQueue.shift();
@@ -5837,8 +5841,8 @@ async function processQueue(customPrompt) {
       try {
         const result = await processDocument(
           doc,
-          existingTags,
-          existingCorrespondentList,
+          existingTagNames,
+          existingCorrespondentNames,
           existingDocumentTypesList,
           ownUserId,
           customPrompt
@@ -7263,16 +7267,12 @@ router.post(
 router.post('/manual/analyze', express.json(), async (req, res) => {
   try {
     const { content, id } = req.body;
-    let existingCorrespondentList =
-      await paperlessService.listCorrespondentsNames();
-    existingCorrespondentList = existingCorrespondentList.map(
-      (correspondent) => correspondent.name
+    const existingCorrespondentList = toNameList(
+      await paperlessService.listCorrespondentsNames()
     );
-    let existingTagsList = await paperlessService.listTagNames();
-    existingTagsList = existingTagsList.map((tags) => tags.name);
-    let existingDocumentTypes = await paperlessService.listDocumentTypesNames();
-    let existingDocumentTypesList = existingDocumentTypes.map(
-      (docType) => docType.name
+    const existingTagsList = toNameList(await paperlessService.listTagNames());
+    const existingDocumentTypesList = toNameList(
+      await paperlessService.listDocumentTypesNames()
     );
 
     if (!content || typeof content !== 'string') {
