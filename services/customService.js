@@ -271,7 +271,8 @@ class CustomOpenAIService {
       systemPrompt = RestrictionPromptService.processRestrictionsInPrompt(
         systemPrompt,
         existingTags,
-        existingCorrespondentList
+        existingCorrespondentList,
+        existingDocumentTypesList
       );
 
       // Include validated external API data if available

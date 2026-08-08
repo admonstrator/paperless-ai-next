@@ -62,8 +62,10 @@ estimate otherwise) and `truncateToTokenLimit()`. Also holds AI-error → OCR-fa
 helpers used by the scan loop.
 
 **Prompt restrictions:** `services/restrictionPromptService.js` replaces placeholders like
-`%RESTRICTED_TAGS%`, `%RESTRICTED_CORRESPONDENTS%`, `%CUSTOMFIELDS%` in prompts. The base prompts live
-in `config/config.js` (`specialPromptPreDefinedTags`, `mustHavePrompt`).
+`%RESTRICTED_TAGS%`, `%RESTRICTED_CORRESPONDENTS%`, `%RESTRICTED_DOCUMENT_TYPES%`, `%CUSTOMFIELDS%`
+in prompts. The base prompts live in `config/config.js` (`specialPromptPreDefinedTags`,
+`mustHavePrompt`). Entity lists reach the services as either `[{ id, name }]` or `['name']` —
+normalize them with `toNameList()` from `services/serviceUtils.js` instead of joining them directly.
 
 **OCR:** `services/mistralOcrService.js` — provider can be `mistral`, `ollama` (native `/api/chat`
 vision), or OpenAI-compatible `/v1`. OCR is a fallback path when AI analysis fails on low-text docs.

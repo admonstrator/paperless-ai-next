@@ -426,7 +426,8 @@ class OllamaService {
     systemPrompt = RestrictionPromptService.processRestrictionsInPrompt(
       systemPrompt,
       existingTags,
-      correspondentList
+      correspondentList,
+      existingDocumentTypes
     );
 
     // Include validated external API data if available

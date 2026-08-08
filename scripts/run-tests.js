@@ -60,6 +60,8 @@ const TESTS = {
   'updated-service': 'test-updated-service.js',
   'prompt-existing-data-serialization':
     'test-prompt-existing-data-serialization.js',
+  'restricted-document-types-placeholder':
+    'test-restricted-document-types-placeholder.js',
   'ssrf-url-validation': 'test-ssrf-url-validation.js',
   'external-api-ssrf-block': 'test-external-api-ssrf-block.js',
   'ui-xss-hardening': 'test-ui-xss-hardening.js',
@@ -134,6 +136,7 @@ const AREAS = {
     'restriction-service',
     'updated-service',
     'prompt-existing-data-serialization',
+    'restricted-document-types-placeholder',
   ],
   quickstart: [
     'quickstart-model-classification',
