@@ -462,6 +462,22 @@ module.exports = {
       10
     ),
     pdfRenderDpi: parseInt(process.env.OCR_PDF_RENDER_DPI || '150', 10),
+    // Automatic draining of the OCR queue. Without it the queue is only
+    // emptied by hand via "Process All Pending" on the /ocr page.
+    autoProcessEnabled: parseEnvBoolean(
+      process.env.OCR_AUTO_PROCESS_ENABLED,
+      'no'
+    ),
+    autoProcessInterval:
+      process.env.OCR_AUTO_PROCESS_INTERVAL || '*/15 * * * *',
+    autoProcessBatchSize: parseInt(
+      process.env.OCR_AUTO_PROCESS_BATCH_SIZE || '10',
+      10
+    ),
+    // Run AI analysis right after OCR. Defaults to yes because a failed
+    // content write-back leaves the OCR text local-only, where a regular
+    // scan would never pick it up.
+    autoAnalyze: parseEnvBoolean(process.env.OCR_AUTO_ANALYZE, 'yes'),
   },
   customFields: process.env.CUSTOM_FIELDS || '',
   aiProvider: process.env.AI_PROVIDER || 'openai',

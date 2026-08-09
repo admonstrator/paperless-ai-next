@@ -13,6 +13,7 @@ const { runStartupMigrations } = require('./services/startupMigrations');
 const setupRoutes = require('./routes/setup');
 const { isAuthenticated } = require('./routes/auth');
 const mistralOcrService = require('./services/mistralOcrService');
+const ocrAutoProcessService = require('./services/ocrAutoProcessService');
 const reconciliationService = require('./services/reconciliationService');
 const scanHealthService = require('./services/scanHealthService');
 const { RUN_STATUS } = scanHealthService;
@@ -1347,6 +1348,32 @@ async function startScanning() {
         'Automatic document processing is disabled (DISABLE_AUTOMATIC_PROCESSING=yes). No scan is scheduled.'
       );
       return;
+    }
+
+    // OCR auto-processing: drain the pending OCR queue without anyone having
+    // to press "Process All Pending". Armed after the kill-switch above
+    // because OCR + AI writes results back to Paperless-ngx, which is exactly
+    // what DISABLE_AUTOMATIC_PROCESSING is meant to stop.
+    if (ocrAutoProcessService.isEnabled()) {
+      const ocrAutoProcessInterval = ocrAutoProcessService.interval;
+      console.log(
+        'Configured OCR auto-processing interval:',
+        ocrAutoProcessInterval
+      );
+      cron.schedule(ocrAutoProcessInterval, async () => {
+        // Never compete with a running scan for the same AI backend.
+        if (scanControl.running) {
+          console.debug(
+            '[OCR] Auto-processing skipped: a document scan is currently running.'
+          );
+          return;
+        }
+        await ocrAutoProcessService.drainQueue();
+      });
+    } else {
+      console.info(
+        '[OCR] Automatic OCR queue processing is disabled (OCR_AUTO_PROCESS_ENABLED=no).'
+      );
     }
 
     // Arm the scheduler before talking to Paperless-ngx. A connection failure

@@ -42,6 +42,7 @@ const TESTS = {
   'login-mfa-flow': 'test-login-mfa-flow.js',
   'ocr-fallback-ai-errors': 'test-ocr-fallback-ai-errors.js',
   'ocr-startup-recovery': 'test-ocr-startup-recovery.js',
+  'ocr-auto-process': 'test-ocr-auto-process.js',
   'search-documents-exact-id': 'test-search-documents-exact-id.js',
   'document-metadata-batching': 'test-document-metadata-batching.js',
   'pr772-fix': 'test-pr772-fix.js',
@@ -103,6 +104,7 @@ const AREAS = {
   ocr: [
     'ocr-fallback-ai-errors',
     'ocr-startup-recovery',
+    'ocr-auto-process',
     'search-documents-exact-id',
     'document-metadata-batching',
     'mistral-ocr-no-processed-on-update-failure',

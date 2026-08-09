@@ -3709,6 +3709,26 @@
                     "type": "boolean",
                     "description": "Disable automatic document processing",
                     "example": false
+                  },
+                  "ocrAutoProcessEnabled": {
+                    "type": "string",
+                    "description": "Process queued OCR documents automatically (yes/no)",
+                    "example": "no"
+                  },
+                  "ocrAutoProcessInterval": {
+                    "type": "string",
+                    "description": "Cron expression for the automatic OCR queue schedule",
+                    "example": "0,15,30,45 * * * *"
+                  },
+                  "ocrAutoProcessBatchSize": {
+                    "type": "integer",
+                    "description": "Maximum queued documents handled per automatic OCR run (1-100)",
+                    "example": 10
+                  },
+                  "ocrAutoAnalyze": {
+                    "type": "string",
+                    "description": "Run AI analysis directly after automatic OCR (yes/no)",
+                    "example": "yes"
                   }
                 }
               }

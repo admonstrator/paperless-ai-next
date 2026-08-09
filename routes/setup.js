@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
+const cron = require('node-cron');
 const setupService = require('../services/setupService.js');
 const paperlessService = require('../services/paperlessService.js');
 const openaiService = require('../services/openaiService.js');
@@ -3690,6 +3691,10 @@ function toEnvPreviewLines(config) {
     'OCR_PDF_RENDER_ENABLED',
     'OCR_PDF_RENDER_MAX_PAGES',
     'OCR_PDF_RENDER_DPI',
+    'OCR_AUTO_PROCESS_ENABLED',
+    'OCR_AUTO_PROCESS_INTERVAL',
+    'OCR_AUTO_PROCESS_BATCH_SIZE',
+    'OCR_AUTO_ANALYZE',
   ];
 
   return previewKeys
@@ -6481,6 +6486,12 @@ router.get('/settings', async (req, res) => {
     OCR_PDF_RENDER_ENABLED: process.env.OCR_PDF_RENDER_ENABLED || 'yes',
     OCR_PDF_RENDER_MAX_PAGES: process.env.OCR_PDF_RENDER_MAX_PAGES || '10',
     OCR_PDF_RENDER_DPI: process.env.OCR_PDF_RENDER_DPI || '150',
+    OCR_AUTO_PROCESS_ENABLED: process.env.OCR_AUTO_PROCESS_ENABLED || 'no',
+    OCR_AUTO_PROCESS_INTERVAL:
+      process.env.OCR_AUTO_PROCESS_INTERVAL || '*/15 * * * *',
+    OCR_AUTO_PROCESS_BATCH_SIZE:
+      process.env.OCR_AUTO_PROCESS_BATCH_SIZE || '10',
+    OCR_AUTO_ANALYZE: process.env.OCR_AUTO_ANALYZE || 'yes',
     SETUP_OCR_VALIDATION_TIMEOUT_MS:
       process.env.SETUP_OCR_VALIDATION_TIMEOUT_MS ||
       process.env.SETUP_VALIDATION_TIMEOUT_MS ||
@@ -7918,6 +7929,22 @@ router.get('/health', async (req, res) => {
  *                 type: boolean
  *                 description: Disable automatic document processing
  *                 example: false
+ *               ocrAutoProcessEnabled:
+ *                 type: string
+ *                 description: Process queued OCR documents automatically (yes/no)
+ *                 example: "no"
+ *               ocrAutoProcessInterval:
+ *                 type: string
+ *                 description: Cron expression for the automatic OCR queue schedule
+ *                 example: "0,15,30,45 * * * *"
+ *               ocrAutoProcessBatchSize:
+ *                 type: integer
+ *                 description: Maximum queued documents handled per automatic OCR run (1-100)
+ *                 example: 10
+ *               ocrAutoAnalyze:
+ *                 type: string
+ *                 description: Run AI analysis directly after automatic OCR (yes/no)
+ *                 example: "yes"
  *     responses:
  *       200:
  *         description: Settings updated successfully
@@ -8016,6 +8043,10 @@ router.post('/settings', express.json(), async (req, res) => {
       ocrPdfRenderEnabled,
       ocrPdfRenderMaxPages,
       ocrPdfRenderDpi,
+      ocrAutoProcessEnabled,
+      ocrAutoProcessInterval,
+      ocrAutoProcessBatchSize,
+      ocrAutoAnalyze,
       globalRateLimitWindowMs,
       globalRateLimitMax,
       trustProxy,
@@ -8105,6 +8136,12 @@ router.post('/settings', express.json(), async (req, res) => {
       OCR_PDF_RENDER_ENABLED: process.env.OCR_PDF_RENDER_ENABLED || 'yes',
       OCR_PDF_RENDER_MAX_PAGES: process.env.OCR_PDF_RENDER_MAX_PAGES || '10',
       OCR_PDF_RENDER_DPI: process.env.OCR_PDF_RENDER_DPI || '150',
+      OCR_AUTO_PROCESS_ENABLED: process.env.OCR_AUTO_PROCESS_ENABLED || 'no',
+      OCR_AUTO_PROCESS_INTERVAL:
+        process.env.OCR_AUTO_PROCESS_INTERVAL || '*/15 * * * *',
+      OCR_AUTO_PROCESS_BATCH_SIZE:
+        process.env.OCR_AUTO_PROCESS_BATCH_SIZE || '10',
+      OCR_AUTO_ANALYZE: process.env.OCR_AUTO_ANALYZE || 'yes',
       GLOBAL_RATE_LIMIT_WINDOW_MS:
         process.env.GLOBAL_RATE_LIMIT_WINDOW_MS || '900000',
       GLOBAL_RATE_LIMIT_MAX: process.env.GLOBAL_RATE_LIMIT_MAX || '1000',
@@ -8497,6 +8534,51 @@ router.post('/settings', express.json(), async (req, res) => {
           `[WARN] Invalid OCR_PDF_RENDER_DPI value: ${ocrPdfRenderDpi}. Using default: 150`
         );
         updatedConfig.OCR_PDF_RENDER_DPI = '150';
+      }
+    }
+    if (typeof ocrAutoProcessEnabled === 'string') {
+      const normalizedAutoProcessEnabled = ocrAutoProcessEnabled
+        .trim()
+        .toLowerCase();
+      if (['yes', 'no'].includes(normalizedAutoProcessEnabled)) {
+        updatedConfig.OCR_AUTO_PROCESS_ENABLED = normalizedAutoProcessEnabled;
+      }
+    }
+    if (typeof ocrAutoAnalyze === 'string') {
+      const normalizedAutoAnalyze = ocrAutoAnalyze.trim().toLowerCase();
+      if (['yes', 'no'].includes(normalizedAutoAnalyze)) {
+        updatedConfig.OCR_AUTO_ANALYZE = normalizedAutoAnalyze;
+      }
+    }
+    if (
+      typeof ocrAutoProcessInterval === 'string' &&
+      ocrAutoProcessInterval.trim()
+    ) {
+      // An invalid cron pattern makes cron.schedule() throw during startup,
+      // so it is rejected here instead of taking the app down on restart.
+      const normalizedAutoProcessInterval = ocrAutoProcessInterval.trim();
+      if (!cron.validate(normalizedAutoProcessInterval)) {
+        return res.status(400).json({
+          error:
+            'Invalid OCR Processing Interval. Use cron syntax, for example */15 * * * *.',
+        });
+      }
+      updatedConfig.OCR_AUTO_PROCESS_INTERVAL = normalizedAutoProcessInterval;
+    }
+    if (ocrAutoProcessBatchSize !== undefined) {
+      const autoProcessBatchSize = parseInt(ocrAutoProcessBatchSize, 10);
+      if (
+        !isNaN(autoProcessBatchSize) &&
+        autoProcessBatchSize >= 1 &&
+        autoProcessBatchSize <= 100
+      ) {
+        updatedConfig.OCR_AUTO_PROCESS_BATCH_SIZE =
+          autoProcessBatchSize.toString();
+      } else {
+        console.warn(
+          `[WARN] Invalid OCR_AUTO_PROCESS_BATCH_SIZE value: ${ocrAutoProcessBatchSize}. Using default: 10`
+        );
+        updatedConfig.OCR_AUTO_PROCESS_BATCH_SIZE = '10';
       }
     }
     updatedConfig.SETUP_OCR_VALIDATION_TIMEOUT_MS = String(

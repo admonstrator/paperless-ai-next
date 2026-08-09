@@ -18,23 +18,23 @@
 ## 📊 At a Glance: Next vs. Original
 
 | Feature                                     | Paperless-AI | Zettelrobbe |
-| ------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------- |
-| **Core automation**                         |              |                                                                                             |
-| AI-based document classification            | ✅           | ✅                                                                                          |
-| Paperless-ngx integration                   | ✅           | ✅                                                                                          |
-| Basic manual processing flows               | ✅           | ✅                                                                                          |
-| **Performance and scale**                   |              |                                                                                             |
-| Server-side history pagination              | ❌           | ✅                                                                                          |
-| Tag caching with reduced API calls          | ❌           | ✅                                                                                          |
-| Faster dashboard behavior under high volume | ❌           | ✅                                                                                          |
-| **Security and reliability**                |              |                                                                                             |
-| Security-focused dependency maintenance     | ✅           | ✅                                                                                          |
-| Global API + SSE rate limiting              | ❌           | ✅                                                                                          |
-| MFA login support                           | ❌           | ✅                                                                                          |
-| **OCR and recovery workflows**              |              |                                                                                             |
-| Works with blurry documents and images      | ❌           | ✅                                                                                          |
-| **UX and operations**                       |              |                                                                                             |
-| Settings tabs with runtime ENV hints        | ❌           | ✅                                                                                          |
+| ------------------------------------------- | ------------ | ----------- |
+| **Core automation**                         |              |             |
+| AI-based document classification            | ✅           | ✅          |
+| Paperless-ngx integration                   | ✅           | ✅          |
+| Basic manual processing flows               | ✅           | ✅          |
+| **Performance and scale**                   |              |             |
+| Server-side history pagination              | ❌           | ✅          |
+| Tag caching with reduced API calls          | ❌           | ✅          |
+| Faster dashboard behavior under high volume | ❌           | ✅          |
+| **Security and reliability**                |              |             |
+| Security-focused dependency maintenance     | ✅           | ✅          |
+| Global API + SSE rate limiting              | ❌           | ✅          |
+| MFA login support                           | ❌           | ✅          |
+| **OCR and recovery workflows**              |              |             |
+| Works with blurry documents and images      | ❌           | ✅          |
+| **UX and operations**                       |              |             |
+| Settings tabs with runtime ENV hints        | ❌           | ✅          |
 
 ---
 
@@ -134,11 +134,12 @@ Then open [http://localhost:3000](http://localhost:3000) to complete setup.
 - Local vision OCR renders multi-page PDFs to per-page images via poppler (`pdftoppm`, bundled in the Docker image) and sends each page to the model. Configure with `OCR_PDF_RENDER_ENABLED` (default `yes`), `OCR_PDF_RENDER_MAX_PAGES` (default `10`, each page is one model request), and `OCR_PDF_RENDER_DPI` (default `150`)
 - On bare-metal installs, install `poppler-utils` to enable multi-page PDF OCR; without it the app falls back to OCRing only the first-page thumbnail
 - The Mistral OCR provider processes PDFs natively and ignores the `OCR_PDF_RENDER_*` settings
+- The OCR queue can be worked through automatically instead of pressing **Process All Pending**: enable `OCR_AUTO_PROCESS_ENABLED` (default `no`) and configure `OCR_AUTO_PROCESS_INTERVAL` (cron, default `*/15 * * * *`), `OCR_AUTO_PROCESS_BATCH_SIZE` (documents per run, default `10`) and `OCR_AUTO_ANALYZE` (run AI analysis right after OCR, default `yes`). Runs are skipped while a document scan is active or while Paperless-ngx is unreachable, so queued documents are never marked as failed because of an outage
 
 ### Container Images
 
-| Image Tag                               | Size        |
-| --------------------------------------- | ----------- |
+| Image Tag                         | Size        |
+| --------------------------------- | ----------- |
 | `admonstrator/zettelrobbe:latest` | ~500–700 MB |
 
 **Docker Hub:** [admonstrator/zettelrobbe](https://hub.docker.com/r/admonstrator/zettelrobbe)

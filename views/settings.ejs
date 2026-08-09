@@ -749,6 +749,32 @@
                                         </div>
                                     </div>
                                 </div>
+                                <div id="ocrAutoProcessContainer" class="space-y-4">
+                                    <%- include('partials/settings-switch', {
+                                        id: 'ocrAutoProcessEnabled',
+                                        label: 'Process OCR Queue Automatically',
+                                        checked: (config.OCR_AUTO_PROCESS_ENABLED || 'no') === 'yes',
+                                        hint: 'ENV: OCR_AUTO_PROCESS_ENABLED &middot; Work through queued documents on a schedule instead of pressing "Process All Pending" on the OCR page &middot; Restart required'
+                                    }) %>
+                                    <div id="ocrAutoProcessOptionsContainer" class="space-y-4 <%= (config.OCR_AUTO_PROCESS_ENABLED || 'no') === 'yes' ? '' : 'hidden' %>">
+                                        <div class="space-y-2">
+                                            <label for="ocrAutoProcessInterval" class="text-sm font-medium">OCR Processing Interval (Cron)</label>
+                                            <input type="text" id="ocrAutoProcessInterval" name="ocrAutoProcessInterval" value="<%= config.OCR_AUTO_PROCESS_INTERVAL || '*/15 * * * *' %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="*/15 * * * *">
+                                            <p class="text-xs text-gray-500">ENV: OCR_AUTO_PROCESS_INTERVAL &middot; Default: every 15 minutes &middot; Runs are skipped while a document scan is active &middot; Restart required</p>
+                                        </div>
+                                        <div class="space-y-2">
+                                            <label for="ocrAutoProcessBatchSize" class="text-sm font-medium">Documents per Run</label>
+                                            <input type="number" id="ocrAutoProcessBatchSize" name="ocrAutoProcessBatchSize" min="1" max="100" step="1" value="<%= config.OCR_AUTO_PROCESS_BATCH_SIZE || 10 %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                            <p class="text-xs text-gray-500">ENV: OCR_AUTO_PROCESS_BATCH_SIZE &middot; Caps how many queued documents one run handles; the rest follow at the next interval (1&ndash;100) &middot; Restart required</p>
+                                        </div>
+                                        <%- include('partials/settings-switch', {
+                                            id: 'ocrAutoAnalyze',
+                                            label: 'AI Analysis After OCR',
+                                            checked: (config.OCR_AUTO_ANALYZE || 'yes') === 'yes',
+                                            hint: 'ENV: OCR_AUTO_ANALYZE &middot; Analyse each document right after OCR. Keep this on: when Paperless-ngx rejects the content write-back the OCR text only exists locally, where a regular scan would never see it &middot; Restart required'
+                                        }) %>
+                                    </div>
+                                </div>
                                 <div class="space-y-2">
                                     <label for="ocrValidationTimeout" class="text-sm font-medium">OCR Timeout</label>
                                     <div class="flex items-center gap-3">

@@ -1125,6 +1125,22 @@ function initializeFormHandlers() {
     });
   }
 
+  // Schedule and batch size only matter while automatic processing is ON.
+  const ocrAutoProcessValueInput = document.getElementById(
+    'ocrAutoProcessEnabled'
+  );
+  const ocrAutoProcessOptionsContainer = document.getElementById(
+    'ocrAutoProcessOptionsContainer'
+  );
+  if (ocrAutoProcessValueInput && ocrAutoProcessOptionsContainer) {
+    ocrAutoProcessValueInput.addEventListener('change', () => {
+      ocrAutoProcessOptionsContainer.classList.toggle(
+        'hidden',
+        ocrAutoProcessValueInput.value !== 'yes'
+      );
+    });
+  }
+
   const quickstartUrlInput = document.getElementById('settingsQuickstartUrl');
   const quickstartApiKeyInput = document.getElementById(
     'settingsQuickstartApiKey'
@@ -3079,6 +3095,19 @@ function initializeRuntimeOverridePills() {
     { selector: '#ocrPdfRenderEnabled', envKey: 'OCR_PDF_RENDER_ENABLED' },
     { selector: '#ocrPdfRenderMaxPages', envKey: 'OCR_PDF_RENDER_MAX_PAGES' },
     { selector: '#ocrPdfRenderDpi', envKey: 'OCR_PDF_RENDER_DPI' },
+    {
+      selector: '#ocrAutoProcessEnabled',
+      envKey: 'OCR_AUTO_PROCESS_ENABLED',
+    },
+    {
+      selector: '#ocrAutoProcessInterval',
+      envKey: 'OCR_AUTO_PROCESS_INTERVAL',
+    },
+    {
+      selector: '#ocrAutoProcessBatchSize',
+      envKey: 'OCR_AUTO_PROCESS_BATCH_SIZE',
+    },
+    { selector: '#ocrAutoAnalyze', envKey: 'OCR_AUTO_ANALYZE' },
     {
       selector: '#ocrValidationTimeout',
       envKey: 'SETUP_OCR_VALIDATION_TIMEOUT_MS',
