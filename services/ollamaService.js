@@ -181,10 +181,11 @@ class OllamaService {
       const systemPrompt = this._generateSystemPrompt(customFieldsStr);
 
       // Calculate context window size
+      const responseTokens = Number(config.responseTokens);
       const promptTokenCount = this._calculatePromptTokenCount(prompt);
       const numCtx = this._calculateNumCtx(
         promptTokenCount,
-        Number(config.responseTokens)
+        responseTokens
       );
 
       console.log(
@@ -672,8 +673,8 @@ class OllamaService {
         top_p: 0.9,
         repeat_penalty: 1.1,
         top_k: 7,
-        num_predict: 256,
-        num_ctx: numCtx,
+        num_predict: responseTokens,
+        num_ctx: numCtx
       },
     };
 
