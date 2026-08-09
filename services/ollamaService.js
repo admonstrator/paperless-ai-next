@@ -674,7 +674,7 @@ class OllamaService {
         repeat_penalty: 1.1,
         top_k: 7,
         num_predict: responseTokens,
-        num_ctx: numCtx
+        num_ctx: numCtx,
       },
     };
 
