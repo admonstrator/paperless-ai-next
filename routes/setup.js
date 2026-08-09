@@ -10,6 +10,7 @@ const azureService = require('../services/azureService.js');
 const documentModel = require('../models/document.js');
 const AIServiceFactory = require('../services/aiServiceFactory');
 const configFile = require('../config/config.js');
+const changelog = require('../config/changelog.js');
 const documentsService = require('../services/documentsService.js');
 const fs = require('fs').promises;
 const path = require('path');
@@ -6587,6 +6588,7 @@ router.get('/settings', async (req, res) => {
     lockedEnvDetails,
     aiProviderPresets,
     mfaSettings,
+    changelogReleases: changelog.releases,
     success: isConfigured
       ? 'The application is already configured. You can update the configuration below.'
       : undefined,
@@ -9982,7 +9984,6 @@ router.get('/api/changelog/status', isAuthenticated, async (req, res) => {
       return res.json({ show: false });
     }
 
-    const changelog = require('../config/changelog');
     const username = req.user && req.user.username;
     if (!username) {
       return res.json({ show: false });

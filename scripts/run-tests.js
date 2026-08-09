@@ -36,6 +36,7 @@ const TESTS = {
   'failed-reset-all': 'test-failed-reset-all.js',
   'ignore-tags-filter': 'test-ignore-tags-filter.js',
   'injected-env-priority': 'test-injected-env-priority.js',
+  'changelog-releases': 'test-changelog-releases.js',
   'log-level-config': 'test-log-level-config.js',
   'log-level-logger': 'test-log-level-logger.js',
   'native-install-log-paths': 'test-native-install-log-paths.js',
@@ -118,6 +119,7 @@ const AREAS = {
     'setupservice-ocr-validation',
   ],
   observability: [
+    'changelog-releases',
     'log-level-config',
     'log-level-logger',
     'native-install-log-paths',

@@ -39,6 +39,12 @@ class SettingsTabsManager {
       content.classList.toggle('hidden', !isActive);
     });
 
+    // The changelog tab is read-only, so the save row would be misleading.
+    const saveRow = document.getElementById('settingsSaveRow');
+    if (saveRow) {
+      saveRow.classList.toggle('hidden', tabId === 'changelog-tab');
+    }
+
     refreshSettingsHints();
   }
 }
