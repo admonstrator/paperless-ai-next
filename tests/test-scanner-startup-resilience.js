@@ -135,7 +135,7 @@ test('A successful run resets the failure counter', () => {
   assert.strictEqual(health.isDegraded(), false);
 });
 
-test('Connectivity is only reachable when the token is accepted too', () => {
+test('Connectivity keeps "reachable" and "authorized" apart', () => {
   const health = new ScanHealthService();
 
   health.recordConnectivity({
@@ -144,11 +144,20 @@ test('Connectivity is only reachable when the token is accepted too', () => {
     status: 403,
     error: 'Request failed with status code 403',
   });
+
+  const rejected = health.getState().paperless;
   assert.strictEqual(
-    health.getState().paperless.reachable,
-    false,
-    'A rejected token makes Paperless unusable even though the host answered'
+    rejected.reachable,
+    true,
+    'The host answered — reporting this as "not reachable" sends users hunting the wrong problem'
   );
+  assert.strictEqual(rejected.authorized, false);
+  assert.strictEqual(
+    rejected.usable,
+    false,
+    'A rejected token still makes Paperless unusable for the scan loop'
+  );
+  assert.strictEqual(rejected.status, 403);
 
   health.recordConnectivity({
     reachable: true,
@@ -156,7 +165,58 @@ test('Connectivity is only reachable when the token is accepted too', () => {
     status: 200,
     error: null,
   });
-  assert.strictEqual(health.getState().paperless.reachable, true);
+
+  const working = health.getState().paperless;
+  assert.strictEqual(working.reachable, true);
+  assert.strictEqual(working.authorized, true);
+  assert.strictEqual(working.usable, true);
+});
+
+test('An outage is reported as unreachable and unusable', () => {
+  const health = new ScanHealthService();
+  health.recordConnectivity({
+    reachable: false,
+    authorized: false,
+    status: null,
+    error: 'connect ECONNREFUSED 172.18.0.2:8000',
+  });
+
+  const state = health.getState().paperless;
+  assert.strictEqual(state.reachable, false);
+  assert.strictEqual(state.usable, false);
+  assert.ok(state.lastCheckedAt, 'Every probe must be timestamped');
+});
+
+test('clearConnectivity() resets to "never probed"', () => {
+  const health = new ScanHealthService();
+  health.recordConnectivity({ reachable: false, authorized: false });
+
+  health.clearConnectivity();
+
+  const state = health.getState().paperless;
+  assert.strictEqual(
+    state.usable,
+    null,
+    'An unconfigured setup must not look like an outage'
+  );
+  assert.strictEqual(state.reachable, null);
+  assert.strictEqual(state.lastCheckedAt, null);
+});
+
+test('Connectivity alone never changes the failure counter', () => {
+  const health = new ScanHealthService();
+  health.markArmed('*/30 * * * *');
+
+  for (let i = 0; i < 5; i++) {
+    health.recordConnectivity({ reachable: false, authorized: false });
+  }
+
+  assert.strictEqual(
+    health.getState().consecutiveFailures,
+    0,
+    'The passive probe must not push /health into 503 on its own'
+  );
+  assert.strictEqual(health.isDegraded(), false);
 });
 
 test('getState() returns a copy that cannot mutate internal state', () => {

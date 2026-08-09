@@ -659,6 +659,7 @@
 }
 
 .theme-alert-success,
+.theme-alert-warning,
 .theme-alert-error {
   border-width: 1px;
   border-style: solid;
@@ -670,10 +671,22 @@
   color: #065f46;
 }
 
+.theme-alert-warning {
+  background-color: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
 .theme-alert-error {
   background-color: #fef2f2;
   border-color: #fecaca;
   color: #991b1b;
+}
+
+[data-theme='dark'] .theme-alert-warning {
+  background-color: rgba(120, 53, 15, 0.3);
+  border-color: rgba(251, 191, 36, 0.35);
+  color: #fcd34d;
 }
 
 [data-theme='dark'] .theme-alert-success {

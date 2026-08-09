@@ -352,7 +352,7 @@ startupLog(logLevel, 'info', 'Configuration loaded:', {
 });
 
 module.exports = {
-  PAPERLESS_AI_VERSION: 'v2026.08.01',
+  PAPERLESS_AI_VERSION: 'v2026.08.02',
   CONFIGURED: false,
   configSourceMode: CONFIG_SOURCE_MODE,
   getApiKey,
@@ -489,6 +489,14 @@ module.exports = {
     strict: parseEnvBoolean(process.env.HEALTHCHECK_STRICT, 'yes'),
     scanFailureThreshold: parseInt(
       process.env.HEALTH_SCAN_FAILURE_THRESHOLD || '3',
+      10
+    ),
+    // Standalone Paperless-ngx connectivity probe, independent of the scan
+    // loop. Without it the dashboard could only learn about an outage on the
+    // next scan tick — up to a full SCAN_INTERVAL late, or never when
+    // DISABLE_AUTOMATIC_PROCESSING=yes. Set to 0 to switch the probe off.
+    paperlessProbeIntervalSeconds: parseInt(
+      process.env.PAPERLESS_PROBE_INTERVAL_SECONDS || '60',
       10
     ),
   },

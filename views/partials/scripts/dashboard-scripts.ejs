@@ -384,15 +384,41 @@
         return describeElapsed(Math.floor((new Date() - date) / 1000));
     }
 
-    function buildScannerHealthMessage(scanner, paperless) {
-        if (!scanner.armed) {
-            return 'The scan scheduler is not armed. Check the server logs and restart the application.';
+    // A probe that reached the host but was rejected is a credentials problem,
+    // not an outage — saying "not reachable" would send users hunting the wrong
+    // thing. `usable` is false in both cases.
+    function describePaperlessProblem(paperless) {
+        const detail = paperless.error ? ` (${paperless.error})` : '';
+        const checked = paperless.lastCheckedAt
+            ? ` Last checked ${formatIsoTimeAgo(paperless.lastCheckedAt)}.`
+            : '';
+
+        if (paperless.reachable && paperless.authorized === false) {
+            return `Paperless-ngx rejected the API credentials${detail}. Check PAPERLESS_API_TOKEN in the settings.${checked}`;
         }
 
+        return `Paperless-ngx is not reachable${detail}.${checked}`;
+    }
+
+    function buildScannerHealthMessage(scanner, paperless, paperlessDown) {
         const parts = [];
-        if (paperless && paperless.reachable === false) {
-            parts.push(`Paperless-ngx is not reachable${paperless.error ? ` (${paperless.error})` : ''}.`);
-        } else if (scanner.lastError) {
+
+        if (paperlessDown) {
+            parts.push(describePaperlessProblem(paperless));
+        }
+
+        // Everything below describes the scan loop, which is only worth
+        // reporting once it has actually degraded.
+        if (!scanner || !scanner.degraded) {
+            return parts.join(' ');
+        }
+
+        if (!scanner.armed) {
+            parts.push('The scan scheduler is not armed. Check the server logs and restart the application.');
+            return parts.join(' ');
+        }
+
+        if (!paperlessDown && scanner.lastError) {
             parts.push(`Last scan error: ${scanner.lastError}.`);
         }
 
@@ -412,14 +438,30 @@
         }
 
         const scanner = data.scanner;
-        if (!scanner || !scanner.degraded) {
+        const paperless = data.paperless;
+        // Warn on the very first failed probe. Waiting for `degraded` means
+        // waiting for `failureThreshold` scan runs — up to hours with the
+        // default interval, and forever when automatic processing is off.
+        const paperlessDown = Boolean(paperless) && paperless.usable === false;
+        const degraded = Boolean(scanner && scanner.degraded);
+
+        if (!paperlessDown && !degraded) {
             banner.classList.add('hidden');
             return;
         }
 
+        // Paperless being down without a degraded scanner is still recoverable
+        // on its own, so it reads as a warning rather than a hard failure.
+        banner.classList.toggle('theme-alert-error', degraded);
+        banner.classList.toggle('theme-alert-warning', !degraded);
+
+        document.getElementById('scannerHealthTitle').textContent = degraded
+            ? 'Document scanning is not working'
+            : 'Paperless-ngx connection problem';
+
         // textContent only — the message carries server-side error strings.
         document.getElementById('scannerHealthMessage').textContent =
-            buildScannerHealthMessage(scanner, data.paperless);
+            buildScannerHealthMessage(scanner, paperless, paperlessDown);
         banner.classList.remove('hidden');
     }
 

@@ -7656,6 +7656,9 @@ function buildScannerHealthSnapshot() {
     },
     paperless: {
       reachable: scanner.paperless.reachable,
+      authorized: scanner.paperless.authorized,
+      usable: scanner.paperless.usable,
+      status: scanner.paperless.status,
       lastCheckedAt: scanner.paperless.lastCheckedAt,
       error: scanner.paperless.error,
     },
