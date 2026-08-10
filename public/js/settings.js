@@ -3169,14 +3169,9 @@ function initializeRuntimeOverridePills() {
     }
 
     if (lockedEnvKeys.has(envKey)) {
+      // The :disabled styling in the framework carries the visual state.
       fieldElement.disabled = true;
       fieldElement.setAttribute('aria-disabled', 'true');
-      fieldElement.classList.add(
-        'bg-gray-100',
-        'text-gray-500',
-        'cursor-not-allowed',
-        'opacity-70'
-      );
 
       if (!targetLabel.querySelector('.locked-pill')) {
         const lockedPill = document.createElement('span');
@@ -3250,13 +3245,6 @@ function initializeCustomFieldsManagement() {
       handle: '.cursor-move',
       onEnd: updateCustomFieldsJson,
     });
-
-    // Add initial theme classes based on current theme
-    const isDarkMode =
-      document.documentElement.getAttribute('data-theme') === 'dark';
-    if (isDarkMode) {
-      updateThemeClasses(true);
-    }
   }
 
   // Initialize type selection
@@ -3278,21 +3266,8 @@ function initializeCustomFieldsManagement() {
     });
   }
 
-  // Observer for theme changes
-  const observer = new MutationObserver(function (mutations) {
-    mutations.forEach(function (mutation) {
-      if (mutation.attributeName === 'data-theme') {
-        const isDark =
-          document.documentElement.getAttribute('data-theme') === 'dark';
-        updateThemeClasses(isDark);
-      }
-    });
-  });
-
-  observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['data-theme'],
-  });
+  // No theme observer here: the framework themes everything through CSS
+  // variables bound to data-theme, so nothing has to be restyled from JS.
 }
 
 class MfaSettingsManager {
@@ -3872,44 +3847,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initializeCustomFieldsManagement();
   new MfaSettingsManager();
 });
-
-function updateThemeClasses(isDark) {
-  // Update custom field items
-  const items = document.querySelectorAll('.custom-field-item');
-  items.forEach((item) => {
-    // Background and border
-    item.classList.toggle('bg-white', !isDark);
-    item.classList.toggle('bg-gray-800', isDark);
-    item.classList.toggle('border-gray-200', !isDark);
-    item.classList.toggle('border-gray-700', isDark);
-
-    // Text colors
-    const title = item.querySelector('p.font-medium');
-    if (title) {
-      title.classList.toggle('text-gray-900', !isDark);
-      title.classList.toggle('text-gray-100', isDark);
-    }
-
-    const subtitle = item.querySelector('p.text-sm');
-    if (subtitle) {
-      subtitle.classList.toggle('text-gray-500', !isDark);
-      subtitle.classList.toggle('text-gray-400', isDark);
-    }
-  });
-
-  // Update form inputs and selects
-  const inputs = document.querySelectorAll(
-    'input:not([type="hidden"]), select'
-  );
-  inputs.forEach((input) => {
-    input.classList.toggle('bg-white', !isDark);
-    input.classList.toggle('bg-gray-800', isDark);
-    input.classList.toggle('text-gray-900', !isDark);
-    input.classList.toggle('text-gray-100', isDark);
-    input.classList.toggle('border-gray-300', !isDark);
-    input.classList.toggle('border-gray-600', isDark);
-  });
-}
 
 function toggleCurrencySelect() {
   const fieldType = document.getElementById('newFieldType').value;

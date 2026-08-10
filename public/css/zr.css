@@ -1097,6 +1097,16 @@ a.zr-list__item:hover {
 .zr-input::placeholder {
   color: var(--zr-text-faint);
 }
+/* Fields the operator pinned through an environment variable are disabled by
+   the settings form; without this they were indistinguishable from editable
+   ones once the utility classes that used to mark them disappeared. */
+.zr-input:disabled,
+.zr-select:disabled,
+.zr-textarea:disabled {
+  background: var(--zr-surface-2);
+  color: var(--zr-text-faint);
+  cursor: not-allowed;
+}
 .zr-inputgroup {
   display: flex;
   gap: var(--zr-2);
@@ -1187,12 +1197,65 @@ a.zr-list__item:hover {
   background: var(--zr-brand-soft);
   color: var(--zr-brand-text);
 }
+/* A tile holding a toggle follows the iOS/Android list pattern: label on the
+   leading edge, switch on the trailing one. */
+.zr-checktile:has(.zr-toggle) {
+  justify-content: space-between;
+}
+.zr-checktile > .zr-toggle {
+  order: 2;
+}
 .zr-check {
   width: 16px;
   height: 16px;
   accent-color: var(--zr-brand);
   flex: none;
   cursor: pointer;
+}
+
+/* Switch rendered from the checkbox itself — same look as .zr-switch, but it
+   needs no track/thumb spans, so a plain checkbox becomes a switch by swapping
+   one class. Used for settings that turn something on or off; checkboxes that
+   select rows keep .zr-check, where a tick is the expected control. */
+.zr-toggle {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  width: 34px;
+  height: 19px;
+  flex: none;
+  margin: 0;
+  border: 0;
+  border-radius: var(--zr-r-full);
+  background: var(--zr-line-strong);
+  cursor: pointer;
+  transition: background var(--zr-dur) var(--zr-ease);
+}
+.zr-toggle::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: var(--zr-shadow-sm);
+  transition: transform var(--zr-dur) var(--zr-ease);
+}
+.zr-toggle:checked {
+  background: var(--zr-brand);
+}
+.zr-toggle:checked::after {
+  transform: translateX(15px);
+}
+.zr-toggle:focus-visible {
+  outline: 2px solid var(--zr-focus);
+  outline-offset: 2px;
+}
+.zr-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* masked API key field */
