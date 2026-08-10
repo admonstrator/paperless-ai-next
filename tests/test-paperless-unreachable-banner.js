@@ -8,8 +8,8 @@
  * the scanner is never degraded by definition.
  *
  * Covers:
- * 1. The banner logic from views/partials/scripts/dashboard-scripts.ejs,
- *    executed for real against a minimal DOM stub
+ * 1. The banner logic from public/js/modules/scanner-health.js, executed for
+ *    real against a minimal DOM stub
  * 2. The /api/processing-status payload carrying the fields it needs
  * 3. server.js arming the standalone connectivity probe
  */
@@ -37,31 +37,22 @@ function test(name, fn) {
 }
 
 // ──────────────────────────────────────────────────────────────────────────────
-// Load the real banner code from the EJS partial
+// Load the real banner code from the shipped module
 // ──────────────────────────────────────────────────────────────────────────────
 
-const partialPath = path.join(
+// The module is browser-facing ESM; strip the export keywords so it can run in
+// a VM without a module loader. Testing the shipped source beats
+// re-implementing the logic here.
+const modulePath = path.join(
   process.cwd(),
-  'views',
-  'partials',
-  'scripts',
-  'dashboard-scripts.ejs'
+  'public',
+  'js',
+  'modules',
+  'scanner-health.js'
 );
-const partialSource = fs.readFileSync(partialPath, 'utf8');
-
-// The status <script> block is plain JavaScript (no EJS tags), so it can run in
-// a VM. Testing the shipped source beats re-implementing the logic here.
-const blockStart = partialSource.indexOf('function describeElapsed');
-const blockEnd = partialSource.indexOf('</script>', blockStart);
-assert.ok(
-  blockStart > -1 && blockEnd > blockStart,
-  'Expected the processing-status script block in dashboard-scripts.ejs'
-);
-const bannerSource = partialSource.slice(blockStart, blockEnd);
-assert.ok(
-  !bannerSource.includes('<%'),
-  'The block must stay free of EJS tags to remain testable'
-);
+const bannerSource = fs
+  .readFileSync(modulePath, 'utf8')
+  .replace(/^export /gm, '');
 
 function createElement() {
   const classes = new Set();
@@ -95,7 +86,7 @@ function renderBanner(payload) {
     scannerHealthTitle: createElement(),
     scannerHealthMessage: createElement(),
   };
-  elements.scannerHealthBanner.classList.add('theme-alert-error');
+  elements.scannerHealthBanner.classList.add('zr-alert--danger');
   elements.scannerHealthBanner.classList.add('hidden');
 
   const sandbox = {
@@ -113,7 +104,14 @@ function renderBanner(payload) {
   vm.createContext(sandbox);
   vm.runInContext(bannerSource, sandbox);
 
-  sandbox.updateScannerHealthBanner(payload);
+  sandbox.updateScannerHealthBanner(
+    {
+      banner: elements.scannerHealthBanner,
+      title: elements.scannerHealthTitle,
+      message: elements.scannerHealthMessage,
+    },
+    payload
+  );
 
   return {
     banner: elements.scannerHealthBanner,
@@ -167,11 +165,11 @@ test('An outage warns on the first failed probe, before degraded', () => {
   assert.match(message.textContent, /ECONNREFUSED/);
   assert.match(title.textContent, /connection problem/i);
   assert.strictEqual(
-    banner.classList.contains('theme-alert-warning'),
+    banner.classList.contains('zr-alert--warn'),
     true,
     'A recoverable outage is a warning, not a hard failure'
   );
-  assert.strictEqual(banner.classList.contains('theme-alert-error'), false);
+  assert.strictEqual(banner.classList.contains('zr-alert--danger'), false);
 });
 
 test('A rejected token is reported as a credentials problem', () => {
@@ -241,8 +239,8 @@ test('A degraded scanner escalates to the error style', () => {
     },
   });
 
-  assert.strictEqual(banner.classList.contains('theme-alert-error'), true);
-  assert.strictEqual(banner.classList.contains('theme-alert-warning'), false);
+  assert.strictEqual(banner.classList.contains('zr-alert--danger'), true);
+  assert.strictEqual(banner.classList.contains('zr-alert--warn'), false);
   assert.match(title.textContent, /not working/i);
   assert.match(message.textContent, /3 consecutive failed scans/);
 });

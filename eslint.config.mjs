@@ -17,6 +17,14 @@ export default [
       },
     },
   },
+  {
+    // Browser assets are native ES modules loaded with <script type="module">.
+    files: ['public/js/**/*.js'],
+    languageOptions: {
+      sourceType: 'module',
+      globals: globals.browser,
+    },
+  },
   pluginJs.configs.recommended,
   prettier, // disables formatting rules that would conflict with Prettier
 ];

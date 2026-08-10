@@ -2,16 +2,14 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
 <%- include('partials/shell/head-start', { pageTitle: 'OCR Queue - Zettelrobbe' }) %>
-    <link rel="stylesheet" href="/vendor/datatables/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="/css/ocr.css">
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', {
     version: typeof version !== 'undefined' ? version : '',
     chatEnabled: typeof chatEnabled !== 'undefined' ? chatEnabled : false
 }) %>
 
-            <div class="content-wrapper">
-                <div class="content-header">
+            <div>
+                <div class="zr-viewhead">
                     <div class="content-header-main min-w-0">
                         <h1 class="content-title truncate">OCR Queue</h1>
                         <p class="content-subtitle">
@@ -21,18 +19,18 @@
                     <% if (ocrEnabled) { %>
                     <div class="content-header-actions ocr-header-badges">
                         <!-- Stats badges -->
-                        <span id="statPending" class="status-badge status-pending"><i class="fas fa-hourglass-half"></i> <span id="statPendingCount">…</span> pending</span>
-                        <span id="statDone" class="status-badge status-done"><i class="fas fa-check"></i> <span id="statDoneCount">…</span> done</span>
-                        <span id="statFailed" class="status-badge status-failed"><i class="fas fa-times"></i> <span id="statFailedCount">…</span> failed</span>
+                        <span id="statPending" class="status-badge status-pending"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-clock"/></svg> <span id="statPendingCount">…</span> pending</span>
+                        <span id="statDone" class="status-badge status-done"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check"/></svg> <span id="statDoneCount">…</span> done</span>
+                        <span id="statFailed" class="status-badge status-failed"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg> <span id="statFailedCount">…</span> failed</span>
                     </div>
                     <% } %>
                 </div>
 
                 <% if (!ocrEnabled) { %>
                 <!-- Feature disabled notice -->
-                <div class="material-card mb-6">
+                <div class="zr-module mb-6">
                     <div class="disabled-overlay">
-                        <i class="fas fa-eye-slash text-5xl text-gray-400 mb-4"></i>
+                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>
                         <h2 class="text-xl font-semibold mb-2">OCR is not enabled</h2>
                         <p class="text-gray-500 mb-4 max-w-lg mx-auto">
                             Enable OCR in settings and configure your OCR provider. You can optionally set these values in <strong>data/.env</strong> and restart the service:
@@ -50,7 +48,7 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                 <% if (ocrEnabled) { %>
 
                 <!-- Toolbar -->
-                <div class="material-card mb-4 p-4">
+                <div class="zr-module mb-4 p-4">
                     <div class="app-toolbar app-toolbar--triple">
                     <!-- Manual add -->
                     <div class="app-toolbar-main">
@@ -76,13 +74,10 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
 
                     <div class="app-toolbar-controls">
                         <!-- Auto-analyze toggle -->
-                        <label class="ocr-toolbar-toggle flex items-center gap-2 cursor-pointer select-none">
-                            <div class="relative">
-                                <input type="checkbox" id="autoAnalyzeToggle" class="sr-only peer">
-                                <div class="w-10 h-5 bg-gray-300 peer-checked:bg-blue-500 rounded-full transition-colors"></div>
-                                <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
-                            </div>
-                            <span>AI analysis after OCR</span>
+                        <label class="zr-switch">
+                            <input type="checkbox" id="autoAnalyzeToggle">
+                            <span class="zr-switch__track"><span class="zr-switch__thumb"></span></span>
+                            <span class="zr-switch__text">AI analysis after OCR</span>
                         </label>
 
                         <!-- Status filter -->
@@ -98,16 +93,16 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                     <div class="app-toolbar-actions">
                         <!-- Process all button -->
                         <button id="processAllBtn"
-                                class="toolbar-btn toolbar-btn--success toolbar-btn--sm"
+                                class="zr-btn"
                                 title="Process all pending items">
-                            <i class="fas fa-play"></i> Process All Pending
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process All Pending
                         </button>
                     </div>
                     </div>
                 </div>
 
                 <!-- Queue Table -->
-                <div class="material-card">
+                <div class="zr-module">
                     <div class="overflow-x-auto">
                         <table id="ocrTable" class="w-full">
                             <thead>
@@ -123,7 +118,7 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                             <tbody id="ocrTableBody">
                                 <tr>
                                     <td colspan="6" class="text-center py-8 text-gray-400">
-                                        <i class="fas fa-spinner fa-spin mr-2"></i> Loading queue…
+                                        <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Loading queue…
                                     </td>
                                 </tr>
                             </tbody>
@@ -131,13 +126,13 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                     </div>
                     <!-- Pagination -->
                     <div class="flex justify-between items-center mt-4 px-4 pb-4 flex-wrap gap-2">
-                        <span id="tableInfo" class="text-sm text-gray-500"></span>
-                        <div class="flex gap-2">
-                            <button id="prevPageBtn" class="toolbar-btn toolbar-btn--ghost toolbar-btn--sm" disabled>
-                                <i class="fas fa-chevron-left"></i> Prev
+                        <span id="tableInfo" class="zr-sm zr-faint"></span>
+                        <div class="zr-inputgroup">
+                            <button id="prevPageBtn" class="zr-btn" disabled>
+                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-chevron-left"/></svg> Prev
                             </button>
-                            <button id="nextPageBtn" class="toolbar-btn toolbar-btn--ghost toolbar-btn--sm" disabled>
-                                Next <i class="fas fa-chevron-right"></i>
+                            <button id="nextPageBtn" class="zr-btn" disabled>
+                                Next <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
                             </button>
                         </div>
                     </div>
@@ -152,8 +147,8 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
         <div id="progressBox">
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-semibold text-lg" id="progressTitle">Processing…</h3>
-                <button id="progressCloseBtn" class="toolbar-btn toolbar-btn--ghost toolbar-btn--sm" style="display:none;" aria-label="Close progress overlay">
-                    <i class="fas fa-times text-xl"></i>
+                <button id="progressCloseBtn" class="zr-btn" style="display:none;" aria-label="Close progress overlay">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
                 </button>
             </div>
 
@@ -165,7 +160,7 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
             <div id="progressLog"></div>
 
             <div class="mt-4 flex justify-end">
-                <button id="progressDoneBtn" class="toolbar-btn toolbar-btn--primary" style="display:none;">
+                <button id="progressDoneBtn" class="zr-btn zr-btn--primary" style="display:none;">
                     Close
                 </button>
             </div>
@@ -175,7 +170,7 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
     <!-- Toast -->
     <div id="toastNotification" class="fixed bottom-6 right-6 z-50 hidden" style="z-index:9999;">
         <div id="toastInner" class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
-            <i id="toastIcon" class="fas fa-check-circle"></i>
+            <svg class="zr-icon" id="toastIcon" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg>
             <span id="toastMessage">Done</span>
         </div>
     </div>
@@ -183,5 +178,4 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
     <%- include('partials/scripts/ocr-scripts') %>
     <script src="/js/document-omnibox.js"></script>
     <script src="/js/ocr.js"></script>
-    <%- include('partials/shell/footer') %>
     <%- include('partials/shell/body-close') %>

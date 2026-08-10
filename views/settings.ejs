@@ -1,162 +1,151 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
-<%- include('partials/shell/head-start', { pageTitle: 'Zettelrobbe Dashboard' }) %>
-    <link rel="stylesheet" href="/css/changelog.css">
-    <script src="/vendor/chart/chart.min.js"></script>
+<html lang="en" data-theme="<%= theme || 'light' %>">
+<%- include('partials/shell/head-start', { pageTitle: 'Settings' }) %>
     <script src="/vendor/popper/popper.min.js"></script>
     <script src="/vendor/tippy/tippy-bundle.umd.min.js"></script>
-    <script src="/vendor/sweetalert2/sweetalert2.all.min.js"></script>
     <script src="/vendor/sortable/Sortable.min.js"></script>
+    <script src="/js/dialogs.js"></script>
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', {
-    version: typeof version !== 'undefined' ? version : '',
-    chatEnabled: typeof chatEnabled !== 'undefined' ? chatEnabled : false
+    pageTitle: 'Settings',
+    version: typeof version !== 'undefined' ? version : ''
 }) %>
-            <div class="content-wrapper">
-                <div class="content-header">
-                    <div class="content-header-main">
-                        <h2 class="content-title">Configuration</h2>
-                    </div>
-                    <div class="content-header-actions relative">API-KEY:
-                        <div id="apiKeyContainer" 
-                             class="relative w-48 px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100 rounded cursor-pointer select-none filter blur-sm hover:blur-none transition-all duration-200 truncate"
-                            data-api-key=""
-                            title="Click to copy API key">
-                            Loading...
-                        </div>
-                        <button id="regenerateBtn" 
-                                class="toolbar-btn toolbar-btn--primary flex items-center space-x-2">
-                            <i class="fas fa-sync-alt" id="regenerateIcon"></i>
-                            <span>Regenerate</span>
-                        </button>
-                            <div id="copyNotification" 
-                                class="absolute right-0 top-0 mt-12 w-64 theme-alert-success border rounded-lg p-3 hidden">
-                            <div class="flex items-center">
-                                <i class="fas fa-check-circle mr-2"></i>
-                                <span>API key copied to clipboard!</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Main Form Card -->
-                <div class="material-card">
-                    <% if (success || settingsError) { %>
-                        <div class="mb-6 space-y-4">
-                            <% if (success) { %>
-                                <div class="flex gap-2 p-4 theme-alert-success border rounded-lg">
-                                    <i class="fas fa-check-circle mt-1"></i>
-                                    <p><%= success %></p>
-                                </div>
-                            <% } %>
-                            
-                            <% if (settingsError) { %>
-                                <div class="flex gap-2 p-4 theme-alert-error border rounded-lg">
-                                    <i class="fas fa-exclamation-triangle mt-1"></i>
-                                    <p><%= settingsError %></p>
-                                </div>
-                            <% } %>
+            <div class="zr-settings" data-module="settings-form">
+                <aside class="zr-only-desktop">
+                    <nav class="zr-sectionnav" data-module="section-nav">
+                        <a href="#system-tab" aria-current="true">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-server"/></svg>
+                            System
+                        </a>
+                        <a href="#ai-tab">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg>
+                            AI
+                        </a>
+                        <a href="#ocr-tab">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>
+                            OCR
+                        </a>
+                        <a href="#mfa-tab">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg>
+                            Security
+                        </a>
+                        <a href="#troubleshooting-tab">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-wrench"/></svg>
+                            Maintenance
+                        </a>
+                        <a href="#changelog-tab">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-zap"/></svg>
+                            Changelog
+                        </a>
+                    </nav>
+                </aside>
+
+                <nav class="zr-sectionnav zr-only-mobile">
+                    <a href="#system-tab" aria-current="true">System</a>
+                    <a href="#ai-tab">AI</a>
+                    <a href="#ocr-tab">OCR</a>
+                    <a href="#mfa-tab">Security</a>
+                    <a href="#troubleshooting-tab">Maintenance</a>
+                    <a href="#changelog-tab">Changelog</a>
+                </nav>
+
+                <div class="zr-col zr-col--loose">
+                    <% if (success) { %>
+                        <div class="zr-alert zr-alert--ok">
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg>
+                            <div class="zr-alert__body"><p><%= success %></p></div>
                         </div>
                     <% } %>
-                    <form id="setupForm" class="space-y-8">
-                        <div class="settings-env-notice rounded-lg px-4 py-3 text-sm">
-                            All settings map to runtime Docker environment variables. Every field below shows the linked ENV key and if a restart is required. Current values are preloaded where safe.
+                    <% if (settingsError) { %>
+                        <div class="zr-alert zr-alert--danger">
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
+                            <div class="zr-alert__body"><p><%= settingsError %></p></div>
                         </div>
-                        <div class="tab-navigation border-b border-gray-200">
-                            <nav class="flex flex-wrap gap-2" role="tablist">
-                                <button type="button" class="settings-tab-button active flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-blue-500" data-tab="system-tab">
-                                    <i class="fas fa-server"></i>
-                                    System
-                                </button>
-                                <button type="button" class="settings-tab-button flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent" data-tab="ai-tab">
-                                    <i class="fas fa-robot"></i>
-                                    AI
-                                </button>
-                                <button type="button" class="settings-tab-button flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent" data-tab="mfa-tab">
-                                    <i class="fas fa-shield"></i>
-                                    MFA
-                                </button>
-                                <button type="button" class="settings-tab-button flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent" data-tab="ocr-tab">
-                                    <i class="fas fa-file-invoice"></i>
-                                    OCR
-                                </button>
-                                <button type="button" class="settings-tab-button flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent" data-tab="troubleshooting-tab">
-                                    <i class="fas fa-wrench"></i>
-                                    Troubleshooting
-                                </button>
-                                <button type="button" class="settings-tab-button flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 border-transparent" data-tab="changelog-tab">
-                                    <i class="fas fa-rocket"></i>
-                                    Changelog
-                                </button>
-                            </nav>
-                        </div>
+                    <% } %>
 
-                        <div id="system-tab" class="settings-tab-content space-y-6">
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">Connection</h3>
-                                <div class="space-y-2">
-                                    <label for="paperlessUrl" class="flex items-center gap-2 text-sm font-medium">
+                    <div class="zr-alert zr-alert--info">
+                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-info"/></svg>
+                        <div class="zr-alert__body">
+                            <p>Every field maps to a runtime environment variable. Each one names its ENV key
+                            and whether a restart is required. Values injected by the container win over
+                            anything set here.</p>
+                        </div>
+                    </div>
+
+                    <form id="setupForm" class="zr-col zr-col--loose">
+                        <div id="system-tab" class="zr-col zr-col--loose">
+                            <section class="zr-module" id="sec-connection">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Connection</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="paperlessUrl" class="zr-field__name">
                                         Paperless-ngx API URL
-                                        <button type="button" class="text-gray-400 hover:text-gray-600 focus:outline-none" id="urlHelp">
-                                            <i class="fas fa-circle-question"></i>
+                                        <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" id="urlHelp">
+                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-help"/></svg>
                                         </button>
                                     </label>
-                                    <input type="text" id="paperlessUrl" name="paperlessUrl" value="<%= config.PAPERLESS_API_URL %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="http://your-paperless-instance:8000" required>
-                                    <p class="text-xs text-gray-500">ENV: PAPERLESS_API_URL · Restart required</p>
+                                    <input type="text" id="paperlessUrl" name="paperlessUrl" value="<%= config.PAPERLESS_API_URL %>" class="zr-input" placeholder="http://your-paperless-instance:8000" required>
+                                    <p class="zr-field__hint">ENV: PAPERLESS_API_URL · Restart required</p>
                                 </div>
 
-                                <div class="space-y-2">
-                                    <label class="text-sm font-medium">Detected Public URL</label>
+                                <div class="zr-field zr-field--stacked">
+                                    <label class="zr-field__name">Detected Public URL</label>
                                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
                                         <div id="paperlessDetectedUrlValue" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm break-all">Loading…</div>
-                                        <button type="button" id="refreshPublicUrlDetection" class="px-3 py-2 border border-gray-300 rounded-lg text-sm hover:bg-gray-50">
-                                            <i class="fas fa-rotate mr-1"></i>Refresh
+                                        <button type="button" id="refreshPublicUrlDetection" class="zr-btn">
+                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>Refresh
                                         </button>
                                     </div>
-                                    <p id="paperlessDetectedUrlMeta" class="text-xs text-gray-500">Checking Paperless API for configured public URL…</p>
+                                    <p id="paperlessDetectedUrlMeta" class="zr-field__hint">Checking Paperless API for configured public URL…</p>
                                 </div>
 
-                                <div class="space-y-2">
-                                    <label for="paperlessPublicUrl" class="text-sm font-medium">Paperless Public URL Override (optional)</label>
-                                    <input type="text" id="paperlessPublicUrl" name="paperlessPublicUrl" value="<%= config.PAPERLESS_PUBLIC_URL || '' %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="https://paperless.example.com">
-                                    <p class="text-xs text-gray-500">ENV: PAPERLESS_PUBLIC_URL · Leave empty to use auto-detection/fallback</p>
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="paperlessPublicUrl" class="zr-field__name">Paperless Public URL Override (optional)</label>
+                                    <input type="text" id="paperlessPublicUrl" name="paperlessPublicUrl" value="<%= config.PAPERLESS_PUBLIC_URL || '' %>" class="zr-input" placeholder="https://paperless.example.com">
+                                    <p class="zr-field__hint">ENV: PAPERLESS_PUBLIC_URL · Leave empty to use auto-detection/fallback</p>
                                 </div>
 
-                                <div class="space-y-2">
-                                    <label for="paperlessToken" class="text-sm font-medium">API Token</label>
-                                    <div class="relative">
-                                        <input type="password" id="paperlessToken" name="paperlessToken" value="" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="<%= configuredSecrets.PAPERLESS_API_TOKEN ? 'Configured (leave empty to keep current value)' : 'Enter API token' %>">
-                                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" data-input="paperlessToken">
-                                            <i class="fas fa-eye"></i>
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="paperlessToken" class="zr-field__name">API Token</label>
+                                    <div class="zr-inputgroup">
+                                        <input type="password" id="paperlessToken" name="paperlessToken" value="" class="zr-input" placeholder="<%= configuredSecrets.PAPERLESS_API_TOKEN ? 'Configured (leave empty to keep current value)' : 'Enter API token' %>">
+                                        <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="paperlessToken">
+                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg>
                                         </button>
                                     </div>
-                                    <p class="text-xs text-gray-500">ENV: PAPERLESS_API_TOKEN · Restart required</p>
+                                    <p class="zr-field__hint">ENV: PAPERLESS_API_TOKEN · Restart required</p>
                                 </div>
 
-                                <div class="space-y-2">
-                                    <label for="paperlessUsername" class="text-sm font-medium">Paperless-ngx Username</label>
-                                    <input type="text" id="paperlessUsername" name="paperlessUsername" value="<%= config.PAPERLESS_USERNAME %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
-                                    <p class="text-xs text-gray-500">ENV: PAPERLESS_USERNAME · Restart required</p>
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="paperlessUsername" class="zr-field__name">Paperless-ngx Username</label>
+                                    <input type="text" id="paperlessUsername" name="paperlessUsername" value="<%= config.PAPERLESS_USERNAME %>" class="zr-input" required>
+                                    <p class="zr-field__hint">ENV: PAPERLESS_USERNAME · Restart required</p>
+                                </div>
                                 </div>
                             </section>
 
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">Processing</h3>
-                                <div class="space-y-2">
-                                    <label for="scanInterval" class="text-sm font-medium">Scan Interval (Cron Format)</label>
-                                    <input type="text" id="scanInterval" name="scanInterval" value="<%= config.SCAN_INTERVAL %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
-                                    <p class="text-xs text-gray-500">ENV: SCAN_INTERVAL · Restart required</p>
+                            <section class="zr-module" id="sec-processing">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Processing</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="scanInterval" class="zr-field__name">Scan Interval (Cron Format)</label>
+                                    <input type="text" id="scanInterval" name="scanInterval" value="<%= config.SCAN_INTERVAL %>" class="zr-input" required>
+                                    <p class="zr-field__hint">ENV: SCAN_INTERVAL · Restart required</p>
                                 </div>
 
-                                <div class="space-y-2">
-                                    <div class="flex items-center gap-3 border border-gray-200 rounded-lg px-4 py-3">
-                                        <label class="relative shrink-0 cursor-pointer select-none">
-                                            <input type="checkbox" id="disableAutomaticProcessing" class="sr-only peer" <%= config.DISABLE_AUTOMATIC_PROCESSING === 'yes' ? 'checked' : '' %>>
-                                            <div class="w-10 h-5 bg-gray-300 peer-checked:bg-blue-500 rounded-full transition-colors"></div>
-                                            <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+                                <div class="zr-field zr-field--stacked">
+                                    <div class="zr-switchrow">
+                                        <label class="zr-switch">
+                                            <input type="checkbox" id="disableAutomaticProcessing" <%= config.DISABLE_AUTOMATIC_PROCESSING === 'yes' ? 'checked' : '' %>>
+                                            <span class="zr-switch__track"><span class="zr-switch__thumb"></span></span>
                                         </label>
-                                        <div class="min-w-0">
-                                            <label for="disableAutomaticProcessing" class="block text-sm font-medium cursor-pointer">Disable automatic processing</label>
-                                            <p class="text-xs text-gray-500 mt-0.5">If enabled, scans are not processed by AI automatically · ENV: DISABLE_AUTOMATIC_PROCESSING · Restart required</p>
+                                        <div class="zr-grow">
+                                            <label for="disableAutomaticProcessing" class="zr-field__name">Disable automatic processing</label>
+                                            <p class="zr-field__hint">If enabled, scans are not processed by AI automatically · ENV: DISABLE_AUTOMATIC_PROCESSING · Restart required</p>
                                         </div>
                                     </div>
                                 </div>
@@ -167,10 +156,14 @@
                                     checked: config.USE_EXISTING_DATA === 'yes',
                                     hint: 'ENV: USE_EXISTING_DATA · Restart required'
                                 }) %>
+                                </div>
                             </section>
 
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">Tag Filters</h3>
+                            <section class="zr-module" id="sec-tag-filters">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Tag Filters</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
                                 <%- include('partials/settings-switch', {
                                     id: 'showTags',
                                     label: 'Process only specific pre-tagged documents',
@@ -179,20 +172,20 @@
                                 }) %>
 
                                 <div id="tagsInputSection" class="<%= config.PROCESS_PREDEFINED_DOCUMENTS === 'yes' ? '' : 'hidden' %> space-y-2">
-                                    <label for="tagInput" class="text-sm font-medium">Tags</label>
-                                    <div class="flex gap-2">
-                                        <input type="text" id="tagInput" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter a tag and press Enter">
-                                        <button type="button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                            <i class="fas fa-plus mr-2"></i>
+                                    <label for="tagInput" class="zr-field__name">Tags</label>
+                                    <div class="zr-inputgroup">
+                                        <input type="text" id="tagInput" class="zr-input" placeholder="Enter a tag and press Enter">
+                                        <button type="button" class="zr-btn zr-btn--primary">
+                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
                                             Add
                                         </button>
                                     </div>
-                                    <div id="tagsContainer" class="flex flex-wrap gap-2 mt-2">
+                                    <div id="tagsContainer" class="zr-chips">
                                         <% if (config.TAGS && Array.isArray(config.TAGS) && config.TAGS.length > 0) { %>
                                             <% config.TAGS.forEach(tag => { %>
                                                 <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2">
                                                     <span><%= tag %></span>
-                                                    <button type="button" class="hover:text-blue-600"><i class="fas fa-times"></i></button>
+                                                    <button type="button" class="hover:text-blue-600"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
                                                 </div>
                                             <% }); %>
                                         <% } %>
@@ -200,65 +193,89 @@
                                     <input type="hidden" id="tags" name="tags" value="<%= Array.isArray(config.TAGS) ? config.TAGS.join(',') : '' %>">
                                 </div>
 
-                                <div class="space-y-2">
-                                    <label for="ignoreTagInput" class="text-sm font-medium">Ignore Tags</label>
-                                    <div class="flex gap-2">
-                                        <input type="text" id="ignoreTagInput" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter a tag to ignore and press Enter">
-                                        <button type="button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                            <i class="fas fa-plus mr-2"></i>
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="ignoreTagInput" class="zr-field__name">Ignore Tags</label>
+                                    <div class="zr-inputgroup">
+                                        <input type="text" id="ignoreTagInput" class="zr-input" placeholder="Enter a tag to ignore and press Enter">
+                                        <button type="button" class="zr-btn zr-btn--primary">
+                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
                                             Add
                                         </button>
                                     </div>
-                                    <div id="ignoreTagsContainer" class="flex flex-wrap gap-2 mt-2">
+                                    <div id="ignoreTagsContainer" class="zr-chips">
                                         <% if (config.IGNORE_TAGS && Array.isArray(config.IGNORE_TAGS) && config.IGNORE_TAGS.length > 0) { %>
                                             <% config.IGNORE_TAGS.forEach(tag => { %>
                                                 <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2">
                                                     <span><%= tag %></span>
-                                                    <button type="button" class="hover:text-blue-600"><i class="fas fa-times"></i></button>
+                                                    <button type="button" class="hover:text-blue-600"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
                                                 </div>
                                             <% }); %>
                                         <% } %>
                                     </div>
                                     <input type="hidden" id="ignoreTags" name="ignoreTags" value="<%= Array.isArray(config.IGNORE_TAGS) ? config.IGNORE_TAGS.join(',') : '' %>">
-                                    <p class="text-xs text-gray-500">ENV: IGNORE_TAGS · Restart required</p>
+                                    <p class="zr-field__hint">ENV: IGNORE_TAGS · Restart required</p>
+                                </div>
                                 </div>
                             </section>
 
                         </div>
 
-                        <div id="mfa-tab" class="settings-tab-content space-y-6 hidden">
-                            <section class="space-y-4 settings-section-card" id="mfaSettingsSection" data-mfa-available="<%= mfaSettings && mfaSettings.available ? 'yes' : 'no' %>" data-mfa-enabled="<%= mfaSettings && mfaSettings.enabled ? 'yes' : 'no' %>" data-mfa-username="<%= mfaSettings && mfaSettings.username ? mfaSettings.username : '' %>">
-                                <h3 class="text-lg font-semibold">Account Security (TOTP)</h3>
+                        <div id="mfa-tab" class="zr-col zr-col--loose">
+                            <section class="zr-module" id="sec-api-key">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">API key</h2>
+                                </div>
+                                <div class="zr-module__body zr-col">
+                                    <p class="zr-sm zr-muted">Used by the REST API and the Paperless-ngx post-consume script.</p>
+                                    <div class="zr-inputgroup">
+                                        <div id="apiKeyContainer" class="zr-input zr-mono zr-apikey" data-api-key=""
+                                            title="Click to copy API key" role="button" tabindex="0">Loading…</div>
+                                        <button type="button" id="regenerateBtn" class="zr-btn">
+                                            <svg class="zr-icon zr-icon--sm" id="regenerateIcon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                                            <span>Regenerate</span>
+                                        </button>
+                                    </div>
+                                    <p id="copyNotification" class="zr-sm hidden" style="color: var(--zr-ok)">
+                                        API key copied to clipboard.
+                                    </p>
+                                </div>
+                            </section>
+
+                            <section class="zr-module" id="sec-account-security-totp" id="mfaSettingsSection" data-mfa-available="<%= mfaSettings && mfaSettings.available ? 'yes' : 'no' %>" data-mfa-enabled="<%= mfaSettings && mfaSettings.enabled ? 'yes' : 'no' %>" data-mfa-username="<%= mfaSettings && mfaSettings.username ? mfaSettings.username : '' %>">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Account Security (TOTP)</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
 
                                 <% if (!(mfaSettings && mfaSettings.available)) { %>
-                                    <div class="theme-alert-warning border rounded-lg p-4 text-sm">
+                                    <div class="zr-alert zr-alert--warn">
                                         MFA controls are available only for interactive user sessions (not API key authentication).
                                     </div>
                                 <% } else { %>
-                                    <div class="space-y-4">
+                                    <div class="zr-col zr-col--loose">
                                         <div class="flex flex-wrap items-center justify-between gap-2">
                                             <div>
-                                                <p class="text-sm font-medium">User: <span id="mfaSettingsUser"><%= mfaSettings.username %></span></p>
-                                                <p class="text-xs text-gray-500">Configure two-factor authentication for this account.</p>
+                                                <p class="zr-field__name">User: <span id="mfaSettingsUser"><%= mfaSettings.username %></span></p>
+                                                <p class="zr-field__hint">Configure two-factor authentication for this account.</p>
                                             </div>
                                             <span id="mfaStatusBadge" class="px-2 py-1 rounded-full text-xs font-semibold <%= mfaSettings.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700' %>">
                                                 <%= mfaSettings.enabled ? 'Enabled' : 'Disabled' %>
                                             </span>
                                         </div>
 
-                                        <div class="space-y-2">
-                                            <label for="mfaCurrentPassword" class="text-sm font-medium">Current Password</label>
-                                            <input type="password" id="mfaCurrentPassword" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter current password">
-                                            <p class="text-xs text-gray-500">Required to start activation and to disable MFA.</p>
+                                        <div class="zr-field zr-field--stacked">
+                                            <label for="mfaCurrentPassword" class="zr-field__name">Current Password</label>
+                                            <input type="password" id="mfaCurrentPassword" class="zr-input" placeholder="Enter current password">
+                                            <p class="zr-field__hint">Required to start activation and to disable MFA.</p>
                                         </div>
 
-                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                            <button type="button" id="mfaEnableBtn" class="toolbar-btn toolbar-btn--primary flex items-center justify-center gap-2">
-                                                <i class="fas fa-key"></i>
+                                        <div class="zr-formgrid">
+                                            <button type="button" id="mfaEnableBtn" class="zr-btn zr-btn--primary">
+                                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-key"/></svg>
                                                 <span>Enable MFA</span>
                                             </button>
-                                            <button type="button" id="mfaDisableBtn" class="toolbar-btn toolbar-btn--danger flex items-center justify-center gap-2">
-                                                <i class="fas fa-shield"></i>
+                                            <button type="button" id="mfaDisableBtn" class="zr-btn zr-btn--danger">
+                                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg>
                                                 <span>Disable MFA</span>
                                             </button>
                                         </div>
@@ -268,32 +285,32 @@
                                                 <img id="mfaQrImage" class="w-44 h-44 rounded border border-gray-200 bg-white p-2 hidden" alt="MFA provisioning QR code" />
                                             </div>
                                             <div class="space-y-1">
-                                                <label for="mfaSecretKey" class="text-sm font-medium">Secret Key</label>
-                                                <input type="text" id="mfaSecretKey" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                                                <label for="mfaSecretKey" class="zr-field__name">Secret Key</label>
+                                                <input type="text" id="mfaSecretKey" class="zr-input" readonly>
                                             </div>
                                             <div class="space-y-1">
-                                                <label for="mfaOtpAuthUri" class="text-sm font-medium">OTP URI</label>
-                                                <textarea id="mfaOtpAuthUri" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-xs" readonly></textarea>
+                                                <label for="mfaOtpAuthUri" class="zr-field__name">OTP URI</label>
+                                                <textarea id="mfaOtpAuthUri" rows="3" class="zr-textarea" readonly></textarea>
                                             </div>
-                                            <div class="flex flex-col sm:flex-row gap-2">
-                                                <button type="button" id="mfaCopySecretBtn" class="toolbar-btn flex items-center justify-center gap-2">
-                                                    <i class="fas fa-copy"></i>
+                                            <div class="zr-inputgroup">
+                                                <button type="button" id="mfaCopySecretBtn" class="zr-btn">
+                                                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-copy"/></svg>
                                                     <span>Copy Secret</span>
                                                 </button>
-                                                <button type="button" id="mfaDownloadQrBtn" class="toolbar-btn flex items-center justify-center gap-2">
-                                                    <i class="fas fa-download"></i>
+                                                <button type="button" id="mfaDownloadQrBtn" class="zr-btn">
+                                                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-download"/></svg>
                                                     <span>Download QR</span>
                                                 </button>
                                             </div>
-                                            <p class="text-xs text-gray-500">Use either the key or URI in your authenticator app, then enter a code below.</p>
+                                            <p class="zr-field__hint">Use either the key or URI in your authenticator app, then enter a code below.</p>
                                         </div>
 
-                                        <div class="space-y-2">
-                                            <label for="mfaToken" class="text-sm font-medium">Authenticator Code</label>
-                                            <div class="flex flex-col sm:flex-row gap-2">
-                                                <input type="text" id="mfaToken" inputmode="numeric" autocomplete="one-time-code" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter 6-digit code">
-                                                <button type="button" id="mfaVerifyBtn" class="toolbar-btn toolbar-btn--warning flex items-center justify-center gap-2">
-                                                    <i class="fas fa-vial"></i>
+                                        <div class="zr-field zr-field--stacked">
+                                            <label for="mfaToken" class="zr-field__name">Authenticator Code</label>
+                                            <div class="zr-inputgroup">
+                                                <input type="text" id="mfaToken" inputmode="numeric" autocomplete="one-time-code" class="zr-input" placeholder="Enter 6-digit code">
+                                                <button type="button" id="mfaVerifyBtn" class="zr-btn">
+                                                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-flask"/></svg>
                                                     <span id="mfaVerifyBtnLabel">Validate & Activate</span>
                                                 </button>
                                             </div>
@@ -303,211 +320,222 @@
                                         <div id="mfaResultMessage" class="hidden rounded-lg p-3 text-sm"></div>
                                     </div>
                                 <% } %>
+                                </div>
                             </section>
                         </div>
 
-                        <div id="ai-tab" class="settings-tab-content space-y-6 hidden">
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">Quickstart auto-detect</h3>
-                                <p class="text-xs text-gray-500">Point at a local AI server (LM Studio, Ollama, or any OpenAI-compatible endpoint). Detection lists the running models and classifies them for AI analysis and OCR.</p>
-                                <div class="space-y-2">
-                                    <label for="settingsQuickstartUrl" class="text-sm font-medium">AI server URL</label>
-                                    <input type="text" id="settingsQuickstartUrl" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="http://192.168.1.5:1234 (LM Studio) or http://host:11434 (Ollama)">
+                        <div id="ai-tab" class="zr-col zr-col--loose">
+                            <section class="zr-module" id="sec-quickstart-auto-detect">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Quickstart auto-detect</h2>
                                 </div>
-                                <div class="space-y-2">
-                                    <label for="settingsQuickstartApiKey" class="text-sm font-medium">API key (optional)</label>
-                                    <input type="password" id="settingsQuickstartApiKey" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Only needed if your endpoint requires a token">
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <p class="zr-field__hint">Point at a local AI server (LM Studio, Ollama, or any OpenAI-compatible endpoint). Detection lists the running models and classifies them for AI analysis and OCR.</p>
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="settingsQuickstartUrl" class="zr-field__name">AI server URL</label>
+                                    <input type="text" id="settingsQuickstartUrl" class="zr-input" placeholder="http://192.168.1.5:1234 (LM Studio) or http://host:11434 (Ollama)">
                                 </div>
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <button type="button" id="settingsQuickstartDetectBtn" class="toolbar-btn toolbar-btn--warning flex items-center gap-2">
-                                        <i class="fas fa-magnifying-glass"></i>
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="settingsQuickstartApiKey" class="zr-field__name">API key (optional)</label>
+                                    <input type="password" id="settingsQuickstartApiKey" class="zr-input" placeholder="Only needed if your endpoint requires a token">
+                                </div>
+                                <div class="zr-row zr-row--wrap">
+                                    <button type="button" id="settingsQuickstartDetectBtn" class="zr-btn">
+                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-search"/></svg>
                                         <span>Detect models</span>
                                     </button>
-                                    <span id="settingsQuickstartState" class="text-xs text-gray-500">Not detected</span>
+                                    <span id="settingsQuickstartState" class="zr-field__hint">Not detected</span>
                                 </div>
                                 <div id="settingsQuickstartResults" class="space-y-4 hidden">
-                                    <p id="settingsQuickstartHint" class="text-xs text-gray-500"></p>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div class="space-y-2">
-                                            <label for="settingsQuickstartAiModel" class="text-sm font-medium">Suggested AI model</label>
-                                            <select id="settingsQuickstartAiModel" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></select>
+                                    <p id="settingsQuickstartHint" class="zr-field__hint"></p>
+                                    <div class="zr-formgrid">
+                                        <div class="zr-field zr-field--stacked">
+                                            <label for="settingsQuickstartAiModel" class="zr-field__name">Suggested AI model</label>
+                                            <select id="settingsQuickstartAiModel" class="zr-input"></select>
                                         </div>
-                                        <div class="space-y-2">
-                                            <label for="settingsQuickstartOcrModel" class="text-sm font-medium">OCR model</label>
-                                            <select id="settingsQuickstartOcrModel" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></select>
+                                        <div class="zr-field zr-field--stacked">
+                                            <label for="settingsQuickstartOcrModel" class="zr-field__name">OCR model</label>
+                                            <select id="settingsQuickstartOcrModel" class="zr-input"></select>
                                         </div>
                                     </div>
-                                    <div class="flex items-center gap-3">
-                                        <label class="relative shrink-0 cursor-pointer select-none">
-                                            <input type="checkbox" id="settingsQuickstartEnableOcr" class="sr-only peer">
-                                            <div class="w-10 h-5 bg-gray-300 peer-checked:bg-blue-500 peer-disabled:opacity-50 rounded-full transition-colors"></div>
-                                            <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+                                    <div class="zr-row">
+                                        <label class="zr-switch">
+                                            <input type="checkbox" id="settingsQuickstartEnableOcr">
+                                            <span class="zr-switch__track"><span class="zr-switch__thumb"></span></span>
                                         </label>
-                                        <label for="settingsQuickstartEnableOcr" class="text-sm font-medium cursor-pointer">Use this service for OCR</label>
+                                        <label for="settingsQuickstartEnableOcr" class="zr-field__name">Use this service for OCR</label>
                                     </div>
-                                    <div class="flex flex-wrap items-center gap-3">
-                                        <button type="button" id="settingsQuickstartApplyBtn" class="toolbar-btn toolbar-btn--neutral flex items-center gap-2">
-                                            <i class="fas fa-wand-magic-sparkles"></i>
+                                    <div class="zr-row zr-row--wrap">
+                                        <button type="button" id="settingsQuickstartApplyBtn" class="zr-btn">
+                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-wand"/></svg>
                                             <span>Apply to fields</span>
                                         </button>
-                                        <button type="button" id="settingsQuickstartSaveBtn" class="toolbar-btn toolbar-btn--primary flex items-center gap-2">
-                                            <i class="fas fa-floppy-disk"></i>
+                                        <button type="button" id="settingsQuickstartSaveBtn" class="zr-btn zr-btn--primary">
+                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-save"/></svg>
                                             <span>Test models &amp; save</span>
                                         </button>
-                                        <span id="settingsQuickstartApplyHint" class="text-xs text-gray-500"></span>
+                                        <span id="settingsQuickstartApplyHint" class="zr-field__hint"></span>
                                     </div>
                                 </div>
-                            </section>
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">Provider</h3>
-                                <div class="space-y-2">
-                                    <label for="aiPreset" class="text-sm font-medium">Provider preset</label>
-                                    <select id="aiPreset" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"></select>
-                                    <p id="aiPresetHint" class="text-xs text-gray-500">Manual mode: choose provider and enter values yourself.</p>
                                 </div>
-                                <div class="space-y-2">
-                                    <label for="aiProvider" class="text-sm font-medium">AI Provider</label>
-                                    <select id="aiProvider" name="aiProvider" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                            </section>
+                            <section class="zr-module" id="sec-provider">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Provider</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="aiPreset" class="zr-field__name">Provider preset</label>
+                                    <select id="aiPreset" class="zr-input"></select>
+                                    <p id="aiPresetHint" class="zr-field__hint">Manual mode: choose provider and enter values yourself.</p>
+                                </div>
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="aiProvider" class="zr-field__name">AI Provider</label>
+                                    <select id="aiProvider" name="aiProvider" class="zr-input">
                                         <option value="openai" <%= config.AI_PROVIDER === 'openai' ? 'selected' : '' %>>OpenAI (ChatGPT)</option>
                                         <option value="ollama" <%= config.AI_PROVIDER === 'ollama' ? 'selected' : '' %>>Ollama (Local LLM)</option>
                                         <option value="custom" <%= config.AI_PROVIDER === 'custom' ? 'selected' : '' %>>Custom</option>
                                         <option value="azure" <%= config.AI_PROVIDER === 'azure' ? 'selected' : '' %>>Azure</option>
                                     </select>
-                                    <p class="text-xs text-gray-500">ENV: AI_PROVIDER · Restart required</p>
+                                    <p class="zr-field__hint">ENV: AI_PROVIDER · Restart required</p>
                                 </div>
 
-                                <div id="openaiSettings" class="space-y-4">
-                                    <div class="space-y-2">
-                                        <label for="openaiKey" class="text-sm font-medium">OpenAI API Key</label>
-                                        <div class="relative">
-                                            <input type="password" id="openaiKey" name="openaiKey" value="" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="<%= configuredSecrets.OPENAI_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter OpenAI API key' %>">
-                                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" data-input="openaiKey"><i class="fas fa-eye"></i></button>
+                                <div id="openaiSettings" class="zr-col zr-col--loose">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="openaiKey" class="zr-field__name">OpenAI API Key</label>
+                                        <div class="zr-inputgroup">
+                                            <input type="password" id="openaiKey" name="openaiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.OPENAI_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter OpenAI API key' %>">
+                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="openaiKey"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
-                                        <p class="text-xs text-gray-500">ENV: OPENAI_API_KEY · Restart required</p>
+                                        <p class="zr-field__hint">ENV: OPENAI_API_KEY · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="openaiModel" class="text-sm font-medium">OpenAI Model</label>
-                                        <select id="openaiModel" name="openaiModel" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="openaiModel" class="zr-field__name">OpenAI Model</label>
+                                        <select id="openaiModel" name="openaiModel" class="zr-input">
                                             <option value="gpt-3.5-turbo-0125" <%= config.OPENAI_MODEL === 'gpt-3.5-turbo-0125' ? 'selected' : '' %>>GPT-3.5 Turbo</option>
                                             <option value="gpt-4o" <%= config.OPENAI_MODEL === 'gpt-4o' ? 'selected' : '' %>>GPT-4o</option>
                                             <option value="o3-mini" <%= config.OPENAI_MODEL === 'o3-mini' ? 'selected' : '' %>>o3-mini</option>
                                             <option value="gpt-4o-mini" <%= config.OPENAI_MODEL === 'gpt-4o-mini' ? 'selected' : '' %>>GPT-4o-mini</option>
                                         </select>
-                                        <p class="text-xs text-gray-500">ENV: OPENAI_MODEL · Restart required</p>
+                                        <p class="zr-field__hint">ENV: OPENAI_MODEL · Restart required</p>
                                     </div>
                                 </div>
 
                                 <div id="ollamaSettings" class="space-y-4 hidden">
-                                    <div class="space-y-2">
-                                        <label for="ollamaUrl" class="text-sm font-medium">Ollama API URL</label>
-                                        <input type="text" id="ollamaUrl" name="ollamaUrl" value="<%= config.OLLAMA_API_URL %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: OLLAMA_API_URL · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="ollamaUrl" class="zr-field__name">Ollama API URL</label>
+                                        <input type="text" id="ollamaUrl" name="ollamaUrl" value="<%= config.OLLAMA_API_URL %>" class="zr-input">
+                                        <p class="zr-field__hint">ENV: OLLAMA_API_URL · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="ollamaApiKey" class="text-sm font-medium">Ollama API Key (optional)</label>
-                                        <div class="relative">
-                                            <input type="password" id="ollamaApiKey" name="ollamaApiKey" value="" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="<%= configuredSecrets.OLLAMA_API_KEY ? 'Configured (leave empty to keep current value)' : 'Only needed if your endpoint requires a token' %>">
-                                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" data-input="ollamaApiKey"><i class="fas fa-eye"></i></button>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="ollamaApiKey" class="zr-field__name">Ollama API Key (optional)</label>
+                                        <div class="zr-inputgroup">
+                                            <input type="password" id="ollamaApiKey" name="ollamaApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.OLLAMA_API_KEY ? 'Configured (leave empty to keep current value)' : 'Only needed if your endpoint requires a token' %>">
+                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="ollamaApiKey"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
-                                        <p class="text-xs text-gray-500">ENV: OLLAMA_API_KEY · Restart required</p>
+                                        <p class="zr-field__hint">ENV: OLLAMA_API_KEY · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="ollamaModel" class="text-sm font-medium">Ollama Model</label>
-                                        <div class="flex flex-col sm:flex-row gap-2">
-                                            <select id="ollamaModel" name="ollamaModel" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="ollamaModel" class="zr-field__name">Ollama Model</label>
+                                        <div class="zr-inputgroup">
+                                            <select id="ollamaModel" name="ollamaModel" class="zr-input">
                                                 <option value="<%= config.OLLAMA_MODEL %>" selected><%= config.OLLAMA_MODEL %></option>
                                             </select>
-                                            <button type="button" id="fetchAiModelsBtn" class="toolbar-btn toolbar-btn--warning flex items-center justify-center gap-2 whitespace-nowrap">
-                                                <i class="fas fa-list"></i>
+                                            <button type="button" id="fetchAiModelsBtn" class="zr-btn">
+                                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
                                                 <span>Fetch Models</span>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500">ENV: OLLAMA_MODEL · Restart required</p>
+                                        <p class="zr-field__hint">ENV: OLLAMA_MODEL · Restart required</p>
                                     </div>
                                 </div>
 
                                 <div id="customSettings" class="space-y-4 hidden">
-                                    <div class="space-y-2">
-                                        <label for="customBaseUrl" class="text-sm font-medium">Custom Base URL</label>
-                                        <input type="text" id="customBaseUrl" name="customBaseUrl" value="<%= config.CUSTOM_BASE_URL %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: CUSTOM_BASE_URL · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="customBaseUrl" class="zr-field__name">Custom Base URL</label>
+                                        <input type="text" id="customBaseUrl" name="customBaseUrl" value="<%= config.CUSTOM_BASE_URL %>" class="zr-input">
+                                        <p class="zr-field__hint">ENV: CUSTOM_BASE_URL · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="customApiKey" class="text-sm font-medium">Custom API Key</label>
-                                        <div class="relative">
-                                            <input type="password" id="customApiKey" name="customApiKey" value="" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="<%= configuredSecrets.CUSTOM_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter Custom API key' %>">
-                                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" data-input="customApiKey"><i class="fas fa-eye"></i></button>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="customApiKey" class="zr-field__name">Custom API Key</label>
+                                        <div class="zr-inputgroup">
+                                            <input type="password" id="customApiKey" name="customApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.CUSTOM_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter Custom API key' %>">
+                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="customApiKey"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
-                                        <p class="text-xs text-gray-500">ENV: CUSTOM_API_KEY · Restart required</p>
+                                        <p class="zr-field__hint">ENV: CUSTOM_API_KEY · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="customModel" class="text-sm font-medium">Custom Model</label>
-                                        <div class="flex flex-col sm:flex-row gap-2">
-                                            <select id="customModel" name="customModel" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="customModel" class="zr-field__name">Custom Model</label>
+                                        <div class="zr-inputgroup">
+                                            <select id="customModel" name="customModel" class="zr-input">
                                                 <option value="<%= config.CUSTOM_MODEL %>" selected><%= config.CUSTOM_MODEL %></option>
                                             </select>
-                                            <button type="button" id="fetchCustomAiModelsBtn" class="toolbar-btn toolbar-btn--warning flex items-center justify-center gap-2 whitespace-nowrap">
-                                                <i class="fas fa-list"></i>
+                                            <button type="button" id="fetchCustomAiModelsBtn" class="zr-btn">
+                                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
                                                 <span>Fetch Models</span>
                                             </button>
                                         </div>
-                                        <p class="text-xs text-gray-500">ENV: CUSTOM_MODEL · Restart required</p>
+                                        <p class="zr-field__hint">ENV: CUSTOM_MODEL · Restart required</p>
                                     </div>
                                 </div>
 
                                 <div id="azureSettings" class="space-y-4 hidden">
-                                    <div class="space-y-2">
-                                        <label for="azureEndpoint" class="text-sm font-medium">Azure Endpoint</label>
-                                        <input type="text" id="azureEndpoint" name="azureEndpoint" value="<%= config.AZURE_ENDPOINT %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: AZURE_ENDPOINT · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="azureEndpoint" class="zr-field__name">Azure Endpoint</label>
+                                        <input type="text" id="azureEndpoint" name="azureEndpoint" value="<%= config.AZURE_ENDPOINT %>" class="zr-input">
+                                        <p class="zr-field__hint">ENV: AZURE_ENDPOINT · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="azureApiKey" class="text-sm font-medium">Azure API Key</label>
-                                        <div class="relative">
-                                            <input type="password" id="azureApiKey" name="azureApiKey" value="" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="<%= configuredSecrets.AZURE_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter Azure API key' %>">
-                                            <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" data-input="azureApiKey"><i class="fas fa-eye"></i></button>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="azureApiKey" class="zr-field__name">Azure API Key</label>
+                                        <div class="zr-inputgroup">
+                                            <input type="password" id="azureApiKey" name="azureApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.AZURE_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter Azure API key' %>">
+                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="azureApiKey"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
-                                        <p class="text-xs text-gray-500">ENV: AZURE_API_KEY · Restart required</p>
+                                        <p class="zr-field__hint">ENV: AZURE_API_KEY · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="azureDeploymentName" class="text-sm font-medium">Deployment</label>
-                                        <input type="text" id="azureDeploymentName" name="azureDeploymentName" value="<%= config.AZURE_DEPLOYMENT_NAME %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: AZURE_DEPLOYMENT_NAME · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="azureDeploymentName" class="zr-field__name">Deployment</label>
+                                        <input type="text" id="azureDeploymentName" name="azureDeploymentName" value="<%= config.AZURE_DEPLOYMENT_NAME %>" class="zr-input">
+                                        <p class="zr-field__hint">ENV: AZURE_DEPLOYMENT_NAME · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="azureApiVersion" class="text-sm font-medium">API Version</label>
-                                        <input type="text" id="azureApiVersion" name="azureApiVersion" value="<%= config.AZURE_API_VERSION %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: AZURE_API_VERSION · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="azureApiVersion" class="zr-field__name">API Version</label>
+                                        <input type="text" id="azureApiVersion" name="azureApiVersion" value="<%= config.AZURE_API_VERSION %>" class="zr-input">
+                                        <p class="zr-field__hint">ENV: AZURE_API_VERSION · Restart required</p>
                                     </div>
                                 </div>
 
                                 <h4 class="text-sm font-semibold text-gray-700 border-t border-gray-200 pt-4">Model Parameters</h4>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="space-y-2">
-                                        <label for="tokenLimit" class="text-sm font-medium">Token Limit</label>
-                                        <input type="number" id="tokenLimit" name="tokenLimit" value="<%= config.TOKEN_LIMIT %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: TOKEN_LIMIT · Restart required</p>
+                                <div class="zr-formgrid">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="tokenLimit" class="zr-field__name">Token Limit</label>
+                                        <input type="number" id="tokenLimit" name="tokenLimit" value="<%= config.TOKEN_LIMIT %>" class="zr-input">
+                                        <p class="zr-field__hint">ENV: TOKEN_LIMIT · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="responseTokens" class="text-sm font-medium">Response Tokens</label>
-                                        <input type="number" id="responseTokens" name="responseTokens" value="<%= config.RESPONSE_TOKENS %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: RESPONSE_TOKENS · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="responseTokens" class="zr-field__name">Response Tokens</label>
+                                        <input type="number" id="responseTokens" name="responseTokens" value="<%= config.RESPONSE_TOKENS %>" class="zr-input">
+                                        <p class="zr-field__hint">ENV: RESPONSE_TOKENS · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="aiTemperatureAnalysis" class="text-sm font-medium">Analysis Temperature</label>
-                                        <input type="number" id="aiTemperatureAnalysis" name="aiTemperatureAnalysis" value="<%= config.AI_TEMPERATURE_ANALYSIS || '0.3' %>" min="0" max="2" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: AI_TEMPERATURE_ANALYSIS · Range: 0.0-2.0 · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="aiTemperatureAnalysis" class="zr-field__name">Analysis Temperature</label>
+                                        <input type="number" id="aiTemperatureAnalysis" name="aiTemperatureAnalysis" value="<%= config.AI_TEMPERATURE_ANALYSIS || '0.3' %>" min="0" max="2" step="0.1" class="zr-input">
+                                        <p class="zr-field__hint">ENV: AI_TEMPERATURE_ANALYSIS · Range: 0.0-2.0 · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="aiTemperatureGeneration" class="text-sm font-medium">Generation Temperature</label>
-                                        <input type="number" id="aiTemperatureGeneration" name="aiTemperatureGeneration" value="<%= config.AI_TEMPERATURE_GENERATION || '0.7' %>" min="0" max="2" step="0.1" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: AI_TEMPERATURE_GENERATION · Range: 0.0-2.0 · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="aiTemperatureGeneration" class="zr-field__name">Generation Temperature</label>
+                                        <input type="number" id="aiTemperatureGeneration" name="aiTemperatureGeneration" value="<%= config.AI_TEMPERATURE_GENERATION || '0.7' %>" min="0" max="2" step="0.1" class="zr-input">
+                                        <p class="zr-field__hint">ENV: AI_TEMPERATURE_GENERATION · Range: 0.0-2.0 · Restart required</p>
                                     </div>
+                                </div>
                                 </div>
                             </section>
 
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">AI Behavior</h3>
+                            <section class="zr-module" id="sec-ai-behavior">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">AI Behavior</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
                                 <%- include('partials/settings-switch', {
                                     id: 'aiProcessedTag',
                                     label: 'Add AI-processed tag to documents',
@@ -515,9 +543,9 @@
                                     hint: 'ENV: ADD_AI_PROCESSED_TAG · Restart required'
                                 }) %>
                                 <div id="aiTagNameSection" class="<%= config.ADD_AI_PROCESSED_TAG === 'yes' ? '' : 'hidden' %> space-y-2">
-                                    <label for="aiTagName" class="text-sm font-medium">AI-processed Tag Name</label>
-                                    <input type="text" id="aiTagName" name="aiTagName" value="<%= config.AI_PROCESSED_TAG_NAME || 'ai-processed' %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                    <p class="text-xs text-gray-500">ENV: AI_PROCESSED_TAG_NAME · Restart required</p>
+                                    <label for="aiTagName" class="zr-field__name">AI-processed Tag Name</label>
+                                    <input type="text" id="aiTagName" name="aiTagName" value="<%= config.AI_PROCESSED_TAG_NAME || 'ai-processed' %>" class="zr-input">
+                                    <p class="zr-field__hint">ENV: AI_PROCESSED_TAG_NAME · Restart required</p>
                                 </div>
 
                                 <%- include('partials/settings-switch', {
@@ -528,20 +556,20 @@
                                 }) %>
 
                                 <div id="promptTagsSection" class="<%= config.USE_PROMPT_TAGS === 'yes' ? '' : 'hidden' %> space-y-2">
-                                    <label for="promptTagInput" class="text-sm font-medium">Prompt Tags</label>
-                                    <div class="flex gap-2">
-                                        <input type="text" id="promptTagInput" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter a tag and press Enter">
-                                        <button type="button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                                            <i class="fas fa-plus mr-2"></i>
+                                    <label for="promptTagInput" class="zr-field__name">Prompt Tags</label>
+                                    <div class="zr-inputgroup">
+                                        <input type="text" id="promptTagInput" class="zr-input" placeholder="Enter a tag and press Enter">
+                                        <button type="button" class="zr-btn zr-btn--primary">
+                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
                                             Add
                                         </button>
                                     </div>
-                                    <div id="promptTagsContainer" class="flex flex-wrap gap-2 mt-2">
+                                    <div id="promptTagsContainer" class="zr-chips">
                                         <% if (config.PROMPT_TAGS && Array.isArray(config.PROMPT_TAGS) && config.PROMPT_TAGS.length > 0) { %>
                                             <% config.PROMPT_TAGS.forEach(tag => { %>
                                                 <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2">
                                                     <span><%= tag %></span>
-                                                    <button type="button" class="hover:text-blue-600"><i class="fas fa-times"></i></button>
+                                                    <button type="button" class="hover:text-blue-600"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
                                                 </div>
                                             <% }); %>
                                         <% } %>
@@ -549,78 +577,85 @@
                                     <input type="hidden" id="promptTags" name="promptTags" value="<%= Array.isArray(config.PROMPT_TAGS) ? config.PROMPT_TAGS.join(',') : '' %>">
                                 </div>
 
-                                <div class="space-y-2">
-                                    <label for="systemPrompt" class="text-sm font-medium">Prompt Description</label>
-                                    <textarea id="systemPrompt" name="systemPrompt" rows="8" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Describe how the AI should analyze your documents..."><%= config.SYSTEM_PROMPT %></textarea>
-                                    <button id="systemPromptBtn" type="button" class="inline-flex items-center px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">
-                                        <i class="fas fa-lightbulb mr-2"></i>
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="systemPrompt" class="zr-field__name">Prompt Description</label>
+                                    <textarea id="systemPrompt" name="systemPrompt" rows="8" class="zr-input" placeholder="Describe how the AI should analyze your documents..."><%= config.SYSTEM_PROMPT %></textarea>
+                                    <button id="systemPromptBtn" type="button" class="zr-btn">
+                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-bulb"/></svg>
                                         Example
                                     </button>
-                                    <p class="text-xs text-gray-500">ENV: SYSTEM_PROMPT · Restart required</p>
+                                    <p class="zr-field__hint">ENV: SYSTEM_PROMPT · Restart required</p>
+                                </div>
                                 </div>
                             </section>
 
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">Restrictions</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <label for="restrictToExistingTags" class="flex items-center gap-3 border rounded-lg p-3 cursor-pointer">
-                                        <input type="checkbox" id="restrictToExistingTags" name="restrictToExistingTags" class="w-5 h-5" <%= config.RESTRICT_TO_EXISTING_TAGS === 'yes' ? 'checked' : '' %>>
+                            <section class="zr-module" id="sec-restrictions">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Restrictions</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <div class="zr-formgrid">
+                                    <label for="restrictToExistingTags" class="zr-checktile">
+                                        <input type="checkbox" id="restrictToExistingTags" name="restrictToExistingTags" class="zr-check" <%= config.RESTRICT_TO_EXISTING_TAGS === 'yes' ? 'checked' : '' %>>
                                         <span>Restrict to Existing Tags</span>
                                     </label>
-                                    <label for="restrictToExistingCorrespondents" class="flex items-center gap-3 border rounded-lg p-3 cursor-pointer">
-                                        <input type="checkbox" id="restrictToExistingCorrespondents" name="restrictToExistingCorrespondents" class="w-5 h-5" <%= config.RESTRICT_TO_EXISTING_CORRESPONDENTS === 'yes' ? 'checked' : '' %>>
+                                    <label for="restrictToExistingCorrespondents" class="zr-checktile">
+                                        <input type="checkbox" id="restrictToExistingCorrespondents" name="restrictToExistingCorrespondents" class="zr-check" <%= config.RESTRICT_TO_EXISTING_CORRESPONDENTS === 'yes' ? 'checked' : '' %>>
                                         <span>Restrict to Existing Correspondents</span>
                                     </label>
-                                    <label for="restrictToExistingDocumentTypes" class="flex items-center gap-3 border rounded-lg p-3 cursor-pointer">
-                                        <input type="checkbox" id="restrictToExistingDocumentTypes" name="restrictToExistingDocumentTypes" class="w-5 h-5" <%= config.RESTRICT_TO_EXISTING_DOCUMENT_TYPES === 'yes' ? 'checked' : '' %>>
+                                    <label for="restrictToExistingDocumentTypes" class="zr-checktile">
+                                        <input type="checkbox" id="restrictToExistingDocumentTypes" name="restrictToExistingDocumentTypes" class="zr-check" <%= config.RESTRICT_TO_EXISTING_DOCUMENT_TYPES === 'yes' ? 'checked' : '' %>>
                                         <span>Restrict to Existing Document Types</span>
                                     </label>
                                 </div>
-                                <p class="text-xs text-gray-500">ENV: RESTRICT_TO_EXISTING_* · Restart required</p>
+                                <p class="zr-field__hint">ENV: RESTRICT_TO_EXISTING_* · Restart required</p>
+                                </div>
                             </section>
 
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">External API</h3>
-                                <div class="flex items-center gap-3 border border-gray-200 rounded-lg px-4 py-3">
-                                    <label class="relative shrink-0 cursor-pointer select-none">
-                                        <input type="checkbox" id="externalApiEnabled" name="externalApiEnabled" class="sr-only peer" <%= config.EXTERNAL_API_ENABLED === 'yes' ? 'checked' : '' %>>
-                                        <div class="w-10 h-5 bg-gray-300 peer-checked:bg-blue-500 rounded-full transition-colors"></div>
-                                        <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
+                            <section class="zr-module" id="sec-external-api">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">External API</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <div class="zr-switchrow">
+                                    <label class="zr-switch">
+                                        <input type="checkbox" id="externalApiEnabled" name="externalApiEnabled" <%= config.EXTERNAL_API_ENABLED === 'yes' ? 'checked' : '' %>>
+                                        <span class="zr-switch__track"><span class="zr-switch__thumb"></span></span>
                                     </label>
-                                    <div class="min-w-0">
-                                        <label for="externalApiEnabled" class="block text-sm font-medium cursor-pointer">Enable External API Integration</label>
-                                        <p class="text-xs text-gray-500 mt-0.5">ENV: EXTERNAL_API_ENABLED · Restart required</p>
+                                    <div class="zr-grow">
+                                        <label for="externalApiEnabled" class="zr-field__name">Enable External API Integration</label>
+                                        <p class="zr-field__hint">ENV: EXTERNAL_API_ENABLED · Restart required</p>
                                     </div>
                                 </div>
 
                                 <div id="externalApiSettings" class="space-y-4 <%= config.EXTERNAL_API_ENABLED === 'yes' ? '' : 'hidden' %>">
-                                    <div class="space-y-2">
-                                        <label for="externalApiUrl" class="text-sm font-medium">API URL</label>
-                                        <input type="text" id="externalApiUrl" name="externalApiUrl" value="<%= config.EXTERNAL_API_URL || '' %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="externalApiUrl" class="zr-field__name">API URL</label>
+                                        <input type="text" id="externalApiUrl" name="externalApiUrl" value="<%= config.EXTERNAL_API_URL || '' %>" class="zr-input">
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="externalApiMethod" class="text-sm font-medium">HTTP Method</label>
-                                        <select id="externalApiMethod" name="externalApiMethod" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="externalApiMethod" class="zr-field__name">HTTP Method</label>
+                                        <select id="externalApiMethod" name="externalApiMethod" class="zr-input">
                                             <option value="GET" <%= config.EXTERNAL_API_METHOD === 'GET' ? 'selected' : '' %>>GET</option>
                                             <option value="POST" <%= config.EXTERNAL_API_METHOD === 'POST' ? 'selected' : '' %>>POST</option>
                                             <option value="PUT" <%= config.EXTERNAL_API_METHOD === 'PUT' ? 'selected' : '' %>>PUT</option>
                                         </select>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="externalApiHeaders" class="text-sm font-medium">Headers (JSON)</label>
-                                        <textarea id="externalApiHeaders" name="externalApiHeaders" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><%= config.EXTERNAL_API_HEADERS || '' %></textarea>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="externalApiHeaders" class="zr-field__name">Headers (JSON)</label>
+                                        <textarea id="externalApiHeaders" name="externalApiHeaders" rows="3" class="zr-input"><%= config.EXTERNAL_API_HEADERS || '' %></textarea>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="externalApiBody" class="text-sm font-medium">Request Body (JSON)</label>
-                                        <textarea id="externalApiBody" name="externalApiBody" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><%= config.EXTERNAL_API_BODY || '' %></textarea>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="externalApiBody" class="zr-field__name">Request Body (JSON)</label>
+                                        <textarea id="externalApiBody" name="externalApiBody" rows="3" class="zr-input"><%= config.EXTERNAL_API_BODY || '' %></textarea>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="externalApiTimeout" class="text-sm font-medium">Timeout (milliseconds)</label>
-                                        <input type="number" id="externalApiTimeout" name="externalApiTimeout" value="<%= config.EXTERNAL_API_TIMEOUT || '5000' %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="externalApiTimeout" class="zr-field__name">Timeout (milliseconds)</label>
+                                        <input type="number" id="externalApiTimeout" name="externalApiTimeout" value="<%= config.EXTERNAL_API_TIMEOUT || '5000' %>" class="zr-input">
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="externalApiTransform" class="text-sm font-medium">Transform Path</label>
-                                        <textarea id="externalApiTransform" name="externalApiTransform" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"><%= config.EXTERNAL_API_TRANSFORM || '' %></textarea>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="externalApiTransform" class="zr-field__name">Transform Path</label>
+                                        <textarea id="externalApiTransform" name="externalApiTransform" rows="4" class="zr-input"><%= config.EXTERNAL_API_TRANSFORM || '' %></textarea>
                                     </div>
                                     <%- include('partials/settings-switch', {
                                         id: 'externalApiAllowPrivateIps',
@@ -628,44 +663,52 @@
                                         checked: config.EXTERNAL_API_ALLOW_PRIVATE_IPS === 'yes',
                                         hint: 'ENV: EXTERNAL_API_ALLOW_PRIVATE_IPS · Restart required'
                                     }) %>
-                                    <p class="text-xs text-gray-500">ENV: EXTERNAL_API_* · Restart required</p>
+                                    <p class="zr-field__hint">ENV: EXTERNAL_API_* · Restart required</p>
+                                </div>
                                 </div>
                             </section>
 
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">AI Function Limits</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <label for="activateTagging" class="flex items-center gap-3 border rounded-lg p-3 cursor-pointer"><input type="checkbox" id="activateTagging" name="activateTagging" class="w-5 h-5" <%= config.ACTIVATE_TAGGING === 'yes' ? 'checked' : '' %>><span>Tags Assignment</span></label>
-                                    <label for="activateCorrespondents" class="flex items-center gap-3 border rounded-lg p-3 cursor-pointer"><input type="checkbox" id="activateCorrespondents" name="activateCorrespondents" class="w-5 h-5" <%= config.ACTIVATE_CORRESPONDENTS === 'yes' ? 'checked' : '' %>><span>Correspondent Detection</span></label>
-                                    <label for="activateDocumentType" class="flex items-center gap-3 border rounded-lg p-3 cursor-pointer"><input type="checkbox" id="activateDocumentType" name="activateDocumentType" class="w-5 h-5" <%= config.ACTIVATE_DOCUMENT_TYPE === 'yes' ? 'checked' : '' %>><span>Document Type Classification</span></label>
-                                    <label for="activateTitle" class="flex items-center gap-3 border rounded-lg p-3 cursor-pointer"><input type="checkbox" id="activateTitle" name="activateTitle" class="w-5 h-5" <%= config.ACTIVATE_TITLE === 'yes' ? 'checked' : '' %>><span>Title Generation</span></label>
-                                    <label for="activateCustomFields" class="flex items-center gap-3 border rounded-lg p-3 cursor-pointer"><input type="checkbox" id="activateCustomFields" name="activateCustomFields" class="w-5 h-5" <%= config.ACTIVATE_CUSTOM_FIELDS === 'yes' ? 'checked' : '' %>><span>Custom Fields</span></label>
+                            <section class="zr-module" id="sec-ai-function-limits">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">AI Function Limits</h2>
                                 </div>
-                                <p class="text-xs text-gray-500">ENV: ACTIVATE_* · Restart required</p>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <div class="zr-formgrid">
+                                    <label for="activateTagging" class="zr-checktile"><input type="checkbox" id="activateTagging" name="activateTagging" class="zr-check" <%= config.ACTIVATE_TAGGING === 'yes' ? 'checked' : '' %>><span>Tags Assignment</span></label>
+                                    <label for="activateCorrespondents" class="zr-checktile"><input type="checkbox" id="activateCorrespondents" name="activateCorrespondents" class="zr-check" <%= config.ACTIVATE_CORRESPONDENTS === 'yes' ? 'checked' : '' %>><span>Correspondent Detection</span></label>
+                                    <label for="activateDocumentType" class="zr-checktile"><input type="checkbox" id="activateDocumentType" name="activateDocumentType" class="zr-check" <%= config.ACTIVATE_DOCUMENT_TYPE === 'yes' ? 'checked' : '' %>><span>Document Type Classification</span></label>
+                                    <label for="activateTitle" class="zr-checktile"><input type="checkbox" id="activateTitle" name="activateTitle" class="zr-check" <%= config.ACTIVATE_TITLE === 'yes' ? 'checked' : '' %>><span>Title Generation</span></label>
+                                    <label for="activateCustomFields" class="zr-checktile"><input type="checkbox" id="activateCustomFields" name="activateCustomFields" class="zr-check" <%= config.ACTIVATE_CUSTOM_FIELDS === 'yes' ? 'checked' : '' %>><span>Custom Fields</span></label>
+                                </div>
+                                <p class="zr-field__hint">ENV: ACTIVATE_* · Restart required</p>
+                                </div>
                             </section>
 
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">Custom Fields</h3>
-                                <div id="customFieldsList" class="space-y-2">
+                            <section class="zr-module" id="sec-custom-fields">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Custom Fields</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <div id="customFieldsList" class="zr-field zr-field--stacked">
                                     <% let _parsedCustomFields = []; try { const _cf = JSON.parse(config.CUSTOM_FIELDS || '{}'); if (Array.isArray(_cf.custom_fields)) _parsedCustomFields = _cf.custom_fields; } catch(e) {} %>
                                     <% if (_parsedCustomFields.length > 0) { %>
                                         <% _parsedCustomFields.forEach((field) => { %>
                                             <div class="custom-field-item flex items-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors">
-                                                <div class="cursor-move text-gray-400"><i class="fas fa-grip-vertical"></i></div>
+                                                <div class="cursor-move text-gray-400"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-grip"/></svg></div>
                                                 <div class="flex-1">
                                                     <p class="font-medium text-gray-900 dark:text-gray-100"><%= field.value %></p>
                                                     <p class="text-sm text-gray-500 dark:text-gray-400">Type: <%= field.data_type %> <%= field.data_type === 'monetary' && field.currency ? `(${field.currency})` : '' %></p>
                                                 </div>
-                                                <button type="button" onclick="removeCustomField(this)" class="text-gray-400 hover:text-red-500 transition-colors"><i class="fas fa-trash"></i></button>
+                                                <button type="button" onclick="removeCustomField(this)" class="text-gray-400 hover:text-red-500 transition-colors"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg></button>
                                             </div>
                                         <% }); %>
                                     <% } %>
                                 </div>
 
                                 <div class="grid grid-cols-12 gap-3">
-                                    <div class="col-span-5"><input type="text" id="newFieldName" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100" placeholder="Enter field name..."></div>
+                                    <div class="col-span-5"><input type="text" id="newFieldName" class="zr-input" placeholder="Enter field name..."></div>
                                     <div class="col-span-3">
-                                        <select id="newFieldType" onchange="toggleCurrencySelect()" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                        <select id="newFieldType" onchange="toggleCurrencySelect()" class="zr-input">
                                             <option value="string">Text</option>
                                             <option value="float">Number</option>
                                             <option value="integer">Integer</option>
@@ -683,16 +726,20 @@
                                             <option value="CHF">CHF</option>
                                         </select>
                                     </div>
-                                    <div class="col-span-2"><button type="button" onclick="addCustomField()" class="w-full px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg">Add</button></div>
+                                    <div class="col-span-2"><button type="button" onclick="addCustomField()" class="zr-btn zr-btn--primary zr-btn--block">Add</button></div>
                                 </div>
                                 <input type="hidden" id="customFieldsJson" name="customFields" value='<%= config.CUSTOM_FIELDS || "{\"custom_fields\":[]}" %>'>
-                                <p class="text-xs text-gray-500">ENV: CUSTOM_FIELDS · Restart required</p>
+                                <p class="zr-field__hint">ENV: CUSTOM_FIELDS · Restart required</p>
+                                </div>
                             </section>
                         </div>
 
-                        <div id="ocr-tab" class="settings-tab-content space-y-6 hidden">
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">OCR Fallback</h3>
+                        <div id="ocr-tab" class="zr-col zr-col--loose">
+                            <section class="zr-module" id="sec-ocr-fallback">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">OCR Fallback</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
                                 <%- include('partials/settings-switch', {
                                     id: 'mistralOcrEnabled',
                                     label: 'Enable OCR',
@@ -700,41 +747,41 @@
                                     hint: 'ENV: MISTRAL_OCR_ENABLED · Restart required'
                                 }) %>
                                 <div id="ocrFieldsContainer" class="space-y-2 <%= config.MISTRAL_OCR_ENABLED === 'yes' ? '' : 'hidden' %>">
-                                <div class="space-y-2">
-                                    <label for="ocrProvider" class="text-sm font-medium">OCR Provider</label>
-                                    <select id="ocrProvider" name="ocrProvider" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="ocrProvider" class="zr-field__name">OCR Provider</label>
+                                    <select id="ocrProvider" name="ocrProvider" class="zr-input">
                                         <option value="mistral" <%= (config.OCR_PROVIDER || 'mistral') === 'mistral' ? 'selected' : '' %>>Mistral OCR API</option>
                                         <option value="custom" <%= ((config.OCR_PROVIDER || 'mistral') === 'custom' || (config.OCR_PROVIDER || 'mistral') === 'ollama') ? 'selected' : '' %>>Custom (Ollama, LM Studio, local models)</option>
                                     </select>
-                                    <p class="text-xs text-gray-500">ENV: OCR_PROVIDER · Restart required</p>
+                                    <p class="zr-field__hint">ENV: OCR_PROVIDER · Restart required</p>
                                 </div>
-                                <div id="ocrApiUrlContainer" class="space-y-2">
-                                    <label for="ocrApiUrl" class="text-sm font-medium">OCR API URL (optional override)</label>
-                                    <input type="text" id="ocrApiUrl" name="ocrApiUrl" value="<%= config.OCR_API_URL || '' %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Leave empty to use provider default">
-                                    <p class="text-xs text-gray-500">ENV: OCR_API_URL · Restart required</p>
+                                <div id="ocrApiUrlContainer" class="zr-field zr-field--stacked">
+                                    <label for="ocrApiUrl" class="zr-field__name">OCR API URL (optional override)</label>
+                                    <input type="text" id="ocrApiUrl" name="ocrApiUrl" value="<%= config.OCR_API_URL || '' %>" class="zr-input" placeholder="Leave empty to use provider default">
+                                    <p class="zr-field__hint">ENV: OCR_API_URL · Restart required</p>
                                 </div>
-                                <div id="ocrApiKeyContainer" class="space-y-2">
-                                    <label for="ocrApiKey" class="text-sm font-medium">OCR API Key</label>
-                                    <div class="relative">
-                                        <input type="password" id="ocrApiKey" name="ocrApiKey" value="" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="<%= (configuredSecrets.OCR_API_KEY || configuredSecrets.MISTRAL_API_KEY) ? 'Configured (leave empty to keep current value)' : 'Optional for local/custom, required for Mistral' %>">
-                                        <button type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600" data-input="ocrApiKey"><i class="fas fa-eye"></i></button>
+                                <div id="ocrApiKeyContainer" class="zr-field zr-field--stacked">
+                                    <label for="ocrApiKey" class="zr-field__name">OCR API Key</label>
+                                    <div class="zr-inputgroup">
+                                        <input type="password" id="ocrApiKey" name="ocrApiKey" value="" class="zr-input" placeholder="<%= (configuredSecrets.OCR_API_KEY || configuredSecrets.MISTRAL_API_KEY) ? 'Configured (leave empty to keep current value)' : 'Optional for local/custom, required for Mistral' %>">
+                                        <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="ocrApiKey"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                     </div>
-                                    <p class="text-xs text-gray-500">ENV: OCR_API_KEY (legacy fallback: MISTRAL_API_KEY) · Restart required</p>
+                                    <p class="zr-field__hint">ENV: OCR_API_KEY (legacy fallback: MISTRAL_API_KEY) · Restart required</p>
                                 </div>
-                                <div class="space-y-2">
-                                    <label for="mistralOcrModel" class="text-sm font-medium">OCR Model</label>
-                                    <div class="flex flex-col sm:flex-row gap-2">
-                                        <select id="mistralOcrModel" name="mistralOcrModel" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="mistralOcrModel" class="zr-field__name">OCR Model</label>
+                                    <div class="zr-inputgroup">
+                                        <select id="mistralOcrModel" name="mistralOcrModel" class="zr-input">
                                             <option value="<%= config.MISTRAL_OCR_MODEL || 'mistral-ocr-latest' %>" selected><%= config.MISTRAL_OCR_MODEL || 'mistral-ocr-latest' %></option>
                                         </select>
-                                        <button type="button" id="fetchOcrModelsBtn" class="toolbar-btn toolbar-btn--warning flex items-center justify-center gap-2 whitespace-nowrap">
-                                            <i class="fas fa-list"></i>
+                                        <button type="button" id="fetchOcrModelsBtn" class="zr-btn">
+                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
                                             <span>Fetch OCR Models</span>
                                         </button>
                                     </div>
-                                    <p class="text-xs text-gray-500">ENV: MISTRAL_OCR_MODEL · Restart required</p>
+                                    <p class="zr-field__hint">ENV: MISTRAL_OCR_MODEL · Restart required</p>
                                 </div>
-                                <div id="ocrPdfRenderContainer" class="space-y-4">
+                                <div id="ocrPdfRenderContainer" class="zr-col zr-col--loose">
                                     <%- include('partials/settings-switch', {
                                         id: 'ocrPdfRenderEnabled',
                                         label: 'Render PDF Pages (poppler)',
@@ -742,19 +789,19 @@
                                         hint: 'ENV: OCR_PDF_RENDER_ENABLED · Render PDF pages with poppler (pdftoppm) so local vision models can OCR multi-page documents; falls back to the first-page thumbnail when poppler is not installed · Restart required'
                                     }) %>
                                     <div id="ocrPdfRenderOptionsContainer" class="space-y-4 <%= (config.OCR_PDF_RENDER_ENABLED || 'yes') === 'yes' ? '' : 'hidden' %>">
-                                        <div class="space-y-2">
-                                            <label for="ocrPdfRenderMaxPages" class="text-sm font-medium">Max PDF Pages per Document</label>
-                                            <input type="number" id="ocrPdfRenderMaxPages" name="ocrPdfRenderMaxPages" min="1" max="50" step="1" value="<%= config.OCR_PDF_RENDER_MAX_PAGES || 10 %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                            <p class="text-xs text-gray-500">ENV: OCR_PDF_RENDER_MAX_PAGES · Each page is one vision model request; pages beyond the limit are skipped · Restart required</p>
+                                        <div class="zr-field zr-field--stacked">
+                                            <label for="ocrPdfRenderMaxPages" class="zr-field__name">Max PDF Pages per Document</label>
+                                            <input type="number" id="ocrPdfRenderMaxPages" name="ocrPdfRenderMaxPages" min="1" max="50" step="1" value="<%= config.OCR_PDF_RENDER_MAX_PAGES || 10 %>" class="zr-input">
+                                            <p class="zr-field__hint">ENV: OCR_PDF_RENDER_MAX_PAGES · Each page is one vision model request; pages beyond the limit are skipped · Restart required</p>
                                         </div>
-                                        <div class="space-y-2">
-                                            <label for="ocrPdfRenderDpi" class="text-sm font-medium">PDF Render Resolution (DPI)</label>
-                                            <input type="number" id="ocrPdfRenderDpi" name="ocrPdfRenderDpi" min="72" max="300" step="1" value="<%= config.OCR_PDF_RENDER_DPI || 150 %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                            <p class="text-xs text-gray-500">ENV: OCR_PDF_RENDER_DPI · Higher values improve OCR accuracy but increase image size (72–300) · Restart required</p>
+                                        <div class="zr-field zr-field--stacked">
+                                            <label for="ocrPdfRenderDpi" class="zr-field__name">PDF Render Resolution (DPI)</label>
+                                            <input type="number" id="ocrPdfRenderDpi" name="ocrPdfRenderDpi" min="72" max="300" step="1" value="<%= config.OCR_PDF_RENDER_DPI || 150 %>" class="zr-input">
+                                            <p class="zr-field__hint">ENV: OCR_PDF_RENDER_DPI · Higher values improve OCR accuracy but increase image size (72–300) · Restart required</p>
                                         </div>
                                     </div>
                                 </div>
-                                <div id="ocrAutoProcessContainer" class="space-y-4">
+                                <div id="ocrAutoProcessContainer" class="zr-col zr-col--loose">
                                     <%- include('partials/settings-switch', {
                                         id: 'ocrAutoProcessEnabled',
                                         label: 'Process OCR Queue Automatically',
@@ -762,15 +809,15 @@
                                         hint: 'ENV: OCR_AUTO_PROCESS_ENABLED &middot; Work through queued documents on a schedule instead of pressing "Process All Pending" on the OCR page &middot; Restart required'
                                     }) %>
                                     <div id="ocrAutoProcessOptionsContainer" class="space-y-4 <%= (config.OCR_AUTO_PROCESS_ENABLED || 'no') === 'yes' ? '' : 'hidden' %>">
-                                        <div class="space-y-2">
-                                            <label for="ocrAutoProcessInterval" class="text-sm font-medium">OCR Processing Interval (Cron)</label>
-                                            <input type="text" id="ocrAutoProcessInterval" name="ocrAutoProcessInterval" value="<%= config.OCR_AUTO_PROCESS_INTERVAL || '*/15 * * * *' %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="*/15 * * * *">
-                                            <p class="text-xs text-gray-500">ENV: OCR_AUTO_PROCESS_INTERVAL &middot; Default: every 15 minutes &middot; Runs are skipped while a document scan is active &middot; Restart required</p>
+                                        <div class="zr-field zr-field--stacked">
+                                            <label for="ocrAutoProcessInterval" class="zr-field__name">OCR Processing Interval (Cron)</label>
+                                            <input type="text" id="ocrAutoProcessInterval" name="ocrAutoProcessInterval" value="<%= config.OCR_AUTO_PROCESS_INTERVAL || '*/15 * * * *' %>" class="zr-input" placeholder="*/15 * * * *">
+                                            <p class="zr-field__hint">ENV: OCR_AUTO_PROCESS_INTERVAL &middot; Default: every 15 minutes &middot; Runs are skipped while a document scan is active &middot; Restart required</p>
                                         </div>
-                                        <div class="space-y-2">
-                                            <label for="ocrAutoProcessBatchSize" class="text-sm font-medium">Documents per Run</label>
-                                            <input type="number" id="ocrAutoProcessBatchSize" name="ocrAutoProcessBatchSize" min="1" max="100" step="1" value="<%= config.OCR_AUTO_PROCESS_BATCH_SIZE || 10 %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                            <p class="text-xs text-gray-500">ENV: OCR_AUTO_PROCESS_BATCH_SIZE &middot; Caps how many queued documents one run handles; the rest follow at the next interval (1&ndash;100) &middot; Restart required</p>
+                                        <div class="zr-field zr-field--stacked">
+                                            <label for="ocrAutoProcessBatchSize" class="zr-field__name">Documents per Run</label>
+                                            <input type="number" id="ocrAutoProcessBatchSize" name="ocrAutoProcessBatchSize" min="1" max="100" step="1" value="<%= config.OCR_AUTO_PROCESS_BATCH_SIZE || 10 %>" class="zr-input">
+                                            <p class="zr-field__hint">ENV: OCR_AUTO_PROCESS_BATCH_SIZE &middot; Caps how many queued documents one run handles; the rest follow at the next interval (1&ndash;100) &middot; Restart required</p>
                                         </div>
                                         <%- include('partials/settings-switch', {
                                             id: 'ocrAutoAnalyze',
@@ -780,174 +827,191 @@
                                         }) %>
                                     </div>
                                 </div>
-                                <div class="space-y-2">
-                                    <label for="ocrValidationTimeout" class="text-sm font-medium">OCR Timeout</label>
-                                    <div class="flex items-center gap-3">
-                                        <input type="number" id="ocrValidationTimeout" name="ocrValidationTimeout" min="1" max="7200" step="1" value="<%= Math.round(Number(config.SETUP_OCR_VALIDATION_TIMEOUT_MS || config.SETUP_VALIDATION_TIMEOUT_MS || 30000) / 1000) %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                <div class="zr-field zr-field--stacked">
+                                    <label for="ocrValidationTimeout" class="zr-field__name">OCR Timeout</label>
+                                    <div class="zr-row">
+                                        <input type="number" id="ocrValidationTimeout" name="ocrValidationTimeout" min="1" max="7200" step="1" value="<%= Math.round(Number(config.SETUP_OCR_VALIDATION_TIMEOUT_MS || config.SETUP_VALIDATION_TIMEOUT_MS || 30000) / 1000) %>" class="zr-input">
                                         <span class="text-xs text-gray-500 whitespace-nowrap">seconds</span>
                                     </div>
-                                    <p class="text-xs text-gray-500">ENV: SETUP_OCR_VALIDATION_TIMEOUT_MS · Used for OCR model loading, connection tests and document processing</p>
+                                    <p class="zr-field__hint">ENV: SETUP_OCR_VALIDATION_TIMEOUT_MS · Used for OCR model loading, connection tests and document processing</p>
                                 </div>
-                                <div class="flex flex-wrap items-center gap-3">
-                                    <button type="button" id="testOcrBtn" class="toolbar-btn toolbar-btn--warning flex items-center gap-2">
-                                        <i class="fas fa-flask"></i>
+                                <div class="zr-row zr-row--wrap">
+                                    <button type="button" id="testOcrBtn" class="zr-btn">
+                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-flask"/></svg>
                                         <span>Test OCR Connection</span>
                                     </button>
                                     <span id="ocrTestState" class="setup-pill">Not tested</span>
                                 </div>
                                 </div>
+                                </div>
                             </section>
                         </div>
 
-                        <div id="troubleshooting-tab" class="settings-tab-content space-y-6 hidden">
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">Caching</h3>
-                                <div class="space-y-2">
+                        <div id="troubleshooting-tab" class="zr-col zr-col--loose">
+                            <section class="zr-module" id="sec-caching">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Caching</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <div class="zr-field zr-field--stacked">
                                     <label for="tagCacheTTL" class="text-sm font-medium flex items-center gap-2">
                                         Tag Cache Lifetime (Seconds)
-                                        <button type="button" class="text-gray-400 hover:text-gray-600 focus:outline-none" id="tagCacheTTLHelp">
-                                            <i class="fas fa-circle-question"></i>
+                                        <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" id="tagCacheTTLHelp">
+                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-help"/></svg>
                                         </button>
                                     </label>
-                                    <input type="number" id="tagCacheTTL" name="tagCacheTTL" min="60" max="3600" value="<%= config.TAG_CACHE_TTL_SECONDS || 300 %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" required>
-                                    <p class="text-xs text-gray-500">ENV: TAG_CACHE_TTL_SECONDS · Restart required</p>
+                                    <input type="number" id="tagCacheTTL" name="tagCacheTTL" min="60" max="3600" value="<%= config.TAG_CACHE_TTL_SECONDS || 300 %>" class="zr-input" required>
+                                    <p class="zr-field__hint">ENV: TAG_CACHE_TTL_SECONDS · Restart required</p>
                                 </div>
-                                <button type="button" id="clearTagCacheBtn" class="toolbar-btn toolbar-btn--warning flex items-center gap-2">
-                                    <i class="fas fa-trash-alt" id="clearCacheIcon"></i>
+                                <button type="button" id="clearTagCacheBtn" class="zr-btn">
+                                    <svg class="zr-icon" id="clearCacheIcon" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>
                                     <span>Clear Tag Cache Now</span>
                                 </button>
 
                                 <div class="space-y-3 border border-gray-200 rounded-lg p-3">
                                     <div class="flex items-center justify-between gap-2">
                                         <div>
-                                            <p class="text-sm font-medium">Thumbnail Cache</p>
-                                            <p class="text-xs text-gray-500">Local cached previews stored in <code>public/images</code>.</p>
+                                            <p class="zr-field__name">Thumbnail Cache</p>
+                                            <p class="zr-field__hint">Local cached previews stored in <code>public/images</code>.</p>
                                         </div>
-                                        <button type="button" id="refreshThumbnailCacheStatsBtn" class="toolbar-btn flex items-center gap-2">
-                                            <i class="fas fa-rotate"></i>
+                                        <button type="button" id="refreshThumbnailCacheStatsBtn" class="zr-btn">
+                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                                             <span>Refresh</span>
                                         </button>
                                     </div>
 
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                    <div class="zr-formgrid">
                                         <div class="rounded-lg border border-gray-200 p-3">
-                                            <p class="text-xs text-gray-500">Files</p>
-                                            <p id="thumbnailCacheFileCount" class="text-lg font-semibold">-</p>
+                                            <p class="zr-field__hint">Files</p>
+                                            <p id="thumbnailCacheFileCount" class="zr-module__title">-</p>
                                         </div>
                                         <div class="rounded-lg border border-gray-200 p-3">
-                                            <p class="text-xs text-gray-500">Total Size</p>
-                                            <p id="thumbnailCacheTotalSize" class="text-lg font-semibold">-</p>
+                                            <p class="zr-field__hint">Total Size</p>
+                                            <p id="thumbnailCacheTotalSize" class="zr-module__title">-</p>
                                         </div>
                                     </div>
 
-                                    <button type="button" id="clearThumbnailCacheBtn" class="toolbar-btn toolbar-btn--danger flex items-center gap-2">
-                                        <i class="fas fa-trash" id="clearThumbnailCacheIcon"></i>
+                                    <button type="button" id="clearThumbnailCacheBtn" class="zr-btn zr-btn--danger">
+                                        <svg class="zr-icon" id="clearThumbnailCacheIcon" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>
                                         <span>Clear Thumbnail Cache</span>
                                     </button>
                                 </div>
 
+                                </div>
                             </section>
 
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">Runtime Controls</h3>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div class="space-y-2">
-                                        <label for="globalRateLimitWindowMs" class="text-sm font-medium">Global rate-limit window (ms)</label>
-                                        <input type="number" id="globalRateLimitWindowMs" name="globalRateLimitWindowMs" value="<%= config.GLOBAL_RATE_LIMIT_WINDOW_MS || 900000 %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: GLOBAL_RATE_LIMIT_WINDOW_MS · Restart required</p>
+                            <section class="zr-module" id="sec-runtime-controls">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Runtime Controls</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <div class="zr-formgrid">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="globalRateLimitWindowMs" class="zr-field__name">Global rate-limit window (ms)</label>
+                                        <input type="number" id="globalRateLimitWindowMs" name="globalRateLimitWindowMs" value="<%= config.GLOBAL_RATE_LIMIT_WINDOW_MS || 900000 %>" class="zr-input">
+                                        <p class="zr-field__hint">ENV: GLOBAL_RATE_LIMIT_WINDOW_MS · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="globalRateLimitMax" class="text-sm font-medium">Global rate-limit max requests</label>
-                                        <input type="number" id="globalRateLimitMax" name="globalRateLimitMax" value="<%= config.GLOBAL_RATE_LIMIT_MAX || 1000 %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: GLOBAL_RATE_LIMIT_MAX · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="globalRateLimitMax" class="zr-field__name">Global rate-limit max requests</label>
+                                        <input type="number" id="globalRateLimitMax" name="globalRateLimitMax" value="<%= config.GLOBAL_RATE_LIMIT_MAX || 1000 %>" class="zr-input">
+                                        <p class="zr-field__hint">ENV: GLOBAL_RATE_LIMIT_MAX · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="trustProxy" class="text-sm font-medium">Trust Proxy</label>
-                                        <input type="text" id="trustProxy" name="trustProxy" value="<%= config.TRUST_PROXY %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="false | true | 1 | loopback">
-                                        <p class="text-xs text-gray-500">ENV: TRUST_PROXY · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="trustProxy" class="zr-field__name">Trust Proxy</label>
+                                        <input type="text" id="trustProxy" name="trustProxy" value="<%= config.TRUST_PROXY %>" class="zr-input" placeholder="false | true | 1 | loopback">
+                                        <p class="zr-field__hint">ENV: TRUST_PROXY · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="cookieSecureMode" class="text-sm font-medium">Cookie Secure Mode</label>
-                                        <select id="cookieSecureMode" name="cookieSecureMode" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="cookieSecureMode" class="zr-field__name">Cookie Secure Mode</label>
+                                        <select id="cookieSecureMode" name="cookieSecureMode" class="zr-input">
                                             <option value="auto" <%= String(config.COOKIE_SECURE_MODE || 'auto').toLowerCase() === 'auto' ? 'selected' : '' %>>auto</option>
                                             <option value="always" <%= String(config.COOKIE_SECURE_MODE || 'auto').toLowerCase() === 'always' ? 'selected' : '' %>>always</option>
                                             <option value="never" <%= String(config.COOKIE_SECURE_MODE || 'auto').toLowerCase() === 'never' ? 'selected' : '' %>>never</option>
                                         </select>
-                                        <p class="text-xs text-gray-500">ENV: COOKIE_SECURE_MODE · Restart required</p>
+                                        <p class="zr-field__hint">ENV: COOKIE_SECURE_MODE · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="minContentLength" class="text-sm font-medium">Minimum content length</label>
-                                        <input type="number" id="minContentLength" name="minContentLength" value="<%= config.MIN_CONTENT_LENGTH || 10 %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: MIN_CONTENT_LENGTH · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="minContentLength" class="zr-field__name">Minimum content length</label>
+                                        <input type="number" id="minContentLength" name="minContentLength" value="<%= config.MIN_CONTENT_LENGTH || 10 %>" class="zr-input">
+                                        <p class="zr-field__hint">ENV: MIN_CONTENT_LENGTH · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="paperlessAiPort" class="text-sm font-medium">Zettelrobbe Port</label>
-                                        <input type="number" id="paperlessAiPort" name="paperlessAiPort" value="<%= config.PAPERLESS_AI_PORT || 3000 %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                                        <p class="text-xs text-gray-500">ENV: PAPERLESS_AI_PORT · Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="paperlessAiPort" class="zr-field__name">Zettelrobbe Port</label>
+                                        <input type="number" id="paperlessAiPort" name="paperlessAiPort" value="<%= config.PAPERLESS_AI_PORT || 3000 %>" class="zr-input">
+                                        <p class="zr-field__hint">ENV: PAPERLESS_AI_PORT · Restart required</p>
                                     </div>
-                                    <div class="space-y-2">
-                                        <label for="logLevel" class="text-sm font-medium">Log Level</label>
-                                        <select id="logLevel" name="logLevel" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="logLevel" class="zr-field__name">Log Level</label>
+                                        <select id="logLevel" name="logLevel" class="zr-input">
                                             <option value="error" <%= String(config.LOG_LEVEL || 'info').toLowerCase() === 'error' ? 'selected' : '' %>>error</option>
                                             <option value="warn" <%= String(config.LOG_LEVEL || 'info').toLowerCase() === 'warn' ? 'selected' : '' %>>warn</option>
                                             <option value="info" <%= String(config.LOG_LEVEL || 'info').toLowerCase() === 'info' ? 'selected' : '' %>>info (default)</option>
                                             <option value="debug" <%= String(config.LOG_LEVEL || 'info').toLowerCase() === 'debug' ? 'selected' : '' %>>debug</option>
                                         </select>
-                                        <p class="text-xs text-gray-500">ENV: LOG_LEVEL · Restart required</p>
+                                        <p class="zr-field__hint">ENV: LOG_LEVEL · Restart required</p>
                                     </div>
+                                </div>
                                 </div>
                             </section>
 
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">History Reconciliation</h3>
-                                <p class="text-sm text-gray-600">
+                            <section class="zr-module" id="sec-history-reconciliation">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">History Reconciliation</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <p class="zr-sm zr-muted">
                                     Automatically removes stale history entries for documents that have been deleted in Paperless-ngx.
                                     Reconciliation runs on a configurable cron schedule and waits for any active scan to finish before starting.
                                 </p>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="zr-formgrid">
                                     <%- include('partials/settings-switch', {
                                         id: 'reconciliationEnabled',
                                         label: 'Automatic Reconciliation',
                                         checked: String(config.RECONCILIATION_ENABLED || 'yes').toLowerCase() === 'yes',
                                         hint: 'ENV: RECONCILIATION_ENABLED · Restart required'
                                     }) %>
-                                    <div class="space-y-2">
-                                        <label for="reconciliationInterval" class="text-sm font-medium">Reconciliation Interval (Cron)</label>
-                                        <input type="text" id="reconciliationInterval" name="reconciliationInterval" value="<%= config.RECONCILIATION_INTERVAL || '0 * * * *' %>" class="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="0 * * * *">
-                                        <p class="text-xs text-gray-500">ENV: RECONCILIATION_INTERVAL · Default: every hour &middot; Restart required</p>
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="reconciliationInterval" class="zr-field__name">Reconciliation Interval (Cron)</label>
+                                        <input type="text" id="reconciliationInterval" name="reconciliationInterval" value="<%= config.RECONCILIATION_INTERVAL || '0 * * * *' %>" class="zr-input" placeholder="0 * * * *">
+                                        <p class="zr-field__hint">ENV: RECONCILIATION_INTERVAL · Default: every hour &middot; Restart required</p>
                                     </div>
                                 </div>
                                 <div>
-                                    <button type="button" id="forceReconcileBtn" class="toolbar-btn toolbar-btn--warning flex items-center gap-2">
-                                        <i class="fas fa-rotate"></i>
+                                    <button type="button" id="forceReconcileBtn" class="zr-btn">
+                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                                         <span>Force Reconciliation Now</span>
                                     </button>
                                     <div id="reconcileResult" class="mt-3 hidden"></div>
                                 </div>
+                                </div>
                             </section>
 
-                            <section class="space-y-4 settings-section-card">
-                                <h3 class="text-lg font-semibold">Local Overrides</h3>
-                                <div class="space-y-2">
-                                    <p class="text-sm text-gray-600">Reset local runtime overrides to fall back to container-managed environment values after restart.</p>
-                                    <button type="button" id="resetLocalOverridesBtn" data-runtime-override-keys="<%- JSON.stringify(runtimeOverrideKeys || []).replace(/</g, '\\u003c').replace(/\"/g, '&quot;') %>" data-runtime-override-details="<%- JSON.stringify(runtimeOverrideDetails || {}).replace(/</g, '\\u003c').replace(/\"/g, '&quot;') %>" data-locked-env-keys="<%- JSON.stringify(lockedEnvKeys || []).replace(/</g, '\\u003c').replace(/\"/g, '&quot;') %>" data-locked-env-details="<%- JSON.stringify(lockedEnvDetails || {}).replace(/</g, '\\u003c').replace(/\"/g, '&quot;') %>" class="toolbar-btn toolbar-btn--danger flex items-center gap-2">
-                                        <i class="fas fa-rotate-left"></i>
+                            <section class="zr-module" id="sec-local-overrides">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Local Overrides</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <div class="zr-field zr-field--stacked">
+                                    <p class="zr-sm zr-muted">Reset local runtime overrides to fall back to container-managed environment values after restart.</p>
+                                    <button type="button" id="resetLocalOverridesBtn" data-runtime-override-keys="<%- JSON.stringify(runtimeOverrideKeys || []).replace(/</g, '\\u003c').replace(/\"/g, '&quot;') %>" data-runtime-override-details="<%- JSON.stringify(runtimeOverrideDetails || {}).replace(/</g, '\\u003c').replace(/\"/g, '&quot;') %>" data-locked-env-keys="<%- JSON.stringify(lockedEnvKeys || []).replace(/</g, '\\u003c').replace(/\"/g, '&quot;') %>" data-locked-env-details="<%- JSON.stringify(lockedEnvDetails || {}).replace(/</g, '\\u003c').replace(/\"/g, '&quot;') %>" class="zr-btn zr-btn--danger">
+                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg>
                                         <span>Reset Local Overrides (Password Required)</span>
                                     </button>
-                                    <p class="text-xs text-gray-500">Removes only local override data (`data/runtime-overrides.json`). Requires your current account password and an interactive user session. Restart to apply container-managed ENV values.</p>
+                                    <p class="zr-field__hint">Removes only local override data (`data/runtime-overrides.json`). Requires your current account password and an interactive user session. Restart to apply container-managed ENV values.</p>
+                                </div>
                                 </div>
                             </section>
                         </div>
 
-                        <div id="changelog-tab" class="settings-tab-content space-y-6 hidden">
-                            <section class="space-y-4 settings-section-card">
+                        <div id="changelog-tab" class="zr-col zr-col--loose">
+                            <section class="zr-module__body zr-col zr-col--loose">
                                 <div class="changelog-header">
                                     <div>
-                                        <h3 class="text-lg font-semibold">Release History</h3>
-                                        <p class="text-xs text-gray-500">What changed in each release, newest first. The current release is expanded.</p>
+                                        <h3 class="zr-module__title">Release History</h3>
+                                        <p class="zr-field__hint">What changed in each release, newest first. The current release is expanded.</p>
                                     </div>
                                     <a href="https://github.com/admonstrator/zettelrobbe/releases" target="_blank" rel="noopener noreferrer" class="changelog-source-link">
-                                        <i class="fab fa-github" aria-hidden="true"></i>
+                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-github"/></svg>
                                         <span>Full release notes</span>
                                     </a>
                                 </div>
@@ -965,7 +1029,7 @@
                                 %>
 
                                 <% if (releaseList.length === 0) { %>
-                                    <p class="text-sm text-gray-500">No release history available.</p>
+                                    <p class="zr-sm zr-faint">No release history available.</p>
                                 <% } else { %>
                                     <ol class="changelog-timeline">
                                         <% releaseList.forEach(function (release, releaseIndex) { %>
@@ -978,7 +1042,7 @@
                                                             <span class="changelog-current-pill">Current</span>
                                                         <% } %>
                                                         <span class="changelog-count"><%= release.entries.length %> change<%= release.entries.length === 1 ? '' : 's' %></span>
-                                                        <i class="fas fa-chevron-down changelog-chevron" aria-hidden="true"></i>
+                                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-chevron-down"/></svg>
                                                     </summary>
                                                     <ul class="changelog-entries">
                                                         <% release.entries.forEach(function (entry) { %>
@@ -1003,17 +1067,21 @@
                             </section>
                         </div>
 
-                        <div id="settingsSaveRow" class="border-t pt-6">
-                            <button type="submit" class="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 flex items-center justify-center gap-2">
-                                <i class="fas fa-save"></i>
-                                Save Configuration
+                        <div class="zr-actionbar" id="settingsSaveRow" data-el="actionbar" data-dirty="false">
+                            <span class="zr-actionbar__status" data-el="status">All changes saved</span>
+                            <span class="zr-badge zr-badge--warn hidden" data-el="restart">
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                                restart required
+                            </span>
+                            <button type="button" class="zr-btn" data-el="reset" disabled>Discard</button>
+                            <button type="submit" class="zr-btn zr-btn--primary" data-el="save">
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-save"/></svg>
+                                Save configuration
                             </button>
                         </div>
                     </form>
                 </div>
             </div>
-        </main>
-    </div>
 
     <%- include('partials/restart-overlay') %>
     <%- include('partials/model-test-overlay') %>
@@ -1025,5 +1093,4 @@
     </script>
     <%- include('partials/scripts/settings-scripts') %>
     <script src="/js/settings.js?v=<%= version || 'dev' %>"></script>
-    <%- include('partials/shell/footer') %>
     <%- include('partials/shell/body-close') %>

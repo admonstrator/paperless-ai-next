@@ -1,4 +1,4 @@
-/* global $ */
+import { createTable } from '/js/modules/data-table.js';
 
 class HistoryManager {
   constructor() {
@@ -12,6 +12,7 @@ class HistoryManager {
   initialize() {
     this.loadHistoryWithProgress()
       .then(() => {
+        this.initializeTableEvents();
         this.table = this.initializeDataTable();
         this.initializeModals();
         this.initializeResetButtons();
@@ -212,96 +213,61 @@ class HistoryManager {
   }
 
   initializeDataTable() {
-    return $('#historyTable').DataTable({
-      serverSide: true,
-      processing: true,
-      ajax: {
-        url: '/api/history',
-        data: (d) => {
-          d.tag = $('#tagFilter').val();
-          d.correspondent = $('#correspondentFilter').val();
-        },
-      },
+    const escape = (value) => this._escapeHTML(String(value ?? ''));
+
+    return createTable(document.getElementById('historyTable'), {
+      url: '/api/history',
+      pageLength: 10,
+      order: { column: 1, dir: 'desc' },
+      emptyText: 'No processed documents yet.',
+      extraParams: () => ({
+        tag: document.getElementById('tagFilter')?.value || '',
+        correspondent:
+          document.getElementById('correspondentFilter')?.value || '',
+      }),
       columns: [
         {
-          data: 'document_id',
-          render: (data) =>
-            `<input type="checkbox" class="doc-select rounded" value="${data}">`,
-          orderable: false,
-          width: '40px',
+          key: 'document_id',
+          label: '',
+          sortable: false,
+          width: '36px',
+          mobile: false,
+          render: (value) =>
+            `<input type="checkbox" class="doc-select zr-check" value="${escape(value)}">`,
+        },
+        { key: 'document_id', label: 'ID', width: '64px', mobileLabel: 'ID' },
+        {
+          key: 'title',
+          label: 'Title',
+          render: (value, row) =>
+            `<div class="zr-strong">${escape(value)}</div>` +
+            `<div class="zr-sm zr-faint">Modified: ${escape(new Date(row.created_at).toLocaleString())}</div>`,
         },
         {
-          data: 'document_id',
-          width: '60px',
+          key: 'correspondent',
+          label: 'Correspondent',
+          render: (value) =>
+            value
+              ? `<span class="zr-badge zr-badge--brand">${escape(value)}</span>`
+              : '<span class="zr-faint zr-sm">None</span>',
         },
         {
-          data: 'title',
-          render: (data, type, row) => {
-            if (type === 'display') {
-              const escapedData = this._escapeHTML(data);
-              return `
-                                <div class="font-medium">${escapedData}</div>
-                                <div class="text-xs text-gray-500">Modified: ${new Date(row.created_at).toLocaleString()}</div>
-                            `;
-            }
-            return data;
-          },
-        },
-        {
-          // AI Info button column (replaces raw tag badges)
-          data: 'document_id',
-          render: (data) => {
-            return `<button onclick="window.historyManager.openInfoModal(${data})" class="toolbar-btn toolbar-btn--warning toolbar-btn--sm" title="Show AI analysis details">
-                            <i class="fa-solid fa-circle-info"></i>
-                            <span class="hidden sm:inline ml-1">Details</span>
-                        </button>`;
-          },
-          orderable: false,
-          width: '80px',
-        },
-        {
-          data: 'correspondent',
-          render: (data) =>
-            data
-              ? `<span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-xs">${this._escapeHTML(data)}</span>`
-              : '<span class="text-gray-400 italic text-xs">None</span>',
-        },
-        {
-          data: null,
-          render: (data) => `
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button type="button" class="history-view-btn toolbar-btn toolbar-btn--primary toolbar-btn--sm" data-link="${this._escapeHTML(String(data.link ?? ''))}">
-                                <i class="fa-solid fa-eye"></i>
-                                <span class="hidden sm:inline ml-1">View</span>
-                            </button>
-                            <button type="button" class="history-chat-btn toolbar-btn toolbar-btn--neutral toolbar-btn--sm" data-docid="${this._escapeHTML(String(data.document_id ?? ''))}">
-                                <i class="fa-solid fa-comment"></i>
-                                <span class="hidden sm:inline ml-1">Chat</span>
-                            </button>
-                        </div>
-                    `,
-          orderable: false,
-          width: '150px',
+          key: 'document_id',
+          label: 'Actions',
+          sortable: false,
+          width: '210px',
+          mobileLabel: '',
+          render: (value, row) =>
+            '<div class="zr-row zr-row--wrap">' +
+            `<button type="button" class="history-info-btn zr-btn" data-docid="${escape(value)}" title="Show AI analysis details">` +
+            '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg><span>Details</span></button>' +
+            `<button type="button" class="history-view-btn zr-btn" data-link="${escape(row.link ?? '')}">` +
+            '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg><span>View</span></button>' +
+            `<button type="button" class="history-chat-btn zr-btn" data-docid="${escape(row.document_id ?? '')}">` +
+            '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-comment"/></svg><span>Chat</span></button>' +
+            '</div>',
         },
       ],
-      order: [[1, 'desc']], // Sort by document_id (column 1) descending - newest first
-      pageLength: 10,
-      dom: '<"flex flex-col sm:flex-row justify-between items-center mb-4"<"flex-1"f><"flex-none"l>>rtip',
-      language: {
-        search: 'Search documents:',
-        lengthMenu: 'Show _MENU_ entries',
-        info: 'Showing _START_ to _END_ of _TOTAL_ documents',
-        infoEmpty: 'Showing 0 to 0 of 0 documents',
-        infoFiltered: '(filtered from _MAX_ total documents)',
-      },
-      drawCallback: () => {
-        // Update "Select All" checkbox state after table redraw
-        this.updateSelectAllState();
-        // Reattach event listeners to checkboxes
-        this.attachCheckboxListeners();
-        // Reattach action handlers after each redraw
-        this.attachActionButtonListeners();
-      },
     });
   }
 
@@ -413,9 +379,23 @@ class HistoryManager {
       ?.addEventListener('click', () => this._handleRescanSelected());
   }
 
+  initializeTableEvents() {
+    // The table module re-renders rows on every page, sort and search, so the
+    // row-level handlers are re-attached on its render event.
+    document
+      .getElementById('historyTable')
+      ?.addEventListener('zr:table-rendered', () => {
+        this.updateSelectAllState();
+        this.attachCheckboxListeners();
+        this.attachActionButtonListeners();
+      });
+  }
+
   initializeFilters() {
-    $('#tagFilter, #correspondentFilter').on('change', () => {
-      this.table.ajax.reload();
+    ['tagFilter', 'correspondentFilter'].forEach((id) => {
+      document
+        .getElementById(id)
+        ?.addEventListener('change', () => this.table.reload());
     });
   }
 
@@ -446,6 +426,15 @@ class HistoryManager {
   }
 
   attachActionButtonListeners() {
+    document.querySelectorAll('.history-info-btn').forEach((button) => {
+      if (button.dataset.boundClick === 'true') return;
+      button.addEventListener('click', () => {
+        const docId = button.dataset.docid || '';
+        if (/^\d+$/.test(docId)) this.openInfoModal(Number(docId));
+      });
+      button.dataset.boundClick = 'true';
+    });
+
     const viewButtons = document.querySelectorAll('.history-view-btn');
     viewButtons.forEach((button) => {
       if (button.dataset.boundClick === 'true') {
@@ -566,7 +555,7 @@ class HistoryManager {
         throw new Error('Failed to reset documents');
       }
 
-      await this.table.ajax.reload();
+      await this.table.reload();
       return true;
     } catch (error) {
       console.error('Error resetting documents:', error);
@@ -586,7 +575,7 @@ class HistoryManager {
         throw new Error('Failed to reset all documents');
       }
 
-      await this.table.ajax.reload();
+      await this.table.reload();
       return true;
     } catch (error) {
       console.error('Error resetting all documents:', error);
@@ -895,7 +884,7 @@ class HistoryManager {
       });
       if (!response.ok) throw new Error('Rescan request failed');
 
-      await this.table.ajax.reload();
+      await this.table.reload();
       this.showToast(
         `${ids.length} document(s) sent for rescan. It might take a few moments to process.`,
         'success'

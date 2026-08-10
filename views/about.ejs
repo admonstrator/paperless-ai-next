@@ -7,14 +7,14 @@
     chatEnabled: typeof chatEnabled !== 'undefined' ? chatEnabled : false
 }) %>
             <div class="content-wrapper space-y-6">
-                <div class="content-header">
-                    <div class="content-header-main">
+                <div class="zr-viewhead">
+                    <div>
                         <h1 class="content-title">About this Fork</h1>
                         <p class="content-subtitle">Support information, project background, and author details.</p>
                     </div>
                 </div>
 
-                <div class="material-card">
+                <div class="zr-module">
                     <h3 class="card-title">💖 Support the Project</h3>
                     <div class="text-sm text-gray-600 space-y-3 leading-relaxed">
                         <p>
@@ -37,7 +37,7 @@
                     </div>
                 </div>
 
-                <div class="material-card">
+                <div class="zr-module">
                     <h3 class="card-title">System Information (Support)</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                         <div class="p-3 rounded-lg bg-gray-50"><strong>App Version:</strong> <%= supportInfo.appVersion %></div>
@@ -53,7 +53,7 @@
                     </div>
                 </div>
 
-                <div class="material-card">
+                <div class="zr-module">
                     <h3 class="card-title">Issue Reporting</h3>
                     <p class="text-sm text-gray-600 mb-4">
                         Open a prefilled issue report with version and environment details, or copy diagnostics to your clipboard.
@@ -66,20 +66,20 @@
                             rel="noopener noreferrer"
                             class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
                         >
-                            <i class="fas fa-bug mr-2"></i>Open Issue Form
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-bug"/></svg>Open Issue Form
                         </a>
                         <button
                             id="copyIssueDiagnosticsBtn"
                             type="button"
                             class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
                         >
-                            <i class="fas fa-copy mr-2"></i>Copy Issue Details
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-copy"/></svg>Copy Issue Details
                         </button>
                         <span id="issueHelperStatus" class="text-sm text-gray-500 self-center"></span>
                     </div>
                 </div>
 
-                <div class="material-card">
+                <div class="zr-module">
                     <h3 class="card-title">This app is awesome because ✨</h3>
                     <div class="text-sm text-gray-600 space-y-3 leading-relaxed">
                         <p>
@@ -106,7 +106,7 @@
                     </div>
                 </div>
                 
-                <div class="material-card">
+                <div class="zr-module">
                     <h3 class="card-title">About the Author 👋</h3>
                     <div class="text-sm text-gray-600 space-y-2">
                         <p>
@@ -132,7 +132,7 @@
                     </div>
                 </div>
                 
-                <div class="material-card">
+                <div class="zr-module">
                     <h3 class="card-title">Credits</h3>
                     <div class="text-sm text-gray-600 space-y-3 leading-relaxed">
                         <p>
@@ -176,5 +176,4 @@
     <script id="supportInfoPayload" type="application/json"><%- JSON.stringify(supportInfo || {}).replace(/</g, '\\u003c') %></script>
 
     <%- include('partials/scripts/about-scripts') %>
-    <%- include('partials/shell/footer') %>
     <%- include('partials/shell/body-close') %>

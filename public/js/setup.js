@@ -1,4 +1,4 @@
-/* global Swal */
+/* global zrDialog */
 class SetupWizard {
   constructor() {
     this.bootstrap = window.__SETUP_BOOTSTRAP__ || {};
@@ -529,26 +529,8 @@ class SetupWizard {
     selectElement.value = unique.length > 0 ? unique[0] : '';
   }
 
-  getPopupThemeOptions() {
-    return {
-      customClass: {
-        popup: 'setup-swal-popup',
-        title: 'setup-swal-title',
-        htmlContainer: 'setup-swal-html',
-        actions: 'setup-swal-actions',
-        confirmButton: 'setup-swal-confirm',
-        cancelButton: 'setup-swal-cancel',
-      },
-      buttonsStyling: false,
-      backdrop: 'rgba(2, 6, 23, 0.72)',
-    };
-  }
-
   showPopup(options = {}) {
-    return Swal.fire({
-      ...this.getPopupThemeOptions(),
-      ...options,
-    });
+    return zrDialog(options);
   }
 
   isTimeoutMessage(message) {
@@ -597,6 +579,24 @@ class SetupWizard {
     });
 
     this.currentStep = index;
+
+    // The side column mirrors the step state; completed steps stay clickable.
+    document
+      .querySelectorAll('[data-step-marker]')
+      .forEach((marker, markerIndex) => {
+        const status =
+          markerIndex === index
+            ? 'active'
+            : markerIndex < index
+              ? 'done'
+              : 'todo';
+        marker.dataset.status = status;
+        const number = marker.querySelector('[data-marker-text]');
+        const check = marker.querySelector('[data-marker-check]');
+        if (number) number.hidden = status === 'done';
+        if (check) check.hidden = status !== 'done';
+      });
+
     this.prevBtn.disabled = index === 0;
     this.nextBtn.classList.toggle('hidden', index === this.steps.length - 1);
 
@@ -2287,19 +2287,16 @@ class SetupWizard {
           title: 'Restarting',
           text: `Container restart in ${countdown} seconds...`,
           showConfirmButton: false,
-          allowOutsideClick: false,
-          didOpen: () => {
+          onOpen: (handle) => {
             const intervalId = setInterval(() => {
               countdown -= 1;
               if (countdown < 0) {
                 clearInterval(intervalId);
+                handle.close();
                 window.location.href = postRestartRedirectTarget;
                 return;
               }
-
-              Swal.update({
-                text: `Container restart in ${countdown} seconds...`,
-              });
+              handle.setText(`Container restart in ${countdown} seconds...`);
             }, 1000);
           },
         });

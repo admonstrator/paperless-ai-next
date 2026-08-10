@@ -502,7 +502,7 @@ setTimeout(() => {
 try {
     const restartButton = document.createElement('button');
     restartButton.className = 'material-button fixed bottom-4 right-4';
-    restartButton.innerHTML = '<i class="fas fa-question-circle"></i> Restart Tour';
+    restartButton.innerHTML = '<svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-help"/></svg> Restart Tour';
     restartButton.onclick = () => {
         try {
             tour.start();

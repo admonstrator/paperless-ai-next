@@ -192,7 +192,7 @@ function createTagElement(tag, color = 'gray', isSuggested = false) {
 
     const removeButton = document.createElement('button');
     removeButton.className = `ml-1 text-${color}-600 hover:text-${color}-800`;
-    removeButton.innerHTML = '<i class="fas fa-times"></i>';
+    removeButton.innerHTML = '<svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>';
     removeButton.onclick = (e) => {
         e.preventDefault();
         e.stopPropagation();
@@ -204,7 +204,7 @@ function createTagElement(tag, color = 'gray', isSuggested = false) {
     if (isSuggested) {
         const addButton = document.createElement('button');
         addButton.className = `ml-1 text-${color}-600 hover:text-${color}-800`;
-        addButton.innerHTML = '<i class="fas fa-plus"></i>';
+        addButton.innerHTML = '<svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>';
         addButton.onclick = (e) => {
             e.preventDefault();
             e.stopPropagation();

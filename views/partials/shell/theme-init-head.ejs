@@ -1,74 +1,58 @@
 <meta name="color-scheme" content="light dark">
 <script>
+    // Runs before first paint so the theme never flashes. The cookie is what the
+    // server reads to render `data-theme` on the very first response.
     (function () {
-        const STORAGE_KEY = 'theme';
-        const COOKIE_KEY = 'theme';
+        const KEY = 'theme';
         const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
-        function normalizeTheme(value) {
+        function normalize(value) {
             return value === 'dark' ? 'dark' : 'light';
         }
 
-        function applyTheme(theme) {
-            const resolvedTheme = normalizeTheme(theme);
+        function apply(theme) {
+            const resolved = normalize(theme);
             const root = document.documentElement;
 
-            root.setAttribute('data-theme', resolvedTheme);
-            root.classList.toggle('dark', resolvedTheme === 'dark');
-            root.style.colorScheme = resolvedTheme;
+            root.setAttribute('data-theme', resolved);
+            root.style.colorScheme = resolved;
 
             try {
-                window.localStorage.setItem(STORAGE_KEY, resolvedTheme);
+                window.localStorage.setItem(KEY, resolved);
             } catch (_error) {
                 // Ignore storage failures and keep the in-memory theme.
             }
 
             try {
-                let cookieValue = `${COOKIE_KEY}=${resolvedTheme}; Path=/; Max-Age=${COOKIE_MAX_AGE}; SameSite=Lax`;
+                let cookie = `${KEY}=${resolved}; Path=/; Max-Age=${COOKIE_MAX_AGE}; SameSite=Lax`;
                 if (window.location && window.location.protocol === 'https:') {
-                    cookieValue += '; Secure';
+                    cookie += '; Secure';
                 }
-                document.cookie = cookieValue;
+                document.cookie = cookie;
             } catch (_error) {
                 // Ignore cookie write failures.
             }
 
-            return resolvedTheme;
+            return resolved;
         }
 
-        function getCookieTheme() {
-            if (typeof document === 'undefined') {
-                return null;
-            }
-
-            const cookieMatch = document.cookie
+        function stored() {
+            const match = document.cookie
                 .split('; ')
-                .find((entry) => entry.startsWith(`${COOKIE_KEY}=`));
+                .find((entry) => entry.startsWith(`${KEY}=`));
 
-            if (!cookieMatch) {
-                return null;
-            }
-
-            const value = cookieMatch.split('=')[1];
-            return normalizeTheme(value);
-        }
-
-        function getStoredTheme() {
-            const cookieTheme = getCookieTheme();
-            if (cookieTheme) {
-                return cookieTheme;
+            if (match) {
+                return normalize(match.split('=')[1]);
             }
 
             try {
-                return normalizeTheme(window.localStorage.getItem(STORAGE_KEY));
+                return normalize(window.localStorage.getItem(KEY));
             } catch (_error) {
                 return 'light';
             }
         }
 
-        window.__paperlessAiApplyTheme = applyTheme;
-        window.__paperlessAiGetTheme = getStoredTheme;
-
-        applyTheme(getStoredTheme());
+        window.zrTheme = { apply: apply, get: stored };
+        apply(stored());
     })();
 </script>

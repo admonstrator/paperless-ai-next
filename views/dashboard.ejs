@@ -1,426 +1,221 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
-<%- include('partials/shell/head-start', { pageTitle: 'Zettelrobbe Dashboard' }) %>
-    <script src="/vendor/chart/chart.min.js"></script>
-    <%- include('partials/shell/head-end') %>
-        <%- include('partials/shell/body-open', { version: typeof version !=='undefined' ? version : '' , chatEnabled:
-            typeof chatEnabled !=='undefined' ? chatEnabled : false }) %>
-            <div class="content-wrapper relative">
-                <div class="content-header">
-                    <h2 class="content-title">Dashboard Overview</h2>
-                    <div class="content-header-actions">
-                        <div id="updateNotification" class="hidden fixed bottom-4 right-4 z-50">
-                            <a href="https://github.com/admonstrator/zettelrobbe/releases/" target="_blank"
-                                class="group flex items-center gap-3 bg-white px-4 py-3 rounded-xl shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300">
-                                <div class="flex items-center justify-center w-8 h-8 bg-blue-100 rounded-lg">
-                                    <i class="fas fa-arrow-up text-blue-500"></i>
-                                </div>
-                                <div class="flex flex-col">
-                                    <span class="text-sm font-medium text-gray-900">Update Available</span>
-                                    <span class="text-xs text-gray-500">New docker image available:<span
-                                            id="latestVersion"></span></span>
-                                </div>
-                                <i
-                                    class="fas fa-chevron-right text-gray-400 group-hover:text-gray-600 group-hover:transform group-hover:translate-x-1 transition-all duration-300"></i>
-                            </a>
-                        </div>
-                        <button id="scanButton"
-                            class="dashboard-scan-button"
-                            onclick="triggerScan()">
-                            <i class="fas fa-sync-alt" aria-hidden="true"></i>
-                            <span>Scan Now</span>
-                        </button>
-                        <button id="stopScanButton"
-                            class="dashboard-scan-button hidden"
-                            onclick="stopScan()"
-                            aria-label="Stop scan">
-                            <i class="fas fa-stop" aria-hidden="true"></i>
-                            <span>Stop</span>
-                        </button>
-                        <!-- Success message toast -->
-                        <div id="successToast"
-                            class="hidden fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg transition-opacity">
-                            <div class="flex items-center gap-2">
-                                <i class="fas fa-check"></i>
-                                <span>Scan completed successfully!</span>
-                            </div>
-                        </div>
-                    </div>
+<html lang="en" data-theme="<%= theme || 'light' %>">
+<%- include('partials/shell/head-start', { pageTitle: 'Dashboard' }) %>
+<%- include('partials/shell/head-end') %>
+<%- include('partials/shell/body-open', { pageTitle: 'Dashboard', version: typeof version !== 'undefined' ? version : '' }) %>
+
+<div data-module="dashboard" data-paperless-url="<%= typeof paperlessUrl !== 'undefined' ? paperlessUrl : '' %>"
+    data-version="<%= typeof version !== 'undefined' ? version : '' %>">
+
+    <div id="scannerHealthBanner" class="zr-alert zr-alert--danger hidden" role="alert" aria-live="assertive"
+        style="margin-bottom: var(--zr-4)">
+        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
+        <div class="zr-alert__body">
+            <div class="zr-alert__title" id="scannerHealthTitle">Document scanning is not working</div>
+            <p class="zr-sm" id="scannerHealthMessage"></p>
+        </div>
+    </div>
+
+    <!-- key figures -->
+    <section class="zr-stats" style="margin-bottom: var(--zr-4)">
+        <div class="zr-stat">
+            <span class="zr-stat__label">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-layers"/></svg>
+                Documents
+            </span>
+            <span class="zr-stat__value" id="kpiDocuments">&mdash;</span>
+            <span class="zr-stat__delta">in Paperless-ngx</span>
+        </div>
+        <div class="zr-stat">
+            <span class="zr-stat__label">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg>
+                AI processed
+            </span>
+            <span class="zr-stat__value" id="kpiProcessed">&mdash;</span>
+            <span class="zr-stat__delta" id="kpiProcessedDelta">&nbsp;</span>
+        </div>
+        <a class="zr-stat" href="/ocr">
+            <span class="zr-stat__label">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>
+                OCR queue
+            </span>
+            <span class="zr-stat__value" id="kpiOcr">&mdash;</span>
+            <span class="zr-stat__delta">waiting for OCR</span>
+        </a>
+        <a class="zr-stat" href="/failed">
+            <span class="zr-stat__label">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-ban"/></svg>
+                Failed
+            </span>
+            <span class="zr-stat__value" id="kpiFailed">&mdash;</span>
+            <span class="zr-stat__delta" id="kpiFailedDelta">&nbsp;</span>
+        </a>
+        <div class="zr-stat">
+            <span class="zr-stat__label">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-inbox"/></svg>
+                Unprocessed
+            </span>
+            <span class="zr-stat__value" id="kpiUnprocessed">&mdash;</span>
+            <span class="zr-stat__delta">not analysed yet</span>
+        </div>
+    </section>
+
+    <section class="zr-grid">
+        <!-- task runner -->
+        <article class="zr-module" data-span="8">
+            <div class="zr-module__head">
+                <span class="zr-dot zr-dot--ok" id="runnerDot"></span>
+                <h2 class="zr-module__title">Task runner</h2>
+                <div class="zr-module__actions">
+                    <span class="zr-sm zr-faint zr-only-desktop" id="statusLastUpdated"></span>
+                    <button class="zr-btn zr-btn--primary" type="button" id="scanButton">
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg>
+                        <span>Scan now</span>
+                    </button>
+                    <button class="zr-btn zr-btn--danger hidden" type="button" id="stopScanButton" aria-label="Stop scan">
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-stop"/></svg>
+                        <span>Stop</span>
+                    </button>
                 </div>
-
-                <div id="scannerHealthBanner" class="theme-alert-error hidden mb-5 rounded-xl px-4 py-3" role="alert"
-                    aria-live="assertive">
-                    <div class="flex items-start gap-3">
-                        <i class="fas fa-triangle-exclamation mt-1" aria-hidden="true"></i>
-                        <div class="flex-1 min-w-0">
-                            <div id="scannerHealthTitle" class="font-semibold text-sm">Document scanning is not working
-                            </div>
-                            <div id="scannerHealthMessage" class="text-sm mt-0.5"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="dashboardLoadingBlock"
-                    class="dashboard-loading-banner hidden mb-5 rounded-xl border px-4 py-3 transition-opacity duration-300 opacity-0"
-                    role="status" aria-live="polite" aria-busy="false">
-                    <div class="dashboard-loading-head">
-                        <div id="dashboardLoadingMessage" class="dashboard-loading-title">Loading dashboard data...</div>
-                        <div id="dashboardLoadingPercent" class="dashboard-loading-percent">15%</div>
-                    </div>
-                    <div class="dashboard-loading-track" aria-hidden="true">
-                        <div id="dashboardLoadingProgress" class="dashboard-loading-bar" style="width: 15%"></div>
-                    </div>
-                    <div id="dashboardLoadingSubtext" class="dashboard-loading-subtext">Preparing cards, metrics, and charts.</div>
-                </div>
-
-                <div class="dashboard-grid">
-                    <div class="material-card dashboard-card dashboard-card-lg">
-                        <div class="flex items-center justify-between mb-4 gap-3">
-                            <h3 class="card-title mb-0">Task Runner Status</h3>
-                            <span id="statusLastUpdated" class="text-sm text-gray-500"></span>
-                        </div>
-
-                        <div class="bg-white rounded-xl border border-gray-100 p-6 mb-4">
-                            <div id="processingContainer" class="hidden">
-                                <div class="flex items-center gap-4">
-                                    <div class="relative">
-                                        <div
-                                            class="w-12 h-12 rounded-full border-4 border-blue-100 border-t-blue-500 animate-spin">
-                                        </div>
-                                        <div class="absolute inset-0 flex items-center justify-center">
-                                            <i class="fas fa-file text-blue-500 text-sm"></i>
-                                        </div>
-                                    </div>
-                                    <div class="flex-1 min-w-0">
-                                        <div class="flex items-center gap-2 mb-1 flex-wrap">
-                                            <span class="font-medium">Processing Document</span>
-                                            <span id="currentDocId"
-                                                class="text-sm theme-pill-info px-2 py-0.5 rounded-full"></span>
-                                        </div>
-                                        <div id="currentDocTitle" class="text-sm text-gray-600 truncate"></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div id="idleContainer" class="flex items-center gap-4">
-                                <div class="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center">
-                                    <i class="fas fa-check text-gray-400"></i>
-                                </div>
-                                <div>
-                                    <div class="font-medium">System Idle</div>
-                                    <div class="text-sm text-gray-600">Waiting for new documents</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="task-runner-stats-grid">
-                            <div class="bg-white rounded-xl border border-gray-100 p-4">
-                                <div class="text-sm text-gray-600 mb-1">Processed Today</div>
-                                <div class="flex items-end gap-2">
-                                    <span id="processedToday" class="text-2xl font-bold">0</span>
-                                    <span class="text-sm text-gray-500 mb-1">documents</span>
-                                </div>
-                            </div>
-
-                            <div class="bg-white rounded-xl border border-gray-100 p-4">
-                                <div class="text-sm text-gray-600 mb-1">Last Processed</div>
-                                <div id="lastProcessed" class="text-sm font-medium">No data</div>
-                            </div>
-                        </div>
-
-                        <div class="mt-5">
-                            <h4 class="text-sm uppercase tracking-wide text-gray-500 mb-3">Recent Processing Activity
-                            </h4>
-                            <div id="recentActivityList" class="activity-list hidden" data-dashboard-list-content></div>
-                            <div id="recentActivityListSkeleton" class="space-y-3" data-dashboard-list-skeleton>
-                                <div class="h-12 rounded bg-gray-200 animate-pulse"></div>
-                                <div class="h-12 rounded bg-gray-200 animate-pulse"></div>
-                                <div class="h-12 rounded bg-gray-200 animate-pulse"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="material-card dashboard-card dashboard-card-lg">
-                        <h3 class="card-title">AI Statistics</h3>
-                        <div class="space-y-5">
-                            <div class="p-4 rounded-lg theme-info-surface">
-                                <div class="text-sm text-gray-600 mb-2">Average Token Usage per Document</div>
-                                <div class="mt-2 text-sm">
-                                    <div class="flex items-center justify-between mb-2 gap-3">
-                                        <span>Prompt Tokens:</span>
-                                        <span id="avgPromptTokensValue" class="font-semibold hidden"
-                                            data-dashboard-value></span>
-                                        <span id="avgPromptTokensValueSkeleton"
-                                            class="inline-block h-5 w-16 rounded bg-gray-200 animate-pulse"
-                                            data-dashboard-skeleton></span>
-                                    </div>
-                                    <div class="flex items-center justify-between mb-2 gap-3">
-                                        <span>Completion Tokens:</span>
-                                        <span id="avgCompletionTokensValue" class="font-semibold hidden"
-                                            data-dashboard-value></span>
-                                        <span id="avgCompletionTokensValueSkeleton"
-                                            class="inline-block h-5 w-16 rounded bg-gray-200 animate-pulse"
-                                            data-dashboard-skeleton></span>
-                                    </div>
-                                    <div class="flex items-center justify-between pt-2 border-t gap-3">
-                                        <span class="font-medium">Average Total:</span>
-                                        <span id="avgTotalTokensValue" class="font-semibold hidden"
-                                            data-dashboard-value></span>
-                                        <span id="avgTotalTokensValueSkeleton"
-                                            class="inline-block h-5 w-16 rounded bg-gray-200 animate-pulse"
-                                            data-dashboard-skeleton></span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="p-4 bg-gray-50 rounded-lg">
-                                <div class="flex items-center justify-between gap-4">
-                                    <div>
-                                        <div class="text-sm text-gray-600">Total Tokens Used</div>
-                                        <div id="tokensOverallValue" class="text-xl font-bold hidden"
-                                            data-dashboard-value></div>
-                                        <div id="tokensOverallValueSkeleton"
-                                            class="h-7 w-24 rounded bg-gray-200 animate-pulse mt-1"
-                                            data-dashboard-skeleton></div>
-                                    </div>
-                                    <div class="text-right">
-                                        <div class="text-sm text-gray-600">Documents Processed</div>
-                                        <div id="documentsProcessedValue" class="text-xl font-bold hidden"
-                                            data-dashboard-value></div>
-                                        <div id="documentsProcessedValueSkeleton"
-                                            class="h-7 w-20 rounded bg-gray-200 animate-pulse mt-1 ml-auto"
-                                            data-dashboard-skeleton></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                <div>
-                                    <h4 class="text-sm uppercase tracking-wide text-gray-500 mb-2">Token Usage
-                                        Distribution</h4>
-                                    <div class="chart-container relative">
-                                        <canvas id="tokenDistribution"></canvas>
-                                        <div id="tokenDistributionSkeleton" data-dashboard-chart-skeleton
-                                            class="absolute inset-0 animate-pulse rounded bg-gray-200/90"
-                                            aria-hidden="false"></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <h4 class="text-sm uppercase tracking-wide text-gray-500 mb-2">Token Trend (7 Days)
-                                    </h4>
-                                    <div class="chart-container relative">
-                                        <canvas id="tokenTrend"></canvas>
-                                        <div id="tokenTrendSkeleton" data-dashboard-chart-skeleton
-                                            class="absolute inset-0 animate-pulse rounded bg-gray-200/90"
-                                            aria-hidden="false"></div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="material-card dashboard-card dashboard-card-lg">
-                        <h3 class="card-title">Document Processing Status</h3>
-                        <div class="stats-legend">
-                            <div class="stat-item">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <div class="w-3 h-3 rounded-full bg-blue-500 mr-2"></div>
-                                        <span>AI Processed</span>
-                                    </div>
-                                    <span id="processedCountValue" class="font-semibold hidden"
-                                        data-dashboard-value></span>
-                                    <span id="processedCountValueSkeleton"
-                                        class="inline-block h-5 w-12 rounded bg-gray-200 animate-pulse"
-                                        data-dashboard-skeleton></span>
-                                </div>
-                            </div>
-                            <div class="stat-item mt-3">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <div class="w-3 h-3 rounded-full bg-amber-400 mr-2"></div>
-                                        <span>OCR Needed</span>
-                                    </div>
-                                    <span id="ocrNeededCountValue" class="font-semibold hidden"
-                                        data-dashboard-value></span>
-                                    <span id="ocrNeededCountValueSkeleton"
-                                        class="inline-block h-5 w-12 rounded bg-gray-200 animate-pulse"
-                                        data-dashboard-skeleton></span>
-                                </div>
-                            </div>
-                            <div class="stat-item mt-3">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <div class="w-3 h-3 rounded-full bg-red-400 mr-2"></div>
-                                        <span>Failed</span>
-                                    </div>
-                                    <span id="failedCountValue" class="font-semibold hidden"
-                                        data-dashboard-value></span>
-                                    <span id="failedCountValueSkeleton"
-                                        class="inline-block h-5 w-12 rounded bg-gray-200 animate-pulse"
-                                        data-dashboard-skeleton></span>
-                                </div>
-                            </div>
-                            <div class="stat-item mt-3">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <div class="w-3 h-3 rounded-full bg-slate-300 mr-2"></div>
-                                        <span>Unprocessed</span>
-                                    </div>
-                                    <span id="unprocessedCountValue" class="font-semibold hidden"
-                                        data-dashboard-value></span>
-                                    <span id="unprocessedCountValueSkeleton"
-                                        class="inline-block h-5 w-12 rounded bg-gray-200 animate-pulse"
-                                        data-dashboard-skeleton></span>
-                                </div>
-                            </div>
-                            <div class="stat-item mt-3">
-                                <div class="flex items-center justify-between">
-                                    <div class="flex items-center">
-                                        <div class="w-3 h-3 rounded-full bg-slate-300 mr-2"></div>
-                                        <span>Total Documents</span>
-                                    </div>
-                                    <span id="totalDocumentsValue" class="font-semibold hidden"
-                                        data-dashboard-value></span>
-                                    <span id="totalDocumentsValueSkeleton"
-                                        class="inline-block h-5 w-12 rounded bg-gray-200 animate-pulse"
-                                        data-dashboard-skeleton></span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="material-card dashboard-card">
-                        <h3 class="card-title">System Statistics</h3>
-                        <div class="space-y-4">
-                            <div class="stat-box cursor-pointer hover:shadow-lg transition-all"
-                                onclick="showTagDetails()">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="flex items-center min-w-0">
-                                        <div
-                                            class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center mr-3">
-                                            <i class="fas fa-tags text-blue-500"></i>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <div class="text-sm text-gray-600">Total Tags</div>
-                                            <div id="totalTagsValue" class="text-xl font-bold hidden"
-                                                data-dashboard-value></div>
-                                            <div id="totalTagsValueSkeleton"
-                                                class="h-7 w-16 rounded bg-gray-200 animate-pulse mt-1"
-                                                data-dashboard-skeleton></div>
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-gray-400"></i>
-                                </div>
-                            </div>
-                            <div class="stat-box cursor-pointer hover:shadow-lg transition-all"
-                                onclick="showCorrespondentDetails()">
-                                <div class="flex items-center justify-between gap-3">
-                                    <div class="flex items-center min-w-0">
-                                        <div
-                                            class="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center mr-3">
-                                            <i class="fas fa-building text-emerald-600"></i>
-                                        </div>
-                                        <div class="min-w-0">
-                                            <div class="text-sm text-gray-600">Correspondents</div>
-                                            <div id="totalCorrespondentsValue" class="text-xl font-bold hidden"
-                                                data-dashboard-value></div>
-                                            <div id="totalCorrespondentsValueSkeleton"
-                                                class="h-7 w-16 rounded bg-gray-200 animate-pulse mt-1"
-                                                data-dashboard-skeleton></div>
-                                        </div>
-                                    </div>
-                                    <i class="fas fa-chevron-right text-gray-400"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="material-card dashboard-card">
-                        <h3 class="card-title">Operations Snapshot</h3>
-                        <div class="mini-metrics-grid">
-                            <div class="mini-metric-item">
-                                <span class="mini-metric-label">Efficiency</span>
-                                <span id="efficiencyRateValue" class="mini-metric-value hidden"
-                                    data-dashboard-value></span>
-                                <span id="efficiencyRateValueSkeleton"
-                                    class="h-6 w-14 rounded bg-gray-200 animate-pulse" data-dashboard-skeleton></span>
-                            </div>
-                            <div class="mini-metric-item">
-                                <span class="mini-metric-label">Queue Backlog</span>
-                                <span id="queueBacklogValue" class="mini-metric-value hidden"
-                                    data-dashboard-value></span>
-                                <span id="queueBacklogValueSkeleton" class="h-6 w-14 rounded bg-gray-200 animate-pulse"
-                                    data-dashboard-skeleton></span>
-                            </div>
-                            <div class="mini-metric-item">
-                                <span class="mini-metric-label">Failed Share</span>
-                                <span id="failedRateValue" class="mini-metric-value hidden" data-dashboard-value></span>
-                                <span id="failedRateValueSkeleton" class="h-6 w-14 rounded bg-gray-200 animate-pulse"
-                                    data-dashboard-skeleton></span>
-                            </div>
-                            <div class="mini-metric-item">
-                                <span class="mini-metric-label">Processed Today</span>
-                                <span id="processedTodayValue" class="mini-metric-value hidden"
-                                    data-dashboard-value></span>
-                                <span id="processedTodayValueSkeleton"
-                                    class="h-6 w-14 rounded bg-gray-200 animate-pulse" data-dashboard-skeleton></span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="material-card dashboard-card">
-                        <h3 class="card-title">Document Type Distribution</h3>
-                        <div class="chart-container relative">
-                            <canvas id="documentTypes"></canvas>
-                            <div id="documentTypesSkeleton" data-dashboard-chart-skeleton
-                                class="absolute inset-0 bg-white/85 dark:bg-slate-900/85 flex items-center justify-center rounded"
-                                aria-hidden="false">
-                                <div
-                                    class="w-24 h-24 rounded-full border-8 border-gray-200 border-t-gray-300 animate-pulse">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="material-card dashboard-card">
-                        <h3 class="card-title">Language Mix</h3>
-                        <div id="languageDistributionList" class="space-y-3 hidden" data-dashboard-list-content></div>
-                        <div id="languageDistributionListSkeleton" class="space-y-3" data-dashboard-list-skeleton>
-                            <div class="h-10 rounded bg-gray-200 animate-pulse"></div>
-                            <div class="h-10 rounded bg-gray-200 animate-pulse"></div>
-                            <div class="h-10 rounded bg-gray-200 animate-pulse"></div>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div id="detailsModal" class="modal hidden">
-                    <div class="modal-overlay"></div>
-                    <div class="modal-container">
-                        <div class="modal-header">
-                            <h3 class="modal-title"></h3>
-                            <button class="modal-close">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                        <div class="modal-content">
-                            <div class="modal-loader hidden">
-                                <div class="loader"></div>
-                            </div>
-                            <div class="modal-data"></div>
-                        </div>
-                    </div>
-                </div>
-                </main>
             </div>
-            <div id="dashboardDataPayload" class="hidden" data-version="<%= version %>">
-                <%= JSON.stringify(paperless_data) %>
+            <div class="zr-module__body zr-col">
+                <div class="zr-row">
+                    <div class="zr-grow zr-col zr-col--tight">
+                        <strong id="runnerLabel">System idle</strong>
+                        <span class="zr-sm zr-faint zr-truncate" id="runnerDetail">Waiting for new documents</span>
+                    </div>
+                    <span class="zr-badge zr-badge--info hidden" id="currentDocId"></span>
+                </div>
+
+                <div class="zr-row zr-row--wrap zr-sm zr-muted" style="gap: var(--zr-4)">
+                    <span><strong class="zr-num" id="processedToday">0</strong> processed today</span>
+                    <span>last document <strong id="lastProcessed">no data</strong></span>
+                </div>
             </div>
-            <script>
-                window.paperlessPublicUrl = <%- JSON.stringify(typeof paperlessUrl !== 'undefined' ? paperlessUrl : '').replace(/</g, '\\u003c') %>;
-            </script>
-            <%- include('partials/scripts/dashboard-scripts') %>
-                <script src="js/dashboard.js"></script>
-                <%- include('partials/shell/footer') %>
-                    <%- include('partials/shell/body-close') %>
+
+            <div class="zr-module__foot">
+                <div class="zr-row zr-row--between">
+                    <span>Recent activity</span>
+                    <a class="zr-row" href="/history" style="gap: 4px">
+                        History
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
+                    </a>
+                </div>
+            </div>
+            <div class="zr-list" id="recentActivityList"></div>
+        </article>
+
+        <!-- entities and rates -->
+        <article class="zr-module" data-span="4">
+            <div class="zr-module__head">
+                <h2 class="zr-module__title">Entities</h2>
+            </div>
+            <div class="zr-module__body zr-col">
+                <button class="zr-row zr-entitybtn" type="button" id="showTagDetails">
+                    <span class="zr-badge zr-badge--brand">
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-tag"/></svg>
+                    </span>
+                    <span class="zr-grow"><strong id="totalTags">&mdash;</strong> tags</span>
+                    <svg class="zr-icon zr-faint" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
+                </button>
+                <button class="zr-row zr-entitybtn" type="button" id="showCorrespondentDetails">
+                    <span class="zr-badge zr-badge--brand">
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-building"/></svg>
+                    </span>
+                    <span class="zr-grow"><strong id="totalCorrespondents">&mdash;</strong> correspondents</span>
+                    <svg class="zr-icon zr-faint" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
+                </button>
+
+                <div class="zr-col zr-col--tight zr-sm" style="margin-top: var(--zr-2)">
+                    <div class="zr-kv">
+                        <span class="zr-kv__k">Efficiency</span>
+                        <span class="zr-kv__v" id="efficiencyRate">&mdash;</span>
+                    </div>
+                    <div class="zr-kv">
+                        <span class="zr-kv__k">Queue backlog</span>
+                        <span class="zr-kv__v" id="queueBacklog">&mdash;</span>
+                    </div>
+                    <div class="zr-kv">
+                        <span class="zr-kv__k">Failed share</span>
+                        <span class="zr-kv__v" id="failedRate">&mdash;</span>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <!-- token usage -->
+        <article class="zr-module" data-span="4">
+            <div class="zr-module__head">
+                <h2 class="zr-module__title">Token usage</h2>
+                <span class="zr-module__meta">last 7 days</span>
+            </div>
+            <div class="zr-module__body zr-col">
+                <div class="zr-row zr-row--between">
+                    <span class="zr-stat__value" id="tokensOverall">&mdash;</span>
+                    <span class="zr-sm zr-faint">total</span>
+                </div>
+                <svg class="zr-spark" id="tokenTrendSpark" aria-hidden="true"></svg>
+                <div class="zr-col zr-col--tight zr-sm">
+                    <div class="zr-kv"><span class="zr-kv__k">Prompt, average</span><span class="zr-kv__v" id="avgPromptTokens">&mdash;</span></div>
+                    <div class="zr-kv"><span class="zr-kv__k">Completion, average</span><span class="zr-kv__v" id="avgCompletionTokens">&mdash;</span></div>
+                    <div class="zr-kv"><span class="zr-kv__k">Total per document</span><span class="zr-kv__v" id="avgTotalTokens">&mdash;</span></div>
+                </div>
+            </div>
+        </article>
+
+        <!-- token distribution -->
+        <article class="zr-module" data-span="4">
+            <div class="zr-module__head">
+                <h2 class="zr-module__title">Token distribution</h2>
+                <span class="zr-module__meta">documents per range</span>
+            </div>
+            <div class="zr-module__body">
+                <div class="zr-barlist" id="tokenDistributionList"></div>
+            </div>
+        </article>
+
+        <!-- document types -->
+        <article class="zr-module" data-span="4">
+            <div class="zr-module__head">
+                <h2 class="zr-module__title">Document types</h2>
+            </div>
+            <div class="zr-module__body zr-row" style="gap: var(--zr-4); align-items: flex-start">
+                <svg class="zr-donut" id="documentTypesDonut" aria-hidden="true"></svg>
+                <div class="zr-grow zr-col zr-col--tight zr-sm" id="documentTypesLegend"></div>
+            </div>
+        </article>
+
+        <!-- processing split -->
+        <article class="zr-module" data-span="6">
+            <div class="zr-module__head">
+                <h2 class="zr-module__title">Processing status</h2>
+            </div>
+            <div class="zr-module__body zr-row" style="gap: var(--zr-4); align-items: flex-start">
+                <svg class="zr-donut" id="processingDonut" aria-hidden="true"></svg>
+                <div class="zr-grow zr-col zr-col--tight zr-sm" id="processingLegend"></div>
+            </div>
+        </article>
+
+        <!-- language mix -->
+        <article class="zr-module" data-span="6">
+            <div class="zr-module__head">
+                <h2 class="zr-module__title">Language mix</h2>
+            </div>
+            <div class="zr-module__body">
+                <div class="zr-barlist" id="languageDistributionList"></div>
+            </div>
+        </article>
+    </section>
+
+    <dialog class="zr-dialog" id="detailsModal" aria-labelledby="detailsModalTitle">
+        <div class="zr-dialog__head zr-row">
+            <span class="zr-grow" id="detailsModalTitle"></span>
+            <button class="zr-btn zr-btn--ghost zr-btn--icon" type="button" id="detailsModalClose" aria-label="Close">
+                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
+            </button>
+        </div>
+        <div class="zr-dialog__body" id="detailsModalBody"></div>
+    </dialog>
+</div>
+
+<%- include('partials/shell/body-close') %>

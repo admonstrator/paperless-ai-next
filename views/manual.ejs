@@ -1,20 +1,19 @@
 <!DOCTYPE html>
 <html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
 <%- include('partials/shell/head-start', { pageTitle: 'Zettelrobbe Dashboard' }) %>
-    <script src="/vendor/chart/chart.min.js"></script>
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', {
     version: typeof version !== 'undefined' ? version : '',
     chatEnabled: typeof chatEnabled !== 'undefined' ? chatEnabled : false
 }) %>
-            <div class="content-wrapper">
+            <div>
                 <!-- Message Area -->
                 <div id="messageArea" class="mb-6 hidden">
                     <!-- Messages will be inserted here -->
                 </div>
         
                 <!-- Document Selection -->
-                <div class="material-card mb-6">
+                <div class="zr-module mb-6">
                     <h2 class="card-title">Select Document</h2>
                     <div class="manual-search-wrapper">
                         <input
@@ -32,15 +31,15 @@
                 <!-- Main Grid -->
                 <div class="card-grid">
                     <!-- Document Preview Card -->
-                    <div class="material-card col-span-2">
+                    <div class="zr-module col-span-2">
                         <h2 class="card-title">Document Preview</h2>
                         <!-- Correspondent Info -->
                         <div id="correspondentInfo" class="stat-box mb-4 hidden">
-                            <h3 class="text-sm font-medium">Correspondent:</h3>
+                            <h3 class="zr-field__name">Correspondent:</h3>
                             <p id="correspondentName"></p>
                         </div>
                         <div id="titleInfo" class="stat-box mb-4 hidden">
-                            <h3 class="text-sm font-medium">Title:</h3>
+                            <h3 class="zr-field__name">Title:</h3>
                             <p id="titleName"></p>
                         </div>
                         <div class="stat-box">
@@ -53,18 +52,18 @@
                     <!-- AI and Tags Section -->
                     <div class="col-span-2">
                         <!-- AI Analysis Card -->
-                        <div class="material-card mb-6">
+                        <div class="zr-module mb-6">
                             <h2 class="card-title">AI Analysis</h2>
                             <button id="analyzeBtn" 
                                     class="w-full flex justify-center items-center px-4 py-2 border border-border-color rounded-md shadow-sm text-sm font-medium text-text-primary bg-bg-primary hover:bg-hover-bg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
                                     disabled>
-                                    <i class="fas fa-robot mr-2"></i>
+                                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg>
                                     Analyze with AI
                             </button>
                             <div id="aiStatus" class="mt-4 hidden">
                                 <div class="flex items-center">
                                     <div class="mr-3">
-                                        <i class="fas fa-spinner fa-spin text-accent-primary"></i>
+                                        <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                                     </div>
                                     <div class="text-sm text-text-secondary">
                                         AI is analyzing the document...
@@ -74,7 +73,7 @@
                         </div>
         
                         <!-- Tags Card -->
-                        <div class="material-card">
+                        <div class="zr-module">
                             <h2 class="card-title">Tags</h2>
                             <!-- AI Suggested Tags -->
                             <div class="mb-4">
@@ -103,7 +102,7 @@
                                         <option value="">Select a tag...</option>
                                     </select>
                                     <button id="addTagBtn" class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent-primary hover:bg-accent-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary transition-all duration-200">
-                                        <i class="fas fa-plus"></i>
+                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
                                     </button>
                                     <input type="hidden" id="hiddenId" value="">
                                 </div>
@@ -117,5 +116,4 @@
     <script src="/js/document-omnibox.js"></script>
     <%- include('partials/scripts/manual-scripts') %>
     <script src="js/dashboard.js"></script>
-    <%- include('partials/shell/footer') %>
     <%- include('partials/shell/body-close') %>

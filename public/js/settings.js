@@ -1,53 +1,6 @@
 //settings.js
 
-/* global Swal, tippy, Sortable */
-
-class SettingsTabsManager {
-  constructor() {
-    this.buttons = Array.from(
-      document.querySelectorAll('.settings-tab-button')
-    );
-    this.contents = Array.from(
-      document.querySelectorAll('.settings-tab-content')
-    );
-    this.initialize();
-  }
-
-  initialize() {
-    if (this.buttons.length === 0 || this.contents.length === 0) {
-      return;
-    }
-
-    this.buttons.forEach((button) => {
-      button.addEventListener('click', () => {
-        const tabId = button.dataset.tab;
-        this.activateTab(tabId);
-      });
-    });
-  }
-
-  activateTab(tabId) {
-    this.buttons.forEach((button) => {
-      const isActive = button.dataset.tab === tabId;
-      button.classList.toggle('active', isActive);
-      button.classList.toggle('border-blue-500', isActive);
-      button.classList.toggle('border-transparent', !isActive);
-    });
-
-    this.contents.forEach((content) => {
-      const isActive = content.id === tabId;
-      content.classList.toggle('hidden', !isActive);
-    });
-
-    // The changelog tab is read-only, so the save row would be misleading.
-    const saveRow = document.getElementById('settingsSaveRow');
-    if (saveRow) {
-      saveRow.classList.toggle('hidden', tabId === 'changelog-tab');
-    }
-
-    refreshSettingsHints();
-  }
-}
+/* global tippy, Sortable, zrDialog */
 
 class FormManager {
   constructor() {
@@ -371,7 +324,7 @@ class TagsManager {
 
   initializeTagRemoval(button) {
     button.addEventListener('click', async () => {
-      const result = await Swal.fire({
+      const result = await zrDialog({
         title: 'Remove Tag',
         text: 'Are you sure you want to remove this tag?',
         icon: 'question',
@@ -402,7 +355,7 @@ class TagsManager {
     const specialChars = /[,;:\n\r\\/]/;
 
     if (specialChars.test(tagText)) {
-      await Swal.fire({
+      await zrDialog({
         title: 'Invalid Characters',
         text: 'Tags cannot contain commas, semi-colons, colons, or line breaks.',
         icon: 'warning',
@@ -516,7 +469,6 @@ For the language:
 }
 
 function initializeCoreSettings() {
-  new SettingsTabsManager();
   new FormManager();
   new TagsManager('tagInput', 'tagsContainer', 'tags');
   new TagsManager('ignoreTagInput', 'ignoreTagsContainer', 'ignoreTags');
@@ -865,7 +817,7 @@ function initializeFormHandlers() {
       const apiUrl = String(ollamaUrlInput?.value || '').trim();
 
       if (provider !== 'ollama') {
-        await Swal.fire({
+        await zrDialog({
           icon: 'info',
           title: 'Switch provider',
           text: 'Use this button with AI Provider set to Ollama.',
@@ -874,7 +826,7 @@ function initializeFormHandlers() {
       }
 
       if (!apiUrl) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'warning',
           title: 'Missing URL',
           text: 'Please enter the Ollama API URL first.',
@@ -899,7 +851,7 @@ function initializeFormHandlers() {
         const resolvedInfo = result.resolvedApiUrl
           ? `\nResolved API URL: ${result.resolvedApiUrl}`
           : '';
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'Models loaded',
           text: `${models.length > 0 ? `Found ${models.length} model(s).` : 'No models found.'}${resolvedInfo}`,
@@ -911,7 +863,7 @@ function initializeFormHandlers() {
           error,
           null
         );
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: errorDetails.isTimeout
             ? 'AI timeout reached'
@@ -933,7 +885,7 @@ function initializeFormHandlers() {
       const token = String(customApiKeyInput?.value || '').trim();
 
       if (provider !== 'custom') {
-        await Swal.fire({
+        await zrDialog({
           icon: 'info',
           title: 'Switch provider',
           text: 'Use this button with AI Provider set to Custom.',
@@ -942,7 +894,7 @@ function initializeFormHandlers() {
       }
 
       if (!apiUrl) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'warning',
           title: 'Missing URL',
           text: 'Please enter the custom base URL first.',
@@ -967,7 +919,7 @@ function initializeFormHandlers() {
         const resolvedInfo = result.resolvedApiUrl
           ? `\nResolved API URL: ${result.resolvedApiUrl}`
           : '';
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'Models loaded',
           text: `${models.length > 0 ? `Found ${models.length} model(s).` : 'No models found.'}${resolvedInfo}`,
@@ -979,7 +931,7 @@ function initializeFormHandlers() {
           error,
           null
         );
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: errorDetails.isTimeout
             ? 'AI timeout reached'
@@ -1182,7 +1134,7 @@ function initializeFormHandlers() {
     quickstartDetectBtn.addEventListener('click', async () => {
       const baseUrl = String(quickstartUrlInput?.value || '').trim();
       if (!baseUrl) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'warning',
           title: 'URL required',
           text: 'Enter the base URL of your AI server first.',
@@ -1278,7 +1230,7 @@ function initializeFormHandlers() {
           error,
           null
         );
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: errorDetails.isTimeout
             ? 'Detection timeout reached'
@@ -1293,7 +1245,7 @@ function initializeFormHandlers() {
 
   const applyQuickstartDetectionToForm = async () => {
     if (!quickstartDetection) {
-      await Swal.fire({
+      await zrDialog({
         icon: 'warning',
         title: 'Detection required',
         text: 'Run detection first.',
@@ -1303,7 +1255,7 @@ function initializeFormHandlers() {
 
     const selectedAiModel = String(quickstartAiModelSelect?.value || '').trim();
     if (!selectedAiModel) {
-      await Swal.fire({
+      await zrDialog({
         icon: 'warning',
         title: 'No AI model selected',
         text: 'Choose an AI model before applying.',
@@ -1557,7 +1509,7 @@ function initializeFormHandlers() {
           );
         }
 
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: 'Model test failed',
           text: `${failures.join('\n')}\n\nAdjust the model selection and try again.`,
@@ -1620,7 +1572,7 @@ function initializeFormHandlers() {
         }
 
         setOcrTestPill('success', 'Connection valid');
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'OCR test successful',
           text: result.message || 'OCR provider is reachable.',
@@ -1635,7 +1587,7 @@ function initializeFormHandlers() {
           'error',
           errorDetails.isTimeout ? 'Timeout reached' : 'Test failed'
         );
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: errorDetails.isTimeout
             ? 'OCR timeout reached'
@@ -1661,7 +1613,7 @@ function initializeFormHandlers() {
       const apiKey = String(ocrApiKeyInput?.value || '').trim();
 
       if (provider === 'mistral' && !apiKey) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'warning',
           title: 'Missing API key',
           text: 'Mistral OCR requires an API key to load models.',
@@ -1697,7 +1649,7 @@ function initializeFormHandlers() {
 
         const models = Array.isArray(result.models) ? result.models : [];
         populateModelSelect(ocrModelInput, models, 'Select OCR model');
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'OCR models loaded',
           text:
@@ -1711,7 +1663,7 @@ function initializeFormHandlers() {
           error,
           getOcrValidationTimeoutMs()
         );
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: errorDetails.isTimeout
             ? 'OCR timeout reached'
@@ -1943,7 +1895,7 @@ function initializeFormHandlers() {
         const result = await response.json();
 
         if (result.success) {
-          await Swal.fire({
+          await zrDialog({
             icon: 'success',
             title: 'Cache Cleared!',
             text: result.message || 'Tag cache has been cleared successfully.',
@@ -1955,7 +1907,7 @@ function initializeFormHandlers() {
         }
       } catch (error) {
         console.error('Error clearing tag cache:', error);
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: 'Error',
           text: error.message || 'Failed to clear tag cache. Please try again.',
@@ -1982,7 +1934,7 @@ function initializeFormHandlers() {
   );
   if (clearThumbnailCacheBtn) {
     clearThumbnailCacheBtn.addEventListener('click', async () => {
-      const confirmResult = await Swal.fire({
+      const confirmResult = await zrDialog({
         icon: 'warning',
         title: 'Clear thumbnail cache?',
         text: 'This will delete all locally cached thumbnail previews. They will be downloaded again when needed.',
@@ -2017,14 +1969,14 @@ function initializeFormHandlers() {
 
         renderThumbnailCacheStats(result.remaining || {});
 
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'Thumbnail cache cleared',
           text: result.message || `Removed ${result.removedFiles || 0} files.`,
         });
       } catch (error) {
         console.error('Error clearing thumbnail cache:', error);
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: 'Action failed',
           text: error.message || 'Failed to clear thumbnail cache.',
@@ -2044,7 +1996,7 @@ function initializeFormHandlers() {
   );
   if (resetLocalOverridesBtn) {
     resetLocalOverridesBtn.addEventListener('click', async () => {
-      const confirmResult = await Swal.fire({
+      const confirmResult = await zrDialog({
         icon: 'warning',
         title: 'Reset local runtime overrides?',
         text: 'This removes local overrides. Container-managed environment values are applied after restart.',
@@ -2095,7 +2047,7 @@ function initializeFormHandlers() {
           );
         }
 
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'Local overrides reset',
           text:
@@ -2106,7 +2058,7 @@ function initializeFormHandlers() {
         showRestartOverlay();
         await waitForServerRecovery();
       } catch (error) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: 'Reset failed',
           text: error.message,
@@ -2389,7 +2341,7 @@ function initializeFormHandlers() {
       const result = await response.json();
 
       if (result.success) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'Success!',
           text: result.message,
@@ -2407,7 +2359,7 @@ function initializeFormHandlers() {
         throw new Error(result.error || 'An unknown error occurred');
       }
     } catch (error) {
-      await Swal.fire({
+      await zrDialog({
         icon: 'error',
         title: 'Error',
         text: error.message,
@@ -2523,7 +2475,7 @@ class URLValidator {
       }
     } catch (error) {
       this.isShowingError = true;
-      const result = await Swal.fire({
+      const result = await zrDialog({
         icon: 'warning',
         title: 'Invalid URL',
         text: error.message,
@@ -2548,7 +2500,7 @@ class URLValidator {
       const url = new URL(this.urlInput.value);
       this.urlInput.value = `${url.protocol}//${url.hostname}${url.port ? ':' + url.port : ''}`;
     } catch {
-      Swal.fire({
+      zrDialog({
         icon: 'error',
         title: 'Invalid URL',
         text: 'Please enter a valid URL. ( http[s]://your-paperless-instance:8000 )',
@@ -3779,7 +3731,7 @@ class MfaSettingsManager {
       return;
     }
 
-    const confirmResult = await Swal.fire({
+    const confirmResult = await zrDialog({
       icon: 'warning',
       title: 'Disable MFA?',
       text: 'Your account will no longer require a TOTP code at login.',
@@ -4038,7 +3990,7 @@ function addCustomField() {
   const currency = data_type === 'monetary' ? currencySelect.value : null;
 
   if (!fieldName) {
-    Swal.fire({
+    zrDialog({
       icon: 'warning',
       title: 'Invalid Field Name',
       text: 'Please enter a field name',
@@ -4052,7 +4004,7 @@ function addCustomField() {
   ).map((p) => p.textContent);
 
   if (existingFields.includes(fieldName)) {
-    Swal.fire({
+    zrDialog({
       icon: 'warning',
       title: 'Duplicate Field',
       text: 'A field with this name already exists',
@@ -4073,7 +4025,7 @@ function addCustomField() {
 // Called from inline onclick handlers in the settings view.
 window.removeCustomField = function removeCustomField(button) {
   const fieldItem = button.closest('.custom-field-item');
-  Swal.fire({
+  zrDialog({
     title: 'Delete Field?',
     text: 'Are you sure you want to delete this custom field?',
     icon: 'warning',
