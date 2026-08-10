@@ -135,8 +135,8 @@
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg> Admin account</h3>
                     <p class="zr-sm zr-muted">Create the initial Zettelrobbe administrator account.</p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <div class="space-y-2 md:col-span-2">
+                    <div class="zr-formgrid">
+                        <div class="zr-field zr-field--stacked zr-formgrid__wide">
                             <label for="adminUsername" class="zr-field__name">Username</label>
                             <input id="adminUsername" name="adminUsername" type="text" class="zr-input" required autocomplete="username">
                         </div>
@@ -156,7 +156,7 @@
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg> Multi-factor authentication (MFA)</h3>
                     <p class="zr-sm zr-muted">Would you like to enable MFA for the admin account?</p>
 
-                    <div class="space-y-2 mt-4">
+                    <div class="zr-field zr-field--stacked">
                         <label for="enableMfa" class="zr-field__name">Enable MFA</label>
                         <select id="enableMfa" name="enableMfa" class="zr-input">
                             <option value="no">No</option>
@@ -171,11 +171,11 @@
                         </button>
 
                         <div id="mfaProvisioningBox" class="setup-provisioning hidden">
-                            <div class="flex flex-col md:flex-row gap-4">
+                            <div class="zr-col">
                                 <div class="setup-qr-box">
-                                    <img id="setupMfaQrImage" class="w-44 h-44 rounded border border-gray-200 bg-white p-2 hidden" alt="MFA setup QR code">
+                                    <img id="setupMfaQrImage" class="hidden" alt="MFA setup QR code">
                                 </div>
-                                <div class="flex-1 space-y-3">
+                                <div class="zr-grow zr-col">
                                     <div class="zr-field zr-field--stacked">
                                         <label for="setupMfaSecret" class="zr-field__name">Secret key</label>
                                         <input id="setupMfaSecret" type="text" class="zr-input" readonly>
@@ -198,8 +198,8 @@
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-link"/></svg> Paperless-ngx connection</h3>
                     <p class="zr-sm zr-muted">Enter your Paperless-ngx API credentials and run a connectivity test.</p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                        <div class="space-y-2 md:col-span-2">
+                    <div class="zr-formgrid">
+                        <div class="zr-field zr-field--stacked zr-formgrid__wide">
                             <label for="paperlessUrl" class="zr-field__name">Paperless-ngx API URL</label>
                             <input id="paperlessUrl" name="paperlessUrl" type="text" class="zr-input" placeholder="http://your-paperless-instance:8000" required value="<%= config.PAPERLESS_API_URL || '' %>">
                         </div>
@@ -213,7 +213,7 @@
                         </div>
                     </div>
 
-                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <div class="zr-row zr-row--wrap">
                         <button type="button" id="testPaperlessBtn" class="zr-btn">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-plug"/></svg>
                             Test Paperless connection
@@ -226,7 +226,7 @@
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-database"/></svg> Paperless metadata</h3>
                     <p class="zr-sm zr-muted">Load document statistics and choose tagging rules.</p>
 
-                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <div class="zr-row zr-row--wrap">
                         <button type="button" id="fetchMetadataBtn" class="zr-btn">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                             Load metadata from Paperless
@@ -234,7 +234,7 @@
                         <span id="metadataLoadState" class="zr-badge">Not loaded</span>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-4">
+                    <div class="zr-formgrid zr-formgrid--3">
                         <article class="zr-stat">
                             <p class="zr-stat__label">Documents</p>
                             <p id="documentsCount" class="zr-stat__value">-</p>
@@ -249,12 +249,12 @@
                         </article>
                     </div>
 
-                    <div class="space-y-4 mt-5">
-                        <label class="flex items-start gap-3">
-                            <input id="scanAllDocuments" type="checkbox" class="mt-1">
+                    <div class="zr-col zr-col--loose">
+                        <label class="zr-row">
+                            <input id="scanAllDocuments" type="checkbox">
                             <span>
                                 <strong>Always scan all documents</strong>
-                                <span class="block setup-hint">If enabled, no include-tag filter is used.</span>
+                                <span class="zr-field__hint">If enabled, no include-tag filter is used.</span>
                             </span>
                         </label>
 
@@ -310,18 +310,18 @@
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg> AI access credentials</h3>
                     <p class="zr-sm zr-muted">Point Quickstart at a local AI server for automatic configuration, or configure a provider manually.</p>
 
-                    <div class="mt-4 flex gap-2" role="group" aria-label="AI configuration mode">
-                        <button type="button" id="aiModeQuickstartBtn" class="setup-btn setup-btn-secondary setup-mode-btn flex items-center gap-2" aria-pressed="false">
+                    <div class="zr-row" role="group" aria-label="AI configuration mode">
+                        <button type="button" id="aiModeQuickstartBtn" class="zr-btn setup-mode-btn" aria-pressed="false">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-zap"/></svg>
                             <span>Quickstart (auto-detect)</span>
                         </button>
-                        <button type="button" id="aiModeManualBtn" class="setup-btn setup-btn-secondary setup-mode-btn flex items-center gap-2" aria-pressed="false">
+                        <button type="button" id="aiModeManualBtn" class="zr-btn setup-mode-btn" aria-pressed="false">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-filter"/></svg>
                             <span>Manual configuration</span>
                         </button>
                     </div>
 
-                    <div id="aiQuickstartPanel" class="hidden space-y-4 mt-4">
+                    <div id="aiQuickstartPanel" class="hidden zr-col zr-col--loose">
                         <div class="zr-field zr-field--stacked">
                             <label for="quickstartBaseUrl" class="zr-field__name">AI server URL</label>
                             <input id="quickstartBaseUrl" type="text" class="zr-input" placeholder="http://192.168.1.5:1234 (LM Studio) or http://host:11434 (Ollama)">
@@ -332,13 +332,13 @@
                             <input id="quickstartApiKey" type="password" class="zr-input" placeholder="Only needed if your endpoint requires a token">
                         </div>
                         <div class="zr-row zr-row--wrap">
-                            <button type="button" id="quickstartDetectBtn" class="setup-btn setup-btn-warning flex items-center gap-2">
+                            <button type="button" id="quickstartDetectBtn" class="zr-btn">
                                 <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-search"/></svg>
                                 <span>Detect models</span>
                             </button>
                             <span id="quickstartDetectState" class="zr-badge">Not detected</span>
                         </div>
-                        <p id="quickstartHint" class="setup-hint hidden"></p>
+                        <p id="quickstartHint" class="zr-field__hint hidden"></p>
                         <div class="zr-field zr-field--stacked">
                             <label for="quickstartAiModel" class="zr-field__name">Suggested AI model</label>
                             <select id="quickstartAiModel" class="zr-input" disabled>
@@ -355,9 +355,9 @@
                             <label class="zr-switch"><input id="quickstartEnableOcr" type="checkbox" disabled><span class="zr-switch__track"><span class="zr-switch__thumb"></span></span></label>
                             <label for="quickstartEnableOcr" class="zr-field__name">Use this service for OCR</label>
                         </div>
-                        <p id="quickstartOcrHint" class="setup-hint hidden"></p>
-                        <div class="flex flex-wrap items-center gap-3 hidden" id="quickstartSaveRow">
-                            <button type="button" id="quickstartSaveBtn" class="setup-btn setup-btn-primary flex items-center gap-2">
+                        <p id="quickstartOcrHint" class="zr-field__hint hidden"></p>
+                        <div class="zr-row hidden zr-row--wrap" id="quickstartSaveRow">
+                            <button type="button" id="quickstartSaveBtn" class="zr-btn zr-btn--primary">
                                 <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-save"/></svg>
                                 <span>Test models &amp; finish setup</span>
                             </button>
@@ -365,39 +365,39 @@
                         </div>
                     </div>
 
-                    <div id="aiManualPanel" class="hidden mt-4">
+                    <div id="aiManualPanel" class="hidden">
                         <div class="zr-formgrid">
-                            <div class="space-y-2 md:col-span-2">
+                            <div class="zr-field zr-field--stacked zr-formgrid__wide">
                                 <label for="aiPreset" class="zr-field__name">Provider preset</label>
                                 <select id="aiPreset" class="zr-input"></select>
                                 <p id="aiPresetHint" class="zr-field__hint"></p>
                             </div>
-                            <div class="space-y-2 md:col-span-2">
+                            <div class="zr-field zr-field--stacked zr-formgrid__wide">
                                 <label for="aiApiUrl" class="zr-field__name">API URL</label>
                                 <input id="aiApiUrl" type="text" class="zr-input" required>
                             </div>
-                            <div class="space-y-2 md:col-span-2">
+                            <div class="zr-field zr-field--stacked zr-formgrid__wide">
                                 <label for="aiToken" class="zr-field__name">API key</label>
                                 <input id="aiToken" type="password" class="zr-input" placeholder="Enter token if required">
                                 <p class="zr-field__hint">For Ollama and custom endpoints, this field can stay empty if the API does not require authentication.</p>
                             </div>
-                            <div class="space-y-2 md:col-span-2">
+                            <div class="zr-field zr-field--stacked zr-formgrid__wide">
                                 <label for="aiModel" class="zr-field__name">Model</label>
                                 <div class="zr-inputgroup">
                                     <select id="aiModel" class="zr-input" required>
                                         <option value="">Select a model</option>
                                     </select>
-                                    <button type="button" id="fetchAiModelsBtn" class="setup-btn setup-btn-warning whitespace-nowrap flex items-center gap-2">
+                                    <button type="button" id="fetchAiModelsBtn" class="zr-btn">
                                         <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
                                         <span>Fetch models</span>
                                     </button>
                                 </div>
                             </div>
-                            <div class="space-y-2 md:col-span-2">
+                            <div class="zr-field zr-field--stacked zr-formgrid__wide">
                                 <label for="aiValidationTimeout" class="zr-field__name">Timeout</label>
                                 <div class="zr-row">
                                     <input id="aiValidationTimeout" type="number" min="1" max="120" step="1" class="zr-input" value="30" required>
-                                    <span class="setup-hint whitespace-nowrap">seconds</span>
+                                    <span class="zr-field__hint">seconds</span>
                                 </div>
                                 <p class="zr-field__hint">Used for model discovery and connection tests. Default: 30s.</p>
                             </div>
@@ -406,7 +406,7 @@
 
                     <input id="aiProvider" type="hidden">
 
-                    <div class="mt-4 flex flex-wrap items-center gap-3">
+                    <div class="zr-row zr-row--wrap">
                         <button type="button" id="testAiBtn" class="zr-btn">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-flask"/></svg>
                             Test AI connection
@@ -419,9 +419,9 @@
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-file"/></svg> OCR fallback</h3>
                     <p class="zr-sm zr-muted">Configure OCR fallback for documents where AI extraction needs OCR assistance.</p>
 
-                    <div id="ocrQuickstartNotice" class="setup-notice setup-notice-success hidden mt-4"></div>
+                    <div id="ocrQuickstartNotice" class="zr-alert zr-alert--ok hidden"></div>
 
-                    <div class="space-y-2 mt-4">
+                    <div class="zr-field zr-field--stacked">
                         <label for="mistralOcrEnabled" class="zr-field__name">Enable OCR</label>
                         <select id="mistralOcrEnabled" class="zr-input">
                             <option value="no" <%= config.MISTRAL_OCR_ENABLED === 'yes' ? '' : 'selected' %>>No</option>
@@ -429,7 +429,7 @@
                         </select>
                     </div>
 
-                    <div id="mistralFields" class="hidden space-y-4 mt-4">
+                    <div id="mistralFields" class="hidden zr-col zr-col--loose">
                         <div class="zr-field zr-field--stacked">
                             <label for="ocrProvider" class="zr-field__name">OCR provider</label>
                             <select id="ocrProvider" class="zr-input">
@@ -452,7 +452,7 @@
                                 <select id="mistralOcrModel" class="zr-input">
                                     <option value="<%= config.MISTRAL_OCR_MODEL || 'mistral-ocr-latest' %>" selected><%= config.MISTRAL_OCR_MODEL || 'mistral-ocr-latest' %></option>
                                 </select>
-                                <button type="button" id="fetchOcrModelsBtn" class="setup-btn setup-btn-warning whitespace-nowrap flex items-center gap-2">
+                                <button type="button" id="fetchOcrModelsBtn" class="zr-btn">
                                     <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
                                     <span>Fetch OCR models</span>
                                 </button>
@@ -462,12 +462,12 @@
                             <label for="ocrValidationTimeout" class="zr-field__name">OCR timeout</label>
                             <div class="zr-row">
                                 <input id="ocrValidationTimeout" type="number" min="1" max="7200" step="1" class="zr-input" value="30">
-                                <span class="setup-hint whitespace-nowrap">seconds</span>
+                                <span class="zr-field__hint">seconds</span>
                             </div>
                             <p class="zr-field__hint">Used for OCR model discovery, connection tests and document processing. Default: 30s.</p>
                         </div>
                         <div class="zr-row zr-row--wrap">
-                            <button type="button" id="testOcrBtn" class="setup-btn setup-btn-warning flex items-center gap-2">
+                            <button type="button" id="testOcrBtn" class="zr-btn">
                                 <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-flask"/></svg>
                                 <span>Test OCR connection</span>
                             </button>
@@ -480,12 +480,12 @@
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg> Review and finish</h3>
                     <p class="zr-sm zr-muted">Review generated environment keys, copy if needed, then finalize setup.</p>
 
-                    <div class="space-y-2 mt-4">
+                    <div class="zr-field zr-field--stacked">
                         <label for="envPreview" class="zr-field__name">For docker compose copy</label>
                         <textarea id="envPreview" class="zr-textarea" rows="12" readonly></textarea>
                     </div>
 
-                    <div class="flex flex-wrap gap-3 mt-4">
+                    <div class="zr-row zr-row--wrap">
                         <button type="button" id="copyEnvPreviewBtn" class="zr-btn">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-copy"/></svg>
                             Copy to clipboard

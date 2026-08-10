@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
+<html lang="en" data-theme="<%= theme || 'light' %>">
 <%- include('partials/shell/head-start', { pageTitle: 'Ignored - Zettelrobbe' }) %>
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', {
@@ -16,10 +16,10 @@
                     </div>
                 </div>
 
-                <div class="zr-module mb-4">
+                <div class="zr-module">
                     <div class="zr-module__body">
                         <h2 class="zr-label">Add document to ignore list</h2>
-                        <div class="flex gap-2 flex-wrap">
+                        <div class="zr-row zr-row--wrap">
                             <input type="number" id="ignoreDocIdInput" placeholder="Document ID" min="1"
                                 class="zr-select" style="max-width: 160px">
                             <input type="text" id="ignoreReasonInput" placeholder="Reason (optional)"

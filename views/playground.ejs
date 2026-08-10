@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
+<html lang="en" data-theme="<%= theme || 'light' %>">
 <%- include('partials/shell/head-start', { pageTitle: 'Playground - Zettelrobbe' }) %>
     <script src="js/playground-analyzer.js" defer></script>
     <%- include('partials/shell/head-end') %>
@@ -10,18 +10,17 @@
     }) %>
 
         <!-- Main Content -->
-            <div class="content-wrapper p-6">
-            <div class="mb-6">
+            <div>
+            <div>
                 <!-- Analysis Section -->
-                <div class="zr-module mb-8">
+                <div class="zr-module">
                     <h2 class="zr-module__title">Document Analysis</h2>
                     <div class="zr-col zr-col--loose">
                         <textarea 
                             id="analysisPrompt"
                             placeholder="Enter your analysis prompt here..."
-                            class="toolbar-input"
-                        ></textarea>
-                        <div id="analysisActions" class="flex flex-wrap items-center gap-2">
+                            class="toolbar-input"></textarea>
+                        <div id="analysisActions" class="zr-row zr-row--wrap">
                                 <button id="analyzeButton" class="zr-btn zr-btn--primary">
                                 Analyze Documents
                             </button>
@@ -29,7 +28,7 @@
                     </div>
                 </div>
 
-                <div id="playgroundInitialLoading" class="zr-module mb-4" role="status" aria-live="polite" aria-busy="true">
+                <div id="playgroundInitialLoading" class="zr-module" role="status" aria-live="polite" aria-busy="true">
                     <div class="zr-row">
                         <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                         <div>
@@ -40,9 +39,9 @@
                 </div>
 
                 <!-- Documents Grid -->
-                <div id="documentsGridWrapper" class="relative">
+                <div id="documentsGridWrapper">
                     <div id="playgroundAnalysisOverlay" class="zr-overlay hidden" role="status" aria-live="polite" aria-busy="true">
-                        <div class="zr-module max-w-md w-full mx-4">
+                        <div class="zr-module">
                             <div class="zr-row">
                                 <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                                 <div>
@@ -53,7 +52,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-4 gap-4" id="documentsGrid"></div>
+                    <div  id="documentsGrid"></div>
                 </div>
             </div>
             </div>

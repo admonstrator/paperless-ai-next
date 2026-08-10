@@ -92,7 +92,7 @@
 
                                 <div class="zr-field zr-field--stacked">
                                     <label class="zr-field__name">Detected Public URL</label>
-                                    <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
+                                    <div class="zr-col">
                                         <div id="paperlessDetectedUrlValue" class="zr-input zr-grow" style="height:auto; word-break:break-all">Loading…</div>
                                         <button type="button" id="refreshPublicUrlDetection" class="zr-btn">
                                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>Refresh
@@ -171,7 +171,7 @@
                                     hint: 'ENV: PROCESS_PREDEFINED_DOCUMENTS + TAGS · Restart required'
                                 }) %>
 
-                                <div id="tagsInputSection" class="<%= config.PROCESS_PREDEFINED_DOCUMENTS === 'yes' ? '' : 'hidden' %> space-y-2">
+                                <div id="tagsInputSection" class="<%= config.PROCESS_PREDEFINED_DOCUMENTS === 'yes' ? '' : 'hidden' %> zr-field zr-field--stacked">
                                     <label for="tagInput" class="zr-field__name">Tags</label>
                                     <div class="zr-inputgroup">
                                         <input type="text" id="tagInput" class="zr-input" placeholder="Enter a tag and press Enter">
@@ -253,7 +253,7 @@
                                     </div>
                                 <% } else { %>
                                     <div class="zr-col zr-col--loose">
-                                        <div class="flex flex-wrap items-center justify-between gap-2">
+                                        <div class="zr-row zr-row--wrap zr-row--between">
                                             <div>
                                                 <p class="zr-field__name">User: <span id="mfaSettingsUser"><%= mfaSettings.username %></span></p>
                                                 <p class="zr-field__hint">Configure two-factor authentication for this account.</p>
@@ -280,15 +280,15 @@
                                             </button>
                                         </div>
 
-                                        <div id="mfaProvisioningBox" class="space-y-3 p-3 border rounded-lg hidden">
-                                            <div class="flex justify-center">
-                                                <img id="mfaQrImage" class="w-44 h-44 rounded border border-gray-200 bg-white p-2 hidden" alt="MFA provisioning QR code" />
+                                        <div id="mfaProvisioningBox" class="zr-col hidden">
+                                            <div class="zr-row">
+                                                <img id="mfaQrImage" class="hidden" alt="MFA provisioning QR code" />
                                             </div>
-                                            <div class="space-y-1">
+                                            <div class="zr-col zr-col--tight">
                                                 <label for="mfaSecretKey" class="zr-field__name">Secret Key</label>
                                                 <input type="text" id="mfaSecretKey" class="zr-input" readonly>
                                             </div>
-                                            <div class="space-y-1">
+                                            <div class="zr-col zr-col--tight">
                                                 <label for="mfaOtpAuthUri" class="zr-field__name">OTP URI</label>
                                                 <textarea id="mfaOtpAuthUri" rows="3" class="zr-textarea" readonly></textarea>
                                             </div>
@@ -314,10 +314,10 @@
                                                     <span id="mfaVerifyBtnLabel">Validate & Activate</span>
                                                 </button>
                                             </div>
-                                            <p id="mfaTokenHint" class="hidden text-xs"></p>
+                                            <p id="mfaTokenHint" class="hidden"></p>
                                         </div>
 
-                                        <div id="mfaResultMessage" class="hidden rounded-lg p-3 text-sm"></div>
+                                        <div id="mfaResultMessage" class="hidden"></div>
                                     </div>
                                 <% } %>
                                 </div>
@@ -346,7 +346,7 @@
                                     </button>
                                     <span id="settingsQuickstartState" class="zr-field__hint">Not detected</span>
                                 </div>
-                                <div id="settingsQuickstartResults" class="space-y-4 hidden">
+                                <div id="settingsQuickstartResults" class="zr-col zr-col--loose hidden">
                                     <p id="settingsQuickstartHint" class="zr-field__hint"></p>
                                     <div class="zr-formgrid">
                                         <div class="zr-field zr-field--stacked">
@@ -421,7 +421,7 @@
                                     </div>
                                 </div>
 
-                                <div id="ollamaSettings" class="space-y-4 hidden">
+                                <div id="ollamaSettings" class="zr-col zr-col--loose hidden">
                                     <div class="zr-field zr-field--stacked">
                                         <label for="ollamaUrl" class="zr-field__name">Ollama API URL</label>
                                         <input type="text" id="ollamaUrl" name="ollamaUrl" value="<%= config.OLLAMA_API_URL %>" class="zr-input">
@@ -450,7 +450,7 @@
                                     </div>
                                 </div>
 
-                                <div id="customSettings" class="space-y-4 hidden">
+                                <div id="customSettings" class="zr-col zr-col--loose hidden">
                                     <div class="zr-field zr-field--stacked">
                                         <label for="customBaseUrl" class="zr-field__name">Custom Base URL</label>
                                         <input type="text" id="customBaseUrl" name="customBaseUrl" value="<%= config.CUSTOM_BASE_URL %>" class="zr-input">
@@ -479,7 +479,7 @@
                                     </div>
                                 </div>
 
-                                <div id="azureSettings" class="space-y-4 hidden">
+                                <div id="azureSettings" class="zr-col zr-col--loose hidden">
                                     <div class="zr-field zr-field--stacked">
                                         <label for="azureEndpoint" class="zr-field__name">Azure Endpoint</label>
                                         <input type="text" id="azureEndpoint" name="azureEndpoint" value="<%= config.AZURE_ENDPOINT %>" class="zr-input">
@@ -542,7 +542,7 @@
                                     checked: config.ADD_AI_PROCESSED_TAG === 'yes',
                                     hint: 'ENV: ADD_AI_PROCESSED_TAG · Restart required'
                                 }) %>
-                                <div id="aiTagNameSection" class="<%= config.ADD_AI_PROCESSED_TAG === 'yes' ? '' : 'hidden' %> space-y-2">
+                                <div id="aiTagNameSection" class="<%= config.ADD_AI_PROCESSED_TAG === 'yes' ? '' : 'hidden' %> zr-field zr-field--stacked">
                                     <label for="aiTagName" class="zr-field__name">AI-processed Tag Name</label>
                                     <input type="text" id="aiTagName" name="aiTagName" value="<%= config.AI_PROCESSED_TAG_NAME || 'ai-processed' %>" class="zr-input">
                                     <p class="zr-field__hint">ENV: AI_PROCESSED_TAG_NAME · Restart required</p>
@@ -555,7 +555,7 @@
                                     hint: 'ENV: USE_PROMPT_TAGS + PROMPT_TAGS · Restart required'
                                 }) %>
 
-                                <div id="promptTagsSection" class="<%= config.USE_PROMPT_TAGS === 'yes' ? '' : 'hidden' %> space-y-2">
+                                <div id="promptTagsSection" class="<%= config.USE_PROMPT_TAGS === 'yes' ? '' : 'hidden' %> zr-field zr-field--stacked">
                                     <label for="promptTagInput" class="zr-field__name">Prompt Tags</label>
                                     <div class="zr-inputgroup">
                                         <input type="text" id="promptTagInput" class="zr-input" placeholder="Enter a tag and press Enter">
@@ -628,7 +628,7 @@
                                     </div>
                                 </div>
 
-                                <div id="externalApiSettings" class="space-y-4 <%= config.EXTERNAL_API_ENABLED === 'yes' ? '' : 'hidden' %>">
+                                <div id="externalApiSettings" class="zr-col zr-col--loose <%= config.EXTERNAL_API_ENABLED === 'yes' ? '' : 'hidden' %>">
                                     <div class="zr-field zr-field--stacked">
                                         <label for="externalApiUrl" class="zr-field__name">API URL</label>
                                         <input type="text" id="externalApiUrl" name="externalApiUrl" value="<%= config.EXTERNAL_API_URL || '' %>" class="zr-input">
@@ -695,7 +695,7 @@
                                         <% _parsedCustomFields.forEach((field) => { %>
                                             <div class="custom-field-item zr-row">
                                                 <div class="zr-faint" style="cursor: move"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-grip"/></svg></div>
-                                                <div class="flex-1">
+                                                <div class="zr-grow">
                                                     <p class="zr-strong"><%= field.value %></p>
                                                     <p class="zr-sm zr-faint">Type: <%= field.data_type %> <%= field.data_type === 'monetary' && field.currency ? `(${field.currency})` : '' %></p>
                                                 </div>
@@ -705,9 +705,9 @@
                                     <% } %>
                                 </div>
 
-                                <div class="grid grid-cols-12 gap-3">
-                                    <div class="col-span-5"><input type="text" id="newFieldName" class="zr-input" placeholder="Enter field name..."></div>
-                                    <div class="col-span-3">
+                                <div class="zr-row zr-row--wrap">
+                                    <div class="zr-grow"><input type="text" id="newFieldName" class="zr-input" placeholder="Enter field name..."></div>
+                                    <div>
                                         <select id="newFieldType" onchange="toggleCurrencySelect()" class="zr-input">
                                             <option value="string">Text</option>
                                             <option value="float">Number</option>
@@ -717,7 +717,7 @@
                                             <option value="boolean">Boolean</option>
                                         </select>
                                     </div>
-                                    <div class="col-span-2">
+                                    <div>
                                         <select id="currencyCode" class="zr-select hidden">
                                             <option value="EUR">EUR</option>
                                             <option value="USD">USD</option>
@@ -726,7 +726,7 @@
                                             <option value="CHF">CHF</option>
                                         </select>
                                     </div>
-                                    <div class="col-span-2"><button type="button" onclick="addCustomField()" class="zr-btn zr-btn--primary zr-btn--block">Add</button></div>
+                                    <div><button type="button" onclick="addCustomField()" class="zr-btn zr-btn--primary zr-btn--block">Add</button></div>
                                 </div>
                                 <input type="hidden" id="customFieldsJson" name="customFields" value='<%= config.CUSTOM_FIELDS || "{\"custom_fields\":[]}" %>'>
                                 <p class="zr-field__hint">ENV: CUSTOM_FIELDS · Restart required</p>
@@ -746,7 +746,7 @@
                                     checked: config.MISTRAL_OCR_ENABLED === 'yes',
                                     hint: 'ENV: MISTRAL_OCR_ENABLED · Restart required'
                                 }) %>
-                                <div id="ocrFieldsContainer" class="space-y-2 <%= config.MISTRAL_OCR_ENABLED === 'yes' ? '' : 'hidden' %>">
+                                <div id="ocrFieldsContainer" class="zr-field zr-field--stacked <%= config.MISTRAL_OCR_ENABLED === 'yes' ? '' : 'hidden' %>">
                                 <div class="zr-field zr-field--stacked">
                                     <label for="ocrProvider" class="zr-field__name">OCR Provider</label>
                                     <select id="ocrProvider" name="ocrProvider" class="zr-input">
@@ -788,7 +788,7 @@
                                         checked: (config.OCR_PDF_RENDER_ENABLED || 'yes') === 'yes',
                                         hint: 'ENV: OCR_PDF_RENDER_ENABLED · Render PDF pages with poppler (pdftoppm) so local vision models can OCR multi-page documents; falls back to the first-page thumbnail when poppler is not installed · Restart required'
                                     }) %>
-                                    <div id="ocrPdfRenderOptionsContainer" class="space-y-4 <%= (config.OCR_PDF_RENDER_ENABLED || 'yes') === 'yes' ? '' : 'hidden' %>">
+                                    <div id="ocrPdfRenderOptionsContainer" class="zr-col zr-col--loose <%= (config.OCR_PDF_RENDER_ENABLED || 'yes') === 'yes' ? '' : 'hidden' %>">
                                         <div class="zr-field zr-field--stacked">
                                             <label for="ocrPdfRenderMaxPages" class="zr-field__name">Max PDF Pages per Document</label>
                                             <input type="number" id="ocrPdfRenderMaxPages" name="ocrPdfRenderMaxPages" min="1" max="50" step="1" value="<%= config.OCR_PDF_RENDER_MAX_PAGES || 10 %>" class="zr-input">
@@ -808,7 +808,7 @@
                                         checked: (config.OCR_AUTO_PROCESS_ENABLED || 'no') === 'yes',
                                         hint: 'ENV: OCR_AUTO_PROCESS_ENABLED &middot; Work through queued documents on a schedule instead of pressing "Process All Pending" on the OCR page &middot; Restart required'
                                     }) %>
-                                    <div id="ocrAutoProcessOptionsContainer" class="space-y-4 <%= (config.OCR_AUTO_PROCESS_ENABLED || 'no') === 'yes' ? '' : 'hidden' %>">
+                                    <div id="ocrAutoProcessOptionsContainer" class="zr-col zr-col--loose <%= (config.OCR_AUTO_PROCESS_ENABLED || 'no') === 'yes' ? '' : 'hidden' %>">
                                         <div class="zr-field zr-field--stacked">
                                             <label for="ocrAutoProcessInterval" class="zr-field__name">OCR Processing Interval (Cron)</label>
                                             <input type="text" id="ocrAutoProcessInterval" name="ocrAutoProcessInterval" value="<%= config.OCR_AUTO_PROCESS_INTERVAL || '*/15 * * * *' %>" class="zr-input" placeholder="*/15 * * * *">
@@ -840,7 +840,7 @@
                                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-flask"/></svg>
                                         <span>Test OCR Connection</span>
                                     </button>
-                                    <span id="ocrTestState" class="setup-pill">Not tested</span>
+                                    <span id="ocrTestState" class="zr-badge">Not tested</span>
                                 </div>
                                 </div>
                                 </div>
@@ -854,7 +854,7 @@
                                 </div>
                                 <div class="zr-module__body zr-col zr-col--loose">
                                 <div class="zr-field zr-field--stacked">
-                                    <label for="tagCacheTTL" class="text-sm font-medium flex items-center gap-2">
+                                    <label for="tagCacheTTL" class="zr-row">
                                         Tag Cache Lifetime (Seconds)
                                         <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" id="tagCacheTTLHelp">
                                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-help"/></svg>
@@ -868,8 +868,8 @@
                                     <span>Clear Tag Cache Now</span>
                                 </button>
 
-                                <div class="space-y-3 border border-gray-200 rounded-lg p-3">
-                                    <div class="flex items-center justify-between gap-2">
+                                <div class="zr-col">
+                                    <div class="zr-row zr-row--between">
                                         <div>
                                             <p class="zr-field__name">Thumbnail Cache</p>
                                             <p class="zr-field__hint">Local cached previews stored in <code>public/images</code>.</p>
@@ -881,11 +881,11 @@
                                     </div>
 
                                     <div class="zr-formgrid">
-                                        <div class="rounded-lg border border-gray-200 p-3">
+                                        <div >
                                             <p class="zr-field__hint">Files</p>
                                             <p id="thumbnailCacheFileCount" class="zr-module__title">-</p>
                                         </div>
-                                        <div class="rounded-lg border border-gray-200 p-3">
+                                        <div >
                                             <p class="zr-field__hint">Total Size</p>
                                             <p id="thumbnailCacheTotalSize" class="zr-module__title">-</p>
                                         </div>
@@ -981,7 +981,7 @@
                                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                                         <span>Force Reconciliation Now</span>
                                     </button>
-                                    <div id="reconcileResult" class="mt-3 hidden"></div>
+                                    <div id="reconcileResult" class="hidden"></div>
                                 </div>
                                 </div>
                             </section>
@@ -1019,12 +1019,12 @@
                                 <%
                                     const releaseList = Array.isArray(changelogReleases) ? changelogReleases : [];
                                     const categoryMeta = {
-                                        new: { label: 'New', icon: 'fa-plus' },
-                                        fix: { label: 'Fix', icon: 'fa-wrench' },
-                                        improvement: { label: 'Improved', icon: 'fa-arrow-up' },
-                                        removed: { label: 'Removed', icon: 'fa-minus' },
-                                        security: { label: 'Security', icon: 'fa-shield-halved' },
-                                        note: { label: 'Note', icon: 'fa-circle-info' }
+                                        new: { label: 'New', icon: 'i-plus' },
+                                        fix: { label: 'Fix', icon: 'i-wrench' },
+                                        improvement: { label: 'Improved', icon: 'i-arrow-up' },
+                                        removed: { label: 'Removed', icon: 'i-minus' },
+                                        security: { label: 'Security', icon: 'i-shield' },
+                                        note: { label: 'Note', icon: 'i-info' }
                                     };
                                 %>
 
@@ -1051,7 +1051,7 @@
                                                             %>
                                                             <li class="changelog-entry">
                                                                 <span class="changelog-badge changelog-badge--<%= entry.category %>">
-                                                                    <i class="fas <%= meta.icon %>" aria-hidden="true"></i>
+                                                                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#<%= meta.icon %>"/></svg>
                                                                     <%= meta.label %>
                                                                 </span>
                                                                 <%# Entries are authored in config/changelog.js and may contain links, so they render as HTML. %>

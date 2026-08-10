@@ -9,20 +9,16 @@ let manualSearchController = null;
 // Show message (error or success)
 function showMessage(message, type = 'error') {
     const messageArea = document.getElementById('messageArea');
-    const alertClass = type === 'error' ? 'theme-alert-error' : 'theme-alert-success';
-    const iconClass = type === 'error' ? 'fa-exclamation-circle text-red-400' : 'fa-check-circle text-green-400';
+    const tone = type === 'error' ? 'danger' : 'ok';
+    const symbol = type === 'error' ? 'i-alert-circle' : 'i-check-circle';
 
-    messageArea.className = `mb-4 p-4 rounded-md border ${alertClass}`;
+    messageArea.className = `zr-alert zr-alert--${tone}`;
     messageArea.innerHTML = `
-        <div class="flex">
-            <div class="flex-shrink-0">
-                <i class="fas ${iconClass}"></i>
-            </div>
-            <div class="ml-3">
-                <p class="text-sm">${message}</p>
-            </div>
-        </div>
+        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#${symbol}"/></svg>
+        <div class="zr-alert__body"><p class="zr-sm" data-message-text></p></div>
     `;
+    // The message can carry server text, so it is set as text, not markup.
+    messageArea.querySelector('[data-message-text]').textContent = message;
     messageArea.classList.remove('hidden');
 
     setTimeout(() => {
@@ -296,7 +292,7 @@ async function handleAnalysis() {
             throw new Error('No document content available for analysis');
         }
 
-        if(content.length > 50000) {
+        if(content.length> 50000) {
             content = content.substring(0, 50000);
         }
 
@@ -450,7 +446,7 @@ function serializeFormWithoutEmptyTags(formElement) {
 
     const object = {};
     formData.forEach((value, key) => {
-        if (key !== 'tags' || currentTags.children.length > 0) {
+        if (key !== 'tags' || currentTags.children.length> 0) {
             object[key] = value;
         }
     });

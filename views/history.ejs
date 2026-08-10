@@ -1,6 +1,6 @@
 <!-- views/history.ejs -->
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
+<html lang="en" data-theme="<%= theme || 'light' %>">
 <%- include('partials/shell/head-start', { pageTitle: 'History - Zettelrobbe' }) %>
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', {
@@ -61,7 +61,7 @@
                 </div>
 
                 <!-- Loading Indicator -->
-                <div id="historyLoadingIndicator" class="zr-module mb-6">
+                <div id="historyLoadingIndicator" class="zr-module">
                     <div class="zr-empty">
                         <div >
                             <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
@@ -121,7 +121,7 @@
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-tag"/></svg> AI-Set Tags
                             <span id="infoModalLiveHint" class="zr-xs zr-faint"></span>
                         </h4>
-                        <div id="infoModalTags" class="flex flex-wrap gap-2 mb-2"></div>
+                        <div id="infoModalTags" class="zr-row zr-row--wrap"></div>
                         <div id="infoModalExternalTags" class="zr-row zr-row--wrap"></div>
                     </div>
                     <!-- Correspondent Section -->
@@ -136,7 +136,7 @@
                         <h4 class="zr-label">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-folder"/></svg> Document Classification
                         </h4>
-                        <div class="flex flex-wrap gap-3 text-sm">
+                        <div class="zr-row zr-row--wrap">
                             <div>
                                 <span class="zr-label">Type</span>
                                 <span id="infoModalDocType" class="zr-badge zr-badge--info">–</span>
@@ -166,7 +166,7 @@
                         <h4 class="zr-label">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-coins"/></svg> Token Usage
                         </h4>
-                        <div id="infoModalTokens" class="flex gap-4 flex-wrap text-sm"></div>
+                        <div id="infoModalTokens" class="zr-row zr-row--wrap"></div>
                     </div>
                     <!-- Original State (collapsible) -->
                     <div  id="infoModalOriginalSection" style="display:none;">
@@ -175,7 +175,7 @@
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-history"/></svg> Original State (before AI)
                         </button>
                         <div id="infoModalOriginalBody" class="hidden">
-                            <div id="infoModalOriginalContent" class="text-sm space-y-1"></div>
+                            <div id="infoModalOriginalContent" class="zr-col zr-col--tight"></div>
                         </div>
                     </div>
                 </div>

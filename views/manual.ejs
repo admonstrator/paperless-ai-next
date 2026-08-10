@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
+<html lang="en" data-theme="<%= theme || 'light' %>">
 <%- include('partials/shell/head-start', { pageTitle: 'Manual - Zettelrobbe' }) %>
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', {
@@ -9,12 +9,12 @@
 }) %>
             <div>
                 <!-- Message Area -->
-                <div id="messageArea" class="mb-6 hidden">
+                <div id="messageArea" class="hidden">
                     <!-- Messages will be inserted here -->
                 </div>
         
                 <!-- Document Selection -->
-                <div class="zr-module mb-6">
+                <div class="zr-module">
                     <h2 class="zr-module__title">Select Document</h2>
                     <div class="manual-search-wrapper">
                         <input
@@ -32,28 +32,28 @@
                 <!-- Main Grid -->
                 <div class="card-grid">
                     <!-- Document Preview Card -->
-                    <div class="zr-module col-span-2">
+                    <div class="zr-module">
                         <h2 class="zr-module__title">Document Preview</h2>
                         <!-- Correspondent Info -->
-                        <div id="correspondentInfo" class="stat-box mb-4 hidden">
+                        <div id="correspondentInfo" class="stat-box hidden">
                             <h3 class="zr-field__name">Correspondent:</h3>
                             <p id="correspondentName"></p>
                         </div>
-                        <div id="titleInfo" class="stat-box mb-4 hidden">
+                        <div id="titleInfo" class="stat-box hidden">
                             <h3 class="zr-field__name">Title:</h3>
                             <p id="titleName"></p>
                         </div>
                         <div class="stat-box">
-                            <div id="documentPreview" class="min-h-[600px] bg-bg-primary rounded border border-border-color p-4">
-                                <div id="contentPreview" class="h-[600px] overflow-y-auto font-mono text-sm whitespace-pre-wrap"></div>
+                            <div id="documentPreview">
+                                <div id="contentPreview" class="zr-mono"></div>
                             </div>
                         </div>
                     </div>
         
                     <!-- AI and Tags Section -->
-                    <div class="col-span-2">
+                    <div>
                         <!-- AI Analysis Card -->
-                        <div class="zr-module mb-6">
+                        <div class="zr-module">
                             <h2 class="zr-module__title">AI Analysis</h2>
                             <button id="analyzeBtn" 
                                     class="zr-btn zr-btn--block" 
@@ -61,12 +61,12 @@
                                     <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg>
                                     Analyze with AI
                             </button>
-                            <div id="aiStatus" class="mt-4 hidden">
-                                <div class="flex items-center">
-                                    <div class="mr-3">
+                            <div id="aiStatus" class="hidden">
+                                <div class="zr-row">
+                                    <div>
                                         <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                                     </div>
-                                    <div class="text-sm text-text-secondary">
+                                    <div class="zr-muted">
                                         AI is analyzing the document...
                                     </div>
                                 </div>
@@ -77,16 +77,16 @@
                         <div class="zr-module">
                             <h2 class="zr-module__title">Tags</h2>
                             <!-- AI Suggested Tags -->
-                            <div >
+                            <div>
                                 <h3 class="zr-field__name">AI Suggestions</h3>
                                 <div id="suggestedTags" class="zr-row zr-row--wrap"></div>
                                 <input type="hidden" id="tags" name="tags" value="">
                             </div>
         
                             <!-- Current Tags -->
-                            <div >
-                                <div class="flex justify-between items-center mb-2">
-                                    <h3 class="text-sm font-medium text-text-secondary">Current Tags</h3>
+                            <div>
+                                <div class="zr-row zr-row--between">
+                                    <h3 class="zr-muted">Current Tags</h3>
                                     <button id="saveTagsBtn" 
                                             class="zr-btn zr-btn--primary">
                                         Save Tags
@@ -98,8 +98,8 @@
                             <!-- Add New Tag -->
                             <div>
                                 <h3 class="zr-field__name">Add New Tag</h3>
-                                <div class="flex space-x-2">
-                                    <select id="newTagSelect" class="flex-1 rounded-md border-border-color bg-bg-primary text-text-primary focus:border-accent-primary focus:ring-accent-primary">
+                                <div class="zr-row">
+                                    <select id="newTagSelect" class="zr-grow">
                                         <option value="">Select a tag...</option>
                                     </select>
                                     <button id="addTagBtn" class="zr-btn zr-btn--primary">

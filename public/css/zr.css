@@ -991,11 +991,15 @@ a.zr-list__item:hover {
 }
 
 /* Stacked variant: label above control. Used by the long configuration forms,
-   where a label column would push the inputs into a narrow strip. */
+   where a label column would push the inputs into a narrow strip.
+   No divider — stacked fields are separated by their own rhythm, and a rule
+   under every one of them reads as noise. */
 .zr-field--stacked {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  padding: 0;
+  border-bottom: 0;
 }
 .zr-field--stacked .zr-field__name {
   font-weight: 600;
@@ -1014,15 +1018,26 @@ a.zr-list__item:hover {
   color: var(--zr-text-muted);
 }
 
-/* two-column form grid for short, related fields */
+/* Two-column form grid for short, related fields. Fixed columns rather than
+   auto-fit, so a wide panel does not silently become three or four columns. */
 .zr-formgrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--zr-3) var(--zr-5);
   align-items: start;
 }
 .zr-formgrid--3 {
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+/* a field that needs the whole row */
+.zr-formgrid__wide {
+  grid-column: 1 / -1;
+}
+@media (max-width: 720px) {
+  .zr-formgrid,
+  .zr-formgrid--3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 /* password reveal button sitting inside an input group */
@@ -1537,6 +1552,33 @@ a.zr-list__item:hover {
   color: var(--zr-brand);
   flex: none;
   margin-top: 3px;
+}
+
+/* full-screen blocking overlay — restart and model-test flows */
+.zr-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--zr-4);
+  background: color-mix(in srgb, var(--zr-canvas) 82%, transparent);
+  backdrop-filter: blur(4px);
+}
+.zr-fullscreen__card {
+  width: 100%;
+  max-width: 520px;
+  padding: var(--zr-6);
+  background: var(--zr-surface);
+  border: 1px solid var(--zr-line);
+  border-radius: var(--zr-r-lg);
+  box-shadow: var(--zr-shadow-lg);
+}
+.zr-fullscreen__seal {
+  font-size: 34px;
+  line-height: 1;
+  flex: none;
 }
 
 /* toast */

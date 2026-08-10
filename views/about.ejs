@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
+<html lang="en" data-theme="<%= theme || 'light' %>">
 <%- include('partials/shell/head-start', { pageTitle: 'About - Zettelrobbe' }) %>
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', {
@@ -7,7 +7,7 @@
     version: typeof version !== 'undefined' ? version : '',
     chatEnabled: typeof chatEnabled !== 'undefined' ? chatEnabled : false
 }) %>
-            <div class="content-wrapper space-y-6">
+            <div class="zr-col zr-col--loose">
                 <div class="zr-viewhead">
                     <div>
                         <p class="zr-viewhead__sub">Support information, project background, and author details.</p>
@@ -39,9 +39,9 @@
 
                 <div class="zr-module">
                     <h3 class="zr-module__title">System Information (Support)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                    <div>
                         <div class="zr-panel"><strong>App Version:</strong> <%= supportInfo.appVersion %></div>
-                        <div class="zr-panel"><strong>Build Commit SHA:</strong> <span class="font-mono break-all"><%= supportInfo.commitSha %></span></div>
+                        <div class="zr-panel"><strong>Build Commit SHA:</strong> <span class="zr-mono"><%= supportInfo.commitSha %></span></div>
                         <div class="zr-panel"><strong>Node.js:</strong> <%= supportInfo.nodeVersion %></div>
                         <div class="zr-panel"><strong>Platform:</strong> <%= supportInfo.platform %></div>
                         <div class="zr-panel"><strong>Environment:</strong> <%= supportInfo.nodeEnv %></div>
@@ -58,21 +58,19 @@
                     <p class="zr-sm zr-muted">
                         Open a prefilled issue report with version and environment details, or copy diagnostics to your clipboard.
                     </p>
-                    <div class="flex flex-wrap gap-3">
+                    <div class="zr-row zr-row--wrap">
                         <a
                             id="openPrefilledIssueBtn"
                             href="https://github.com/admonstrator/zettelrobbe/issues/new?template=bug_report.yml"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="zr-btn zr-btn--primary"
-                        >
+                            class="zr-btn zr-btn--primary">
                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-bug"/></svg>Open Issue Form
                         </a>
                         <button
                             id="copyIssueDiagnosticsBtn"
                             type="button"
-                            class="zr-btn"
-                        >
+                            class="zr-btn">
                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-copy"/></svg>Copy Issue Details
                         </button>
                         <span id="issueHelperStatus" class="zr-sm zr-faint"></span>

@@ -815,6 +815,26 @@ img {
 }
 
 /* --- setup wizard steps ------------------------------------------------- */
+/* Inside the wizard panel every control spans the same width, so the fields
+   line up on one edge instead of stepping between 460 and 560 px. */
+.zr-setup__panel .zr-field--stacked .zr-input,
+.zr-setup__panel .zr-field--stacked .zr-select,
+.zr-setup__panel .zr-field--stacked .zr-textarea,
+.zr-setup__panel .zr-field--stacked .zr-inputgroup,
+.zr-setup__panel .zr-formgrid .zr-input,
+.zr-setup__panel .zr-formgrid .zr-select,
+.zr-setup__panel .zr-formgrid .zr-inputgroup {
+  max-width: none;
+  width: 100%;
+}
+/* Fields sit on a single rhythm; the section title carries the separation. */
+.setup-step > .zr-field--stacked + .zr-field--stacked {
+  margin-top: var(--zr-3);
+}
+.setup-step .zr-formgrid {
+  margin-top: var(--zr-3);
+}
+
 .setup-step {
   display: none;
   flex-direction: column;
@@ -1275,4 +1295,78 @@ img {
   width: 100%;
   max-width: 440px;
   position: relative;
+}
+
+/* the AI-mode toggle in the wizard behaves like a segmented control */
+.setup-mode-btn[aria-pressed='true'] {
+  background: var(--zr-brand-soft);
+  border-color: var(--zr-brand);
+  color: var(--zr-brand-text);
+  font-weight: 600;
+}
+/* the MFA pairing QR keeps a fixed footprint */
+#setupMfaQrImage {
+  width: 176px;
+  height: 176px;
+  padding: var(--zr-2);
+  background: #fff;
+  border: 1px solid var(--zr-line);
+  border-radius: var(--zr-r-md);
+}
+
+/* --- remaining page-specific pieces ------------------------------------- */
+/* manual: the document/preview column pair */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: var(--zr-3);
+  align-items: start;
+}
+
+/* setup wizard tooltips */
+.tooltip-content {
+  padding: var(--zr-2);
+  font-size: var(--zr-fs-sm);
+  line-height: 1.5;
+}
+.tooltip-content ul {
+  padding-left: var(--zr-4);
+  margin-top: var(--zr-1);
+}
+
+/* settings: draggable custom-field row */
+.custom-field-item {
+  padding: var(--zr-2) var(--zr-3);
+  border: 1px solid var(--zr-line);
+  border-radius: var(--zr-r-md);
+  background: var(--zr-surface);
+  transition: border-color var(--zr-dur) var(--zr-ease);
+}
+.custom-field-item:hover {
+  border-color: var(--zr-brand);
+}
+
+/* setup-error: collapsed technical details */
+.zr-errorpage .tech-details {
+  margin-top: var(--zr-4);
+  text-align: left;
+  font-family: var(--zr-font-mono);
+  font-size: var(--zr-fs-sm);
+  color: var(--zr-text-muted);
+}
+
+/* login: the step-back link only shows during the MFA step */
+.login-back-button {
+  align-self: center;
+}
+
+/* playground detail modal body */
+.modal-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--zr-6);
+}
+.modal-data {
+  padding: var(--zr-3);
 }

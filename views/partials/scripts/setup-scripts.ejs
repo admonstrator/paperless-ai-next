@@ -43,39 +43,39 @@
     
     let tooltipInstance = tippy('#urlHelp', {
         content: `
-            <div class="tooltip-content p-2">
-                <h3 class="font-bold text-lg mb-2">API URL Configuration</h3>
-                <p class="mb-2">The URL should follow this format:</p>
-                <code class="block p-2 rounded mb-2">
+            <div class="tooltip-content">
+                <h3 class="zr-strong">API URL Configuration</h3>
+                <p>The URL should follow this format:</p>
+                <code>
                     http://your-host:8000
                 </code>
                 
-                <p class="mb-2"><span class="font-semibold">Important Notes:</span></p>
-                <ul class="list-disc pl-4">
-                    <li class="mb-1">Must start with <u>http://</u> or <u>https://</u></li>
-                    <li class="mb-1">Contains <strong>host/IP</strong> and optionally a <strong>port</strong></li>
-                    <li class="mb-1">No additional paths or parameters</li>
+                <p><span class="zr-strong">Important Notes:</span></p>
+                <ul>
+                    <li>Must start with <u>http://</u> or <u>https://</u></li>
+                    <li>Contains <strong>host/IP</strong> and optionally a <strong>port</strong></li>
+                    <li>No additional paths or parameters</li>
                 </ul>
 
-                <div class="mt-4">
-                    <p class="font-semibold mb-1">Docker Network Configuration:</p>
-                    <ul class="list-disc pl-4">
-                        <li class="mb-1">Using <strong>localhost</strong> or <strong>127.0.0.1</strong> won't work in Docker bridge mode</li>
-                        <li class="mb-1">Use your machine's local IP (e.g., <code>192.168.1.x</code>) instead</li>
-                        <li class="mb-1">Or use the Docker container name if both services are in the same network</li>
+                <div>
+                    <p class="zr-strong">Docker Network Configuration:</p>
+                    <ul>
+                        <li>Using <strong>localhost</strong> or <strong>127.0.0.1</strong> won't work in Docker bridge mode</li>
+                        <li>Use your machine's local IP (e.g., <code>192.168.1.x</code>) instead</li>
+                        <li>Or use the Docker container name if both services are in the same network</li>
                     </ul>
                 </div>
 
-                <div class="mt-4">
-                    <p class="font-semibold mb-1">Examples:</p>
-                    <ul class="list-none space-y-1">
+                <div>
+                    <p class="zr-strong">Examples:</p>
+                    <ul class="zr-col zr-col--tight">
                         <li>🔸 Local IP: <code>http://192.168.1.100:8000</code></li>
                         <li>🔸 Container: <code>http://paperless-ngx:8000</code></li>
                         <li>🔸 Remote: <code>http://paperless.domain.com</code></li>
                     </ul>
                 </div>
 
-                <p class="mt-4 text-sm italic">The /api endpoint will be added automatically.</p>
+                <p class="zr-sm">The /api endpoint will be added automatically.</p>
             </div>
         `,
         allowHTML: true,
