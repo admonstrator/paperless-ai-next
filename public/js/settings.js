@@ -3962,7 +3962,7 @@ function createFieldElement(fieldName, data_type, currency = null) {
         <div class="zr-faint">
             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-grip"/></svg>
         </div>
-        <div class="flex-1">
+        <div class="zr-grow">
             <p class="zr-strong" data-field-name></p>
             <p class="zr-sm zr-faint" data-field-type></p>
         </div>

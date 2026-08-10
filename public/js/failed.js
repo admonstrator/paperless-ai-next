@@ -79,7 +79,7 @@
       .map((item) => {
         const docLink = paperlessUrl
           ? `<a href="${paperlessUrl}/documents/${item.document_id}/details" target="_blank" class="zr-link zr-mono">#${item.document_id}</a>`
-          : `<span class="font-mono">#${item.document_id}</span>`;
+          : `<span class="zr-mono">#${item.document_id}</span>`;
 
         const reasonLabel = formatFailedReason(item.failed_reason);
         const sourceLabel = formatFailedSource(item.source);
@@ -143,7 +143,7 @@
   }
 
   function formatFailedSource(source) {
-    if (source === 'ocr') return '<span class="text-violet-600">OCR</span>';
+    if (source === 'ocr') return '<span class="zr-warn-text">OCR</span>';
     if (source === 'ai') return '<span class="zr-link">AI</span>';
     return escHtml(source || 'unknown');
   }

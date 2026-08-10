@@ -164,7 +164,7 @@
       .map((item) => {
         const docLink = paperlessUrl
           ? `<a href="${paperlessUrl}/documents/${item.document_id}/details" target="_blank" class="zr-link zr-mono">#${item.document_id}</a>`
-          : `<span class="font-mono">#${item.document_id}</span>`;
+          : `<span class="zr-mono">#${item.document_id}</span>`;
 
         const reasonLabel = formatReasonLabel(item.reason);
 
@@ -201,7 +201,7 @@
                 <td>${statusHtml}</td>
                 <td class="zr-sm zr-faint">${addedDate}</td>
                 <td>
-                    <div class="flex flex-wrap items-center gap-2">
+                    <div class="zr-row zr-row--wrap">
                         ${processBtn}
                         ${analyzeBtn}
                         ${infoBtn}

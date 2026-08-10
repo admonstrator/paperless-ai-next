@@ -615,6 +615,14 @@ body {
   padding: var(--zr-6) var(--zr-4);
   color: var(--zr-text-muted);
 }
+.zr-empty > .zr-icon {
+  margin-right: var(--zr-1);
+}
+/* `.zr-table td` is more specific than `.zr-empty`, so an empty state used as
+   a table cell would otherwise fall back to the tight generic cell padding. */
+.zr-table td.zr-empty {
+  padding: var(--zr-6) var(--zr-4);
+}
 .zr-empty__icon {
   color: var(--zr-text-faint);
   margin: 0 auto var(--zr-2);
@@ -629,6 +637,12 @@ body {
 
 /* icon */
 .zr-icon {
+  /* Layer 1 makes every svg a block. Inside a flex parent (buttons, rows) that
+     is irrelevant, but an icon sitting directly in text — a label, a link, an
+     empty state — would claim its own line. Inline-block keeps it on the
+     baseline everywhere without affecting the flex cases. */
+  display: inline-block;
+  vertical-align: -3px;
   width: 16px;
   height: 16px;
   fill: none;
@@ -1501,16 +1515,21 @@ a.zr-list__item:hover {
 
 /* dialog (native <dialog>, replaces SweetAlert2) */
 .zr-dialog {
+  /* `margin: auto` is what centres a modal <dialog>; the reset in layer 1
+     zeroes every margin, so it has to be restored explicitly here. */
+  margin: auto;
   width: min(440px, calc(100vw - 32px));
+  max-height: calc(100vh - 2 * var(--zr-6));
   padding: 0;
   border: 1px solid var(--zr-line);
   border-radius: var(--zr-r-lg);
   background: var(--zr-surface);
   color: var(--zr-text);
   box-shadow: var(--zr-shadow-lg);
+  overflow: auto;
 }
 .zr-dialog::backdrop {
-  background: rgba(6, 16, 24, 0.5);
+  background: rgba(6, 16, 24, 0.55);
   backdrop-filter: blur(2px);
 }
 .zr-dialog__head {

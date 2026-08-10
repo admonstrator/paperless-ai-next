@@ -255,7 +255,9 @@ class HistoryManager {
           key: 'document_id',
           label: 'Actions',
           sortable: false,
-          width: '210px',
+          // The three buttons need ~256px side by side; a narrower column
+          // pushed "Chat" onto a second line and doubled the row height.
+          width: '280px',
           mobileLabel: '',
           render: (value, row) =>
             '<div class="zr-row zr-row--wrap">' +

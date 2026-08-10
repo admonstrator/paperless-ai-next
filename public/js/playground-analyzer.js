@@ -123,8 +123,8 @@ class PromptRatingSystem {
     }
 
     const modalHtml = `
-            <div id="ratingModal" class="fixed inset-0 z-50 hidden">
-                <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
+            <div id="ratingModal" class="hidden">
+                <div class="zr-modal-backdrop"></div>
                 <div class="zr-modal-center">
                     <div class="zr-module zr-modal-card" style="background: var(--zr-surface); color: var(--zr-text)">
                         <div class="zr-module__head" style="border-color: var(--zr-line)">
@@ -137,7 +137,7 @@ class PromptRatingSystem {
                             <div class="prompt-preview zr-panel" style="background: var(--zr-surface-2)">
                                 <code class="zr-sm zr-mono"></code>
                             </div>
-                            <div class="star-rating flex justify-center gap-2" id="starRating">
+                            <div class="star-rating" id="starRating">
                                 ${Array.from(
                                   { length: 10 },
                                   (_, i) => `
@@ -362,7 +362,7 @@ class PromptRatingSystem {
                 <div class="prompt-text zr-sm zr-mono">${prompt.prompt}</div>
                 ${prompt.comment ? `<div class="zr-sm zr-muted">${prompt.comment}</div>` : ''}
                 <div class="zr-xs zr-faint">${new Date(prompt.date).toLocaleString()}</div>
-                <div class="absolute top-2 right-2 flex gap-2">
+                <div class="saved-prompt-card__actions">
                     <button onclick="window.promptRating.usePrompt(${prompt.id})" 
                             class="zr-btn zr-btn--primary"
                             title="Use this prompt">
@@ -497,10 +497,10 @@ class PlaygroundAnalyzer {
 
         return `
                 <div class="zr-module document-card" data-document-id="${this.escapeHtml(documentId)}">
-                    <div class="relative aspect-[3/4]">
+                    <div class="document-card__thumb">
                         <div class="thumbnail-skeleton" data-thumb-skeleton aria-hidden="true"></div>
                         <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" data-thumb-src="/thumb/${this.escapeHtml(documentId)}" alt="${safeTitle}" class="playground-thumb" loading="lazy" decoding="async">
-                        <div class="tags-container absolute top-2 left-2 right-2 flex flex-wrap gap-1">${tagsMarkup}</div>
+                        <div class="tags-container">${tagsMarkup}</div>
                     </div>
                     <div class="document-info">
                         <div class="info-container">
@@ -706,7 +706,7 @@ class PlaygroundAnalyzer {
   setupStyles() {
     const style = document.createElement('style');
     style.textContent = `
-            /* Kartendesign */
+            /* Card design */
             .document-card {
                 display: flex;
                 flex-direction: column;
@@ -718,7 +718,7 @@ class PlaygroundAnalyzer {
                 padding: 0.75rem;
             }
 
-            /* Container für Text-Informationen */
+            /* Text information container */
             .info-container {
                 display: flex;
                 flex-direction: column;
@@ -742,7 +742,7 @@ class PlaygroundAnalyzer {
                 100% { box-shadow: none; }
             }
             
-            /* Tag-Stile */
+            /* Tag styles */
             .tag.new-tag {
                 background: #22c55e !important;
                 animation: fadeIn 0.5s ease-in-out;
@@ -753,7 +753,7 @@ class PlaygroundAnalyzer {
                 animation: fadeIn 0.5s ease-in-out;
             }
 
-            /* Text-Updates */
+            /* Text updates */
             .updated-text {
                 color: var(--zr-brand);
                 font-weight: 600;
@@ -780,8 +780,12 @@ class PlaygroundAnalyzer {
                 to { opacity: 1; transform: translateY(0); }
             }
 
-            /* Verbesserte Tag-Container */
+            /* Tag overlay, pinned to the top of the thumbnail frame */
             .tags-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
                 display: flex;
                 flex-wrap: wrap;
                 gap: 0.25rem;
@@ -789,14 +793,14 @@ class PlaygroundAnalyzer {
                 min-height: 2.5rem;
             }
 
-            /* Responsives Layout */
+            /* Responsive layout */
             @media (max-width: 1536px) {
                 .document-info {
                     min-height: 10rem;
                 }
             }
 
-            /* Highlighting für das aktuelle Dokument */
+            /* Highlighting for the current document */
             .document-card.processing {
                 box-shadow: 0 0 0 2px #60a5fa;
                 transform: scale(1.02);

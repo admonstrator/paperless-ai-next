@@ -785,6 +785,9 @@ class SetupWizard {
 
     try {
       const result = await this.request('/api/setup/ocr/test', payload);
+      // The result dialog is awaited below; reset the button first so it
+      // does not keep claiming the test is still running.
+      this.setButtonLoading(this.testOcrBtn, false);
       this.ocrTestState.ran = true;
       this.ocrTestState.success = Boolean(result.success);
 
@@ -891,6 +894,9 @@ class SetupWizard {
     this.setButtonLoading(this.startMfaSetupBtn, true, 'Generating...');
     try {
       const result = await this.request('/api/setup/mfa/setup', { username });
+      // The result dialog is awaited below; reset the button first so it
+      // does not keep claiming the test is still running.
+      this.setButtonLoading(this.startMfaSetupBtn, false);
       this.mfaState.challengeId = result.challengeId;
       this.mfaState.setupStarted = true;
       this.mfaState.verified = false;
@@ -940,6 +946,9 @@ class SetupWizard {
         challengeId: this.mfaState.challengeId,
         token,
       });
+      // The result dialog is awaited below; reset the button first so it
+      // does not keep claiming the test is still running.
+      this.setButtonLoading(this.confirmMfaCodeBtn, false);
       this.mfaState.verified = true;
       this.mfaStatusHint.textContent = 'MFA confirmed. You can continue.';
       this.mfaStatusHint.className = 'setup-hint setup-hint-success';
@@ -973,6 +982,9 @@ class SetupWizard {
 
     try {
       const result = await this.request('/api/setup/paperless/test', payload);
+      // The result dialog is awaited below; reset the button first so it
+      // does not keep claiming the test is still running.
+      this.setButtonLoading(this.testPaperlessBtn, false);
       this.paperlessTestState.ran = true;
       this.paperlessTestState.success = Boolean(result.success);
       this.paperlessTestState.allowFailure = false;
@@ -1033,6 +1045,9 @@ class SetupWizard {
         '/api/setup/paperless/metadata',
         payload
       );
+      // The result dialog is awaited below; reset the button first so it
+      // does not keep claiming the test is still running.
+      this.setButtonLoading(this.fetchMetadataBtn, false);
       const metadata = result.metadata || {};
 
       this.documentsCount.textContent = String(metadata.documents ?? '-');
@@ -1205,6 +1220,9 @@ class SetupWizard {
         '/api/setup/quickstart/detect',
         payload
       );
+      // The result dialog is awaited below; reset the button first so it
+      // does not keep claiming the test is still running.
+      this.setButtonLoading(this.quickstartDetectBtn, false);
       const detection = result.detection || {};
 
       this.quickstartState.detected = true;
@@ -1659,6 +1677,9 @@ class SetupWizard {
     this.setButtonLoading(this.fetchAiModelsBtn, true, 'Loading...');
     try {
       const result = await this.request('/api/setup/ai/models', payload);
+      // The result dialog is awaited below; reset the button first so it
+      // does not keep claiming the test is still running.
+      this.setButtonLoading(this.fetchAiModelsBtn, false);
       const models = Array.isArray(result.models) ? result.models : [];
 
       if (result.resolvedApiUrl && this.aiApiUrl) {
@@ -1725,6 +1746,9 @@ class SetupWizard {
     this.setButtonLoading(this.fetchOcrModelsBtn, true, 'Loading...');
     try {
       const result = await this.request('/api/setup/ocr/models', payload);
+      // The result dialog is awaited below; reset the button first so it
+      // does not keep claiming the test is still running.
+      this.setButtonLoading(this.fetchOcrModelsBtn, false);
       const models = Array.isArray(result.models) ? result.models : [];
 
       if (result.resolvedApiUrl && this.ocrApiUrl) {
@@ -1798,6 +1822,9 @@ class SetupWizard {
 
     try {
       const result = await this.request('/api/setup/ai/test', payload);
+      // The result dialog is awaited below; reset the button first so it
+      // does not keep claiming the test is still running.
+      this.setButtonLoading(this.testAiBtn, false);
       this.aiTestState.ran = true;
       this.aiTestState.success = Boolean(result.success);
       this.aiTestState.allowFailure = false;
@@ -2281,6 +2308,9 @@ class SetupWizard {
     try {
       const payload = this.buildFinalizePayload();
       const result = await this.request('/api/setup/complete', payload);
+      // The result dialog is awaited below; reset the button first so it
+      // does not keep claiming the test is still running.
+      this.setButtonLoading(this.finalizeSetupBtn, false);
       const postRestartRedirectTarget = result.redirectTo || '/login';
 
       if (result.envPreview) {

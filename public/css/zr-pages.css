@@ -469,6 +469,40 @@
   transition: all 0.3s ease;
 }
 
+/* the analysis overlay is positioned against this wrapper */
+.playground-grid-wrap {
+  position: relative;
+}
+
+/* Thumbnail frame: the skeleton and the tag overlay are positioned against it,
+   and it holds the page ratio while the image is still loading. */
+.document-card__thumb {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  border-radius: var(--zr-r-md);
+  background: var(--zr-canvas);
+}
+.document-card__thumb .playground-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.star-rating {
+  display: flex;
+  justify-content: center;
+  gap: var(--zr-2);
+}
+
+.saved-prompt-card__actions {
+  position: absolute;
+  top: var(--zr-2);
+  right: var(--zr-2);
+  display: flex;
+  gap: var(--zr-2);
+}
+
 #messageArea {
   position: relative;
   z-index: 100;
@@ -1080,6 +1114,12 @@ img {
   color: var(--zr-text);
 }
 
+/* The manual preview claims its height up front, so picking a document does
+   not make the rest of the page jump. Frame and padding come from .stat-box. */
+.manual-preview {
+  min-height: 600px;
+}
+
 .stat-box:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -1281,7 +1321,22 @@ img {
   color: var(--zr-text-muted);
 }
 
-/* the playground rating dialog is built in JS, not as a <dialog> */
+/* The detail modal stacks labelled sections. Spacing goes on the container
+   rather than the sections themselves, because JS toggles their `display`. */
+.zr-modal-sections > * + * {
+  margin-top: var(--zr-4);
+}
+
+/* the playground rating dialog is built in JS, not as a <dialog>, so it needs
+   an explicit backdrop element — this matches what `.zr-dialog::backdrop`
+   gives the native ones, and sits one layer below `.zr-modal-center`. */
+.zr-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 59;
+  background: rgba(6, 16, 24, 0.55);
+  backdrop-filter: blur(2px);
+}
 .zr-modal-center {
   position: fixed;
   inset: 0;
