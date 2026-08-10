@@ -10,57 +10,56 @@
             <div>
                 <div class="zr-viewhead">
                     <div>
-                        <h1 class="content-title">Ignored Documents</h1>
-                        <p class="content-subtitle">
+                        <p class="zr-viewhead__sub">
                             These documents are permanently skipped by automatic scanning. Use this for encrypted or otherwise unprocessable files.
                         </p>
                     </div>
                 </div>
 
                 <div class="zr-module mb-4">
-                    <div class="px-4 pt-4 pb-3">
-                        <h2 class="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Add document to ignore list</h2>
+                    <div class="zr-module__body">
+                        <h2 class="zr-label">Add document to ignore list</h2>
                         <div class="flex gap-2 flex-wrap">
                             <input type="number" id="ignoreDocIdInput" placeholder="Document ID" min="1"
-                                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100 w-40">
+                                class="zr-select" style="max-width: 160px">
                             <input type="text" id="ignoreReasonInput" placeholder="Reason (optional)"
-                                class="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 dark:text-gray-100 flex-1 min-w-32">
+                                class="zr-input zr-grow">
                             <button id="ignoreAddBtn" class="zr-btn zr-btn--primary">
-                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg> Ignore
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg> Ignore
                             </button>
                         </div>
                     </div>
                 </div>
 
                 <div class="zr-module">
-                    <div class="overflow-x-auto">
-                        <table id="ignoredTable" class="w-full">
+                    <div class="zr-table-wrap">
+                        <table id="ignoredTable"  class="zr-table">
                             <thead>
                                 <tr>
-                                    <th class="text-left py-3 px-4">Doc ID</th>
-                                    <th class="text-left py-3 px-4">Title</th>
-                                    <th class="text-left py-3 px-4">Reason</th>
-                                    <th class="text-left py-3 px-4">Added</th>
-                                    <th class="text-left py-3 px-4">Actions</th>
+                                    <th >Doc ID</th>
+                                    <th >Title</th>
+                                    <th >Reason</th>
+                                    <th >Added</th>
+                                    <th >Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="ignoredTableBody">
                                 <tr>
-                                    <td colspan="5" class="text-center py-8 text-gray-400">
+                                    <td colspan="5" class="zr-empty">
                                         <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Loading ignored documents…
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <div class="flex justify-between items-center mt-4 px-4 pb-4 flex-wrap gap-2">
+                    <div class="zr-table-foot">
                         <span id="ignoredTableInfo" class="zr-sm zr-faint"></span>
                         <div class="zr-inputgroup">
                             <button id="ignoredClearAllBtn" class="zr-btn zr-btn--danger" disabled>
-                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg> Clear All
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg> Clear All
                             </button>
                             <button id="ignoredPrevPageBtn" class="zr-btn" disabled>
-                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-chevron-left"/></svg> Prev
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-left"/></svg> Prev
                             </button>
                             <button id="ignoredNextPageBtn" class="zr-btn" disabled>
                                 Next <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
@@ -72,8 +71,8 @@
         </main>
     </div>
 
-    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 hidden" style="z-index:9999;">
-        <div id="toastInner" class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+    <div id="toastNotification" class="zr-toasts hidden" style="z-index:9999;">
+        <div id="toastInner" class="zr-toast zr-toast--ok">
             <svg class="zr-icon" id="toastIcon" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg>
             <span id="toastMessage">Done</span>
         </div>

@@ -12,10 +12,9 @@
         <!-- Main Content -->
             <div class="content-wrapper p-6">
             <div class="mb-6">
-                <h1 class="text-2xl font-bold mb-4">Documents</h1>
                 <!-- Analysis Section -->
                 <div class="zr-module mb-8">
-                    <h2 class="card-title">Document Analysis</h2>
+                    <h2 class="zr-module__title">Document Analysis</h2>
                     <div class="zr-col zr-col--loose">
                         <textarea 
                             id="analysisPrompt"
@@ -34,7 +33,7 @@
                     <div class="zr-row">
                         <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                         <div>
-                            <div class="font-medium">Loading document previews...</div>
+                            <div class="zr-strong">Loading document previews...</div>
                             <div id="playgroundInitialLoadingStatus" class="zr-sm zr-muted">Preparing thumbnail requests...</div>
                         </div>
                     </div>
@@ -42,12 +41,12 @@
 
                 <!-- Documents Grid -->
                 <div id="documentsGridWrapper" class="relative">
-                    <div id="playgroundAnalysisOverlay" class="hidden absolute inset-0 z-10 flex items-center justify-center bg-white/75 dark:bg-slate-900/75 rounded-lg" role="status" aria-live="polite" aria-busy="true">
+                    <div id="playgroundAnalysisOverlay" class="zr-overlay hidden" role="status" aria-live="polite" aria-busy="true">
                         <div class="zr-module max-w-md w-full mx-4">
                             <div class="zr-row">
                                 <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                                 <div>
-                                    <div id="playgroundAnalysisStatus" class="font-medium">Analyzing documents...</div>
+                                    <div id="playgroundAnalysisStatus" class="zr-strong">Analyzing documents...</div>
                                     <div class="zr-sm zr-muted">This can take a moment for larger batches.</div>
                                 </div>
                             </div>

@@ -83,7 +83,7 @@
                                     <label for="paperlessUrl" class="zr-field__name">
                                         Paperless-ngx API URL
                                         <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" id="urlHelp">
-                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-help"/></svg>
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-help"/></svg>
                                         </button>
                                     </label>
                                     <input type="text" id="paperlessUrl" name="paperlessUrl" value="<%= config.PAPERLESS_API_URL %>" class="zr-input" placeholder="http://your-paperless-instance:8000" required>
@@ -93,9 +93,9 @@
                                 <div class="zr-field zr-field--stacked">
                                     <label class="zr-field__name">Detected Public URL</label>
                                     <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
-                                        <div id="paperlessDetectedUrlValue" class="flex-1 px-3 py-2 border border-gray-200 rounded-lg bg-gray-50 text-sm break-all">Loading…</div>
+                                        <div id="paperlessDetectedUrlValue" class="zr-input zr-grow" style="height:auto; word-break:break-all">Loading…</div>
                                         <button type="button" id="refreshPublicUrlDetection" class="zr-btn">
-                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>Refresh
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>Refresh
                                         </button>
                                     </div>
                                     <p id="paperlessDetectedUrlMeta" class="zr-field__hint">Checking Paperless API for configured public URL…</p>
@@ -112,7 +112,7 @@
                                     <div class="zr-inputgroup">
                                         <input type="password" id="paperlessToken" name="paperlessToken" value="" class="zr-input" placeholder="<%= configuredSecrets.PAPERLESS_API_TOKEN ? 'Configured (leave empty to keep current value)' : 'Enter API token' %>">
                                         <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="paperlessToken">
-                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg>
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg>
                                         </button>
                                     </div>
                                     <p class="zr-field__hint">ENV: PAPERLESS_API_TOKEN · Restart required</p>
@@ -176,16 +176,16 @@
                                     <div class="zr-inputgroup">
                                         <input type="text" id="tagInput" class="zr-input" placeholder="Enter a tag and press Enter">
                                         <button type="button" class="zr-btn zr-btn--primary">
-                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
                                             Add
                                         </button>
                                     </div>
                                     <div id="tagsContainer" class="zr-chips">
                                         <% if (config.TAGS && Array.isArray(config.TAGS) && config.TAGS.length > 0) { %>
                                             <% config.TAGS.forEach(tag => { %>
-                                                <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2">
+                                                <div class="zr-chip">
                                                     <span><%= tag %></span>
-                                                    <button type="button" class="hover:text-blue-600"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
+                                                    <button type="button" class="zr-link"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
                                                 </div>
                                             <% }); %>
                                         <% } %>
@@ -198,16 +198,16 @@
                                     <div class="zr-inputgroup">
                                         <input type="text" id="ignoreTagInput" class="zr-input" placeholder="Enter a tag to ignore and press Enter">
                                         <button type="button" class="zr-btn zr-btn--primary">
-                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
                                             Add
                                         </button>
                                     </div>
                                     <div id="ignoreTagsContainer" class="zr-chips">
                                         <% if (config.IGNORE_TAGS && Array.isArray(config.IGNORE_TAGS) && config.IGNORE_TAGS.length > 0) { %>
                                             <% config.IGNORE_TAGS.forEach(tag => { %>
-                                                <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2">
+                                                <div class="zr-chip">
                                                     <span><%= tag %></span>
-                                                    <button type="button" class="hover:text-blue-600"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
+                                                    <button type="button" class="zr-link"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
                                                 </div>
                                             <% }); %>
                                         <% } %>
@@ -258,7 +258,7 @@
                                                 <p class="zr-field__name">User: <span id="mfaSettingsUser"><%= mfaSettings.username %></span></p>
                                                 <p class="zr-field__hint">Configure two-factor authentication for this account.</p>
                                             </div>
-                                            <span id="mfaStatusBadge" class="px-2 py-1 rounded-full text-xs font-semibold <%= mfaSettings.enabled ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700' %>">
+                                            <span id="mfaStatusBadge" class="zr-badge <%= mfaSettings.enabled ? 'zr-badge--ok' : '' %>">
                                                 <%= mfaSettings.enabled ? 'Enabled' : 'Disabled' %>
                                             </span>
                                         </div>
@@ -271,11 +271,11 @@
 
                                         <div class="zr-formgrid">
                                             <button type="button" id="mfaEnableBtn" class="zr-btn zr-btn--primary">
-                                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-key"/></svg>
+                                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-key"/></svg>
                                                 <span>Enable MFA</span>
                                             </button>
                                             <button type="button" id="mfaDisableBtn" class="zr-btn zr-btn--danger">
-                                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg>
+                                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg>
                                                 <span>Disable MFA</span>
                                             </button>
                                         </div>
@@ -294,11 +294,11 @@
                                             </div>
                                             <div class="zr-inputgroup">
                                                 <button type="button" id="mfaCopySecretBtn" class="zr-btn">
-                                                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-copy"/></svg>
+                                                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-copy"/></svg>
                                                     <span>Copy Secret</span>
                                                 </button>
                                                 <button type="button" id="mfaDownloadQrBtn" class="zr-btn">
-                                                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-download"/></svg>
+                                                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-download"/></svg>
                                                     <span>Download QR</span>
                                                 </button>
                                             </div>
@@ -310,7 +310,7 @@
                                             <div class="zr-inputgroup">
                                                 <input type="text" id="mfaToken" inputmode="numeric" autocomplete="one-time-code" class="zr-input" placeholder="Enter 6-digit code">
                                                 <button type="button" id="mfaVerifyBtn" class="zr-btn">
-                                                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-flask"/></svg>
+                                                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-flask"/></svg>
                                                     <span id="mfaVerifyBtnLabel">Validate & Activate</span>
                                                 </button>
                                             </div>
@@ -341,7 +341,7 @@
                                 </div>
                                 <div class="zr-row zr-row--wrap">
                                     <button type="button" id="settingsQuickstartDetectBtn" class="zr-btn">
-                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-search"/></svg>
+                                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-search"/></svg>
                                         <span>Detect models</span>
                                     </button>
                                     <span id="settingsQuickstartState" class="zr-field__hint">Not detected</span>
@@ -367,11 +367,11 @@
                                     </div>
                                     <div class="zr-row zr-row--wrap">
                                         <button type="button" id="settingsQuickstartApplyBtn" class="zr-btn">
-                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-wand"/></svg>
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-wand"/></svg>
                                             <span>Apply to fields</span>
                                         </button>
                                         <button type="button" id="settingsQuickstartSaveBtn" class="zr-btn zr-btn--primary">
-                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-save"/></svg>
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-save"/></svg>
                                             <span>Test models &amp; save</span>
                                         </button>
                                         <span id="settingsQuickstartApplyHint" class="zr-field__hint"></span>
@@ -405,7 +405,7 @@
                                         <label for="openaiKey" class="zr-field__name">OpenAI API Key</label>
                                         <div class="zr-inputgroup">
                                             <input type="password" id="openaiKey" name="openaiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.OPENAI_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter OpenAI API key' %>">
-                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="openaiKey"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
+                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="openaiKey"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
                                         <p class="zr-field__hint">ENV: OPENAI_API_KEY · Restart required</p>
                                     </div>
@@ -431,7 +431,7 @@
                                         <label for="ollamaApiKey" class="zr-field__name">Ollama API Key (optional)</label>
                                         <div class="zr-inputgroup">
                                             <input type="password" id="ollamaApiKey" name="ollamaApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.OLLAMA_API_KEY ? 'Configured (leave empty to keep current value)' : 'Only needed if your endpoint requires a token' %>">
-                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="ollamaApiKey"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
+                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="ollamaApiKey"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
                                         <p class="zr-field__hint">ENV: OLLAMA_API_KEY · Restart required</p>
                                     </div>
@@ -442,7 +442,7 @@
                                                 <option value="<%= config.OLLAMA_MODEL %>" selected><%= config.OLLAMA_MODEL %></option>
                                             </select>
                                             <button type="button" id="fetchAiModelsBtn" class="zr-btn">
-                                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
+                                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
                                                 <span>Fetch Models</span>
                                             </button>
                                         </div>
@@ -460,7 +460,7 @@
                                         <label for="customApiKey" class="zr-field__name">Custom API Key</label>
                                         <div class="zr-inputgroup">
                                             <input type="password" id="customApiKey" name="customApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.CUSTOM_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter Custom API key' %>">
-                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="customApiKey"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
+                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="customApiKey"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
                                         <p class="zr-field__hint">ENV: CUSTOM_API_KEY · Restart required</p>
                                     </div>
@@ -471,7 +471,7 @@
                                                 <option value="<%= config.CUSTOM_MODEL %>" selected><%= config.CUSTOM_MODEL %></option>
                                             </select>
                                             <button type="button" id="fetchCustomAiModelsBtn" class="zr-btn">
-                                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
+                                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
                                                 <span>Fetch Models</span>
                                             </button>
                                         </div>
@@ -489,7 +489,7 @@
                                         <label for="azureApiKey" class="zr-field__name">Azure API Key</label>
                                         <div class="zr-inputgroup">
                                             <input type="password" id="azureApiKey" name="azureApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.AZURE_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter Azure API key' %>">
-                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="azureApiKey"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
+                                            <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="azureApiKey"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
                                         <p class="zr-field__hint">ENV: AZURE_API_KEY · Restart required</p>
                                     </div>
@@ -505,7 +505,7 @@
                                     </div>
                                 </div>
 
-                                <h4 class="text-sm font-semibold text-gray-700 border-t border-gray-200 pt-4">Model Parameters</h4>
+                                <h4 class="zr-label">Model Parameters</h4>
                                 <div class="zr-formgrid">
                                     <div class="zr-field zr-field--stacked">
                                         <label for="tokenLimit" class="zr-field__name">Token Limit</label>
@@ -560,16 +560,16 @@
                                     <div class="zr-inputgroup">
                                         <input type="text" id="promptTagInput" class="zr-input" placeholder="Enter a tag and press Enter">
                                         <button type="button" class="zr-btn zr-btn--primary">
-                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
                                             Add
                                         </button>
                                     </div>
                                     <div id="promptTagsContainer" class="zr-chips">
                                         <% if (config.PROMPT_TAGS && Array.isArray(config.PROMPT_TAGS) && config.PROMPT_TAGS.length > 0) { %>
                                             <% config.PROMPT_TAGS.forEach(tag => { %>
-                                                <div class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2">
+                                                <div class="zr-chip">
                                                     <span><%= tag %></span>
-                                                    <button type="button" class="hover:text-blue-600"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
+                                                    <button type="button" class="zr-link"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
                                                 </div>
                                             <% }); %>
                                         <% } %>
@@ -581,7 +581,7 @@
                                     <label for="systemPrompt" class="zr-field__name">Prompt Description</label>
                                     <textarea id="systemPrompt" name="systemPrompt" rows="8" class="zr-input" placeholder="Describe how the AI should analyze your documents..."><%= config.SYSTEM_PROMPT %></textarea>
                                     <button id="systemPromptBtn" type="button" class="zr-btn">
-                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-bulb"/></svg>
+                                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-bulb"/></svg>
                                         Example
                                     </button>
                                     <p class="zr-field__hint">ENV: SYSTEM_PROMPT · Restart required</p>
@@ -693,13 +693,13 @@
                                     <% let _parsedCustomFields = []; try { const _cf = JSON.parse(config.CUSTOM_FIELDS || '{}'); if (Array.isArray(_cf.custom_fields)) _parsedCustomFields = _cf.custom_fields; } catch(e) {} %>
                                     <% if (_parsedCustomFields.length > 0) { %>
                                         <% _parsedCustomFields.forEach((field) => { %>
-                                            <div class="custom-field-item flex items-center gap-2 p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 transition-colors">
-                                                <div class="cursor-move text-gray-400"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-grip"/></svg></div>
+                                            <div class="custom-field-item zr-row">
+                                                <div class="zr-faint" style="cursor: move"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-grip"/></svg></div>
                                                 <div class="flex-1">
-                                                    <p class="font-medium text-gray-900 dark:text-gray-100"><%= field.value %></p>
-                                                    <p class="text-sm text-gray-500 dark:text-gray-400">Type: <%= field.data_type %> <%= field.data_type === 'monetary' && field.currency ? `(${field.currency})` : '' %></p>
+                                                    <p class="zr-strong"><%= field.value %></p>
+                                                    <p class="zr-sm zr-faint">Type: <%= field.data_type %> <%= field.data_type === 'monetary' && field.currency ? `(${field.currency})` : '' %></p>
                                                 </div>
-                                                <button type="button" onclick="removeCustomField(this)" class="text-gray-400 hover:text-red-500 transition-colors"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg></button>
+                                                <button type="button" onclick="removeCustomField(this)" class="zr-btn zr-btn--ghost zr-btn--icon zr-btn--danger"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg></button>
                                             </div>
                                         <% }); %>
                                     <% } %>
@@ -718,7 +718,7 @@
                                         </select>
                                     </div>
                                     <div class="col-span-2">
-                                        <select id="currencyCode" class="hidden w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                                        <select id="currencyCode" class="zr-select hidden">
                                             <option value="EUR">EUR</option>
                                             <option value="USD">USD</option>
                                             <option value="GBP">GBP</option>
@@ -764,7 +764,7 @@
                                     <label for="ocrApiKey" class="zr-field__name">OCR API Key</label>
                                     <div class="zr-inputgroup">
                                         <input type="password" id="ocrApiKey" name="ocrApiKey" value="" class="zr-input" placeholder="<%= (configuredSecrets.OCR_API_KEY || configuredSecrets.MISTRAL_API_KEY) ? 'Configured (leave empty to keep current value)' : 'Optional for local/custom, required for Mistral' %>">
-                                        <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="ocrApiKey"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
+                                        <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="ocrApiKey"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                     </div>
                                     <p class="zr-field__hint">ENV: OCR_API_KEY (legacy fallback: MISTRAL_API_KEY) · Restart required</p>
                                 </div>
@@ -775,7 +775,7 @@
                                             <option value="<%= config.MISTRAL_OCR_MODEL || 'mistral-ocr-latest' %>" selected><%= config.MISTRAL_OCR_MODEL || 'mistral-ocr-latest' %></option>
                                         </select>
                                         <button type="button" id="fetchOcrModelsBtn" class="zr-btn">
-                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
                                             <span>Fetch OCR Models</span>
                                         </button>
                                     </div>
@@ -831,13 +831,13 @@
                                     <label for="ocrValidationTimeout" class="zr-field__name">OCR Timeout</label>
                                     <div class="zr-row">
                                         <input type="number" id="ocrValidationTimeout" name="ocrValidationTimeout" min="1" max="7200" step="1" value="<%= Math.round(Number(config.SETUP_OCR_VALIDATION_TIMEOUT_MS || config.SETUP_VALIDATION_TIMEOUT_MS || 30000) / 1000) %>" class="zr-input">
-                                        <span class="text-xs text-gray-500 whitespace-nowrap">seconds</span>
+                                        <span class="zr-xs zr-faint" style="white-space: nowrap">seconds</span>
                                     </div>
                                     <p class="zr-field__hint">ENV: SETUP_OCR_VALIDATION_TIMEOUT_MS · Used for OCR model loading, connection tests and document processing</p>
                                 </div>
                                 <div class="zr-row zr-row--wrap">
                                     <button type="button" id="testOcrBtn" class="zr-btn">
-                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-flask"/></svg>
+                                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-flask"/></svg>
                                         <span>Test OCR Connection</span>
                                     </button>
                                     <span id="ocrTestState" class="setup-pill">Not tested</span>
@@ -857,14 +857,14 @@
                                     <label for="tagCacheTTL" class="text-sm font-medium flex items-center gap-2">
                                         Tag Cache Lifetime (Seconds)
                                         <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" id="tagCacheTTLHelp">
-                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-help"/></svg>
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-help"/></svg>
                                         </button>
                                     </label>
                                     <input type="number" id="tagCacheTTL" name="tagCacheTTL" min="60" max="3600" value="<%= config.TAG_CACHE_TTL_SECONDS || 300 %>" class="zr-input" required>
                                     <p class="zr-field__hint">ENV: TAG_CACHE_TTL_SECONDS · Restart required</p>
                                 </div>
                                 <button type="button" id="clearTagCacheBtn" class="zr-btn">
-                                    <svg class="zr-icon" id="clearCacheIcon" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>
+                                    <svg class="zr-icon zr-icon--sm" id="clearCacheIcon" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>
                                     <span>Clear Tag Cache Now</span>
                                 </button>
 
@@ -875,7 +875,7 @@
                                             <p class="zr-field__hint">Local cached previews stored in <code>public/images</code>.</p>
                                         </div>
                                         <button type="button" id="refreshThumbnailCacheStatsBtn" class="zr-btn">
-                                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                                             <span>Refresh</span>
                                         </button>
                                     </div>
@@ -892,7 +892,7 @@
                                     </div>
 
                                     <button type="button" id="clearThumbnailCacheBtn" class="zr-btn zr-btn--danger">
-                                        <svg class="zr-icon" id="clearThumbnailCacheIcon" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>
+                                        <svg class="zr-icon zr-icon--sm" id="clearThumbnailCacheIcon" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>
                                         <span>Clear Thumbnail Cache</span>
                                     </button>
                                 </div>
@@ -978,7 +978,7 @@
                                 </div>
                                 <div>
                                     <button type="button" id="forceReconcileBtn" class="zr-btn">
-                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                                         <span>Force Reconciliation Now</span>
                                     </button>
                                     <div id="reconcileResult" class="mt-3 hidden"></div>

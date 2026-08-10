@@ -11,14 +11,13 @@
 
             <div>
                 <div class="zr-viewhead">
-                    <div class="content-header-main min-w-0">
-                        <h1 class="content-title truncate">OCR Queue</h1>
-                        <p class="content-subtitle">
+                    <div class="zr-grow">
+                        <p class="zr-viewhead__sub">
                             Documents with missing or insufficient OCR text queued for OCR reprocessing.
                         </p>
                     </div>
                     <% if (ocrEnabled) { %>
-                    <div class="content-header-actions ocr-header-badges">
+                    <div class="zr-viewhead__actions">
                         <!-- Stats badges -->
                         <span id="statPending" class="status-badge status-pending"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-clock"/></svg> <span id="statPendingCount">…</span> pending</span>
                         <span id="statDone" class="status-badge status-done"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check"/></svg> <span id="statDoneCount">…</span> done</span>
@@ -32,8 +31,8 @@
                 <div class="zr-module mb-6">
                     <div class="disabled-overlay">
                         <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>
-                        <h2 class="text-xl font-semibold mb-2">OCR is not enabled</h2>
-                        <p class="text-gray-500 mb-4 max-w-lg mx-auto">
+                        <h2 class="zr-viewhead__title">OCR is not enabled</h2>
+                        <p class="zr-muted">
                             Enable OCR in settings and configure your OCR provider. You can optionally set these values in <strong>data/.env</strong> and restart the service:
                         </p>
                         <pre class="ocr-env-codeblock">MISTRAL_OCR_ENABLED=yes
@@ -41,7 +40,7 @@ OCR_PROVIDER=mistral|custom
 OCR_API_URL=http://localhost:11434
 OCR_API_KEY=optional_or_required_provider_key
 MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
-                        <p class="text-gray-400 text-xs">Choose the provider and endpoint that match your OCR backend.</p>
+                        <p class="zr-xs zr-faint">Choose the provider and endpoint that match your OCR backend.</p>
                     </div>
                 </div>
                 <% } %>
@@ -56,7 +55,7 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                         <div class="manual-search-wrapper">
                             <input
                                 id="manualDocSearchInput"
-                                class="w-full rounded-md border-border-color bg-bg-primary text-text-primary p-2 focus:border-accent-primary focus:ring-accent-primary"
+                                class="zr-input"
                                 type="search"
                                 placeholder="Search documents..."
                                 autocomplete="off">
@@ -96,7 +95,7 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                         <button id="processAllBtn"
                                 class="zr-btn"
                                 title="Process all pending items">
-                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process All Pending
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process All Pending
                         </button>
                     </div>
                     </div>
@@ -104,21 +103,21 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
 
                 <!-- Queue Table -->
                 <div class="zr-module">
-                    <div class="overflow-x-auto">
-                        <table id="ocrTable" class="w-full">
+                    <div class="zr-table-wrap">
+                        <table id="ocrTable"  class="zr-table">
                             <thead>
                                 <tr>
-                                    <th class="text-left py-3 px-4">Doc ID</th>
-                                    <th class="text-left py-3 px-4">Title</th>
-                                    <th class="text-left py-3 px-4">Reason</th>
-                                    <th class="text-left py-3 px-4">Status</th>
-                                    <th class="text-left py-3 px-4">Added</th>
-                                    <th class="text-left py-3 px-4">Actions</th>
+                                    <th >Doc ID</th>
+                                    <th >Title</th>
+                                    <th >Reason</th>
+                                    <th >Status</th>
+                                    <th >Added</th>
+                                    <th >Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="ocrTableBody">
                                 <tr>
-                                    <td colspan="6" class="text-center py-8 text-gray-400">
+                                    <td colspan="6" class="zr-empty">
                                         <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Loading queue…
                                     </td>
                                 </tr>
@@ -126,11 +125,11 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                         </table>
                     </div>
                     <!-- Pagination -->
-                    <div class="flex justify-between items-center mt-4 px-4 pb-4 flex-wrap gap-2">
+                    <div class="zr-table-foot">
                         <span id="tableInfo" class="zr-sm zr-faint"></span>
                         <div class="zr-inputgroup">
                             <button id="prevPageBtn" class="zr-btn" disabled>
-                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-chevron-left"/></svg> Prev
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-left"/></svg> Prev
                             </button>
                             <button id="nextPageBtn" class="zr-btn" disabled>
                                 Next <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
@@ -149,13 +148,13 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
             <div class="flex justify-between items-center mb-4">
                 <h3 class="font-semibold text-lg" id="progressTitle">Processing…</h3>
                 <button id="progressCloseBtn" class="zr-btn" style="display:none;" aria-label="Close progress overlay">
-                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
+                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
                 </button>
             </div>
 
             <!-- Progress bar -->
-            <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
-                <div id="progressBar" class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width:0%"></div>
+            <div class="zr-meter">
+                <div id="progressBar" class="zr-meter__fill" style="width:0%"></div>
             </div>
 
             <div id="progressLog"></div>
@@ -169,8 +168,8 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
     </div>
 
     <!-- Toast -->
-    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 hidden" style="z-index:9999;">
-        <div id="toastInner" class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+    <div id="toastNotification" class="zr-toasts hidden" style="z-index:9999;">
+        <div id="toastInner" class="zr-toast zr-toast--ok">
             <svg class="zr-icon" id="toastIcon" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg>
             <span id="toastMessage">Done</span>
         </div>

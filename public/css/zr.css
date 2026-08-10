@@ -528,6 +528,53 @@ body {
   color: var(--zr-text-muted);
 }
 
+/* A bare title directly inside a module reads as its header, so it gets the
+   same treatment as .zr-module__head without needing the wrapper. */
+.zr-module > .zr-module__title {
+  display: block;
+  padding: var(--zr-2) var(--zr-3);
+  border-bottom: 1px solid var(--zr-line);
+  margin-bottom: var(--zr-3);
+}
+.zr-module > .zr-module__title:only-child {
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+
+/* Fallback padding: a module whose content is not wrapped in __body still needs
+   breathing room. Structural children bring their own padding and opt out. */
+.zr-module
+  > *:not(.zr-module__head):not(.zr-module__body):not(.zr-module__foot):not(
+    .zr-list
+  ):not(.zr-table-wrap):not(.zr-table-cards):not(.zr-table-toolbar):not(
+    .zr-table-foot
+  ):not(table):not(script):not(style) {
+  padding-left: var(--zr-3);
+  padding-right: var(--zr-3);
+}
+.zr-module
+  > *:not(.zr-module__head):not(.zr-module__body):not(.zr-module__foot):not(
+    .zr-list
+  ):not(.zr-table-wrap):not(.zr-table-cards):not(.zr-table-toolbar):not(
+    .zr-table-foot
+  ):not(table):not(script):not(style):first-child {
+  padding-top: var(--zr-3);
+}
+.zr-module
+  > *:not(.zr-module__head):not(.zr-module__body):not(.zr-module__foot):not(
+    .zr-list
+  ):not(.zr-table-wrap):not(.zr-table-cards):not(.zr-table-toolbar):not(
+    .zr-table-foot
+  ):not(table):not(script):not(style):last-child {
+  padding-bottom: var(--zr-3);
+}
+/* Stacked modules need air between them; the grid handles its own gaps. */
+.zr-module + .zr-module,
+.zr-module + .zr-alert,
+.zr-alert + .zr-module {
+  margin-top: var(--zr-3);
+}
+
 /* state machine: one attribute swaps skeleton / empty / error / content */
 .zr-module [data-slot='skeleton'],
 .zr-module [data-slot='empty'],
@@ -1561,7 +1608,7 @@ a.zr-list__item:hover {
 .zr-viewhead__sub {
   font-size: var(--zr-fs-sm);
   color: var(--zr-text-muted);
-  width: 100%;
+  flex-basis: 100%;
   margin-top: -4px;
 }
 .zr-viewhead__actions {
@@ -1570,6 +1617,18 @@ a.zr-list__item:hover {
   align-items: center;
   gap: var(--zr-2);
   flex-wrap: wrap;
+}
+
+/* loading overlay covering a module while it refreshes */
+.zr-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--zr-surface) 78%, transparent);
+  border-radius: inherit;
 }
 
 /* spinner */
@@ -1658,6 +1717,32 @@ a.zr-list__item:hover {
 .zr-kv__v {
   font-weight: 600;
   font-variant-numeric: tabular-nums;
+}
+
+/* inline link */
+.zr-link {
+  color: var(--zr-brand);
+  text-decoration: none;
+}
+.zr-link:hover {
+  text-decoration: underline;
+}
+
+/* recessed panel — for read-only blocks inside a module */
+.zr-panel {
+  padding: var(--zr-3);
+  border-radius: var(--zr-r-md);
+  background: var(--zr-surface-2);
+  border: 1px solid var(--zr-line);
+}
+
+/* small caps label above a group */
+.zr-label {
+  font-size: var(--zr-fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--zr-text-faint);
 }
 
 /* --- 6. utilities (deliberately few) ------------------------------------- */

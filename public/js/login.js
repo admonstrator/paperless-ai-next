@@ -20,8 +20,8 @@
   }
 
   function resolveThemePreference() {
-    if (typeof window.__paperlessAiGetTheme === 'function') {
-      return normalizeTheme(window.__paperlessAiGetTheme());
+    if (window.zrTheme && typeof window.zrTheme.get === 'function') {
+      return normalizeTheme(window.zrTheme.get());
     }
 
     try {

@@ -15,11 +15,11 @@
         
                 <!-- Document Selection -->
                 <div class="zr-module mb-6">
-                    <h2 class="card-title">Select Document</h2>
+                    <h2 class="zr-module__title">Select Document</h2>
                     <div class="manual-search-wrapper">
                         <input
                             id="manualDocumentSearchInput"
-                            class="w-full rounded-md border-border-color bg-bg-primary text-text-primary p-2 focus:border-accent-primary focus:ring-accent-primary"
+                            class="zr-input"
                             type="search"
                             placeholder="Search documents (title, ID, correspondent)..."
                             autocomplete="off">
@@ -33,7 +33,7 @@
                 <div class="card-grid">
                     <!-- Document Preview Card -->
                     <div class="zr-module col-span-2">
-                        <h2 class="card-title">Document Preview</h2>
+                        <h2 class="zr-module__title">Document Preview</h2>
                         <!-- Correspondent Info -->
                         <div id="correspondentInfo" class="stat-box mb-4 hidden">
                             <h3 class="zr-field__name">Correspondent:</h3>
@@ -54,9 +54,9 @@
                     <div class="col-span-2">
                         <!-- AI Analysis Card -->
                         <div class="zr-module mb-6">
-                            <h2 class="card-title">AI Analysis</h2>
+                            <h2 class="zr-module__title">AI Analysis</h2>
                             <button id="analyzeBtn" 
-                                    class="w-full flex justify-center items-center px-4 py-2 border border-border-color rounded-md shadow-sm text-sm font-medium text-text-primary bg-bg-primary hover:bg-hover-bg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed" 
+                                    class="zr-btn zr-btn--block" 
                                     disabled>
                                     <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg>
                                     Analyze with AI
@@ -75,34 +75,34 @@
         
                         <!-- Tags Card -->
                         <div class="zr-module">
-                            <h2 class="card-title">Tags</h2>
+                            <h2 class="zr-module__title">Tags</h2>
                             <!-- AI Suggested Tags -->
-                            <div class="mb-4">
-                                <h3 class="text-sm font-medium text-text-secondary mb-2">AI Suggestions</h3>
-                                <div id="suggestedTags" class="flex flex-wrap gap-2"></div>
+                            <div >
+                                <h3 class="zr-field__name">AI Suggestions</h3>
+                                <div id="suggestedTags" class="zr-row zr-row--wrap"></div>
                                 <input type="hidden" id="tags" name="tags" value="">
                             </div>
         
                             <!-- Current Tags -->
-                            <div class="mb-4">
+                            <div >
                                 <div class="flex justify-between items-center mb-2">
                                     <h3 class="text-sm font-medium text-text-secondary">Current Tags</h3>
                                     <button id="saveTagsBtn" 
-                                            class="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200">
+                                            class="zr-btn zr-btn--primary">
                                         Save Tags
                                     </button>
                                 </div>
-                                <div id="currentTags" class="flex flex-wrap gap-2"></div>
+                                <div id="currentTags" class="zr-row zr-row--wrap"></div>
                             </div>
         
                             <!-- Add New Tag -->
                             <div>
-                                <h3 class="text-sm font-medium text-text-secondary mb-2">Add New Tag</h3>
+                                <h3 class="zr-field__name">Add New Tag</h3>
                                 <div class="flex space-x-2">
                                     <select id="newTagSelect" class="flex-1 rounded-md border-border-color bg-bg-primary text-text-primary focus:border-accent-primary focus:ring-accent-primary">
                                         <option value="">Select a tag...</option>
                                     </select>
-                                    <button id="addTagBtn" class="inline-flex items-center px-3 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-accent-primary hover:bg-accent-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-accent-primary transition-all duration-200">
+                                    <button id="addTagBtn" class="zr-btn zr-btn--primary">
                                         <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
                                     </button>
                                     <input type="hidden" id="hiddenId" value="">
@@ -116,5 +116,4 @@
     </div>
     <script src="/js/document-omnibox.js"></script>
     <%- include('partials/scripts/manual-scripts') %>
-    <script src="js/dashboard.js"></script>
     <%- include('partials/shell/body-close') %>

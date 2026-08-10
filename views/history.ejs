@@ -11,70 +11,69 @@
 }) %>
             <div>
                 <div class="zr-viewhead">
-                    <div>
-                        <h1 class="content-title">Modified Documents</h1>
-                    </div>
-                    <div class="content-header-actions toolbar-actions">
-                        <button id="selectAllDocsBtn" class="zr-btn" title="Select all visible documents">
-                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check"/></svg> Select All
-                        </button>
-                        <button id="deselectAllDocsBtn" class="zr-btn" title="Deselect all visible documents">
-                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check"/></svg> Deselect All
-                        </button>
-                        <button id="rescanSelectedBtn" class="zr-btn" title="Reprocess selected documents (clears local processing record and triggers a scan)">
-                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Rescan Selected
-                        </button>
-                        <button id="forceReloadBtn" class="zr-btn zr-btn--primary" title="Force reload filters (bypass cache)">
-                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Force Reload
-                        </button>
-                        <button id="resetSelectedBtn" class="zr-btn zr-btn--danger">
-                            Reset Selected
-                        </button>
-                        <button id="resetAllBtn" class="zr-btn zr-btn--danger">
-                            Reset All
-                        </button>
-                        <span class="text-sm text-gray-500 italic ml-2">
-                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-info"/></svg>
-                            History is reconciled automatically. To run manually, go to <a href="/settings#troubleshooting" class="underline hover:text-blue-600">Settings &rarr; Troubleshooting</a>.
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Custom Filters -->
-                <div class="app-toolbar-filters mb-6">
-                    <div class="filter-item">
-                        <select id="tagFilter" class="toolbar-input">
-                            <option value="">All Tags</option>
+                    <p class="zr-viewhead__sub" style="margin-top: 0">
+                        Documents Zettelrobbe has already processed. Resetting one makes it eligible
+                        for the next scan again.
+                    </p>
+                    <div class="zr-viewhead__actions">
+                        <select id="tagFilter" class="zr-select" aria-label="Filter by tag" style="max-width: 200px">
+                            <option value="">All tags</option>
                             <% filters.allTags.forEach(function(tag) { %>
                                 <option value="<%= tag.id %>"><%= tag.name %></option>
                             <% }); %>
                         </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <select id="correspondentFilter" class="toolbar-input">
-                            <option value="">All Correspondents</option>
+                        <select id="correspondentFilter" class="zr-select" aria-label="Filter by correspondent" style="max-width: 220px">
+                            <option value="">All correspondents</option>
                             <% filters.allCorrespondents.forEach(function(corr) { %>
                                 <option value="<%= corr %>"><%= corr %></option>
                             <% }); %>
                         </select>
+                        <button id="forceReloadBtn" class="zr-btn" title="Reload filters, bypassing the cache">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                            Reload
+                        </button>
+                    </div>
+                </div>
+
+                <div class="zr-row zr-row--wrap" style="margin-bottom: var(--zr-3)">
+                    <button id="selectAllDocsBtn" class="zr-btn" title="Select all visible documents">
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check"/></svg>
+                        Select all
+                    </button>
+                    <button id="deselectAllDocsBtn" class="zr-btn" title="Deselect all visible documents">
+                        Deselect all
+                    </button>
+                    <button id="rescanSelectedBtn" class="zr-btn" title="Reprocess selected documents (clears the local record and triggers a scan)">
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                        Rescan selected
+                    </button>
+                    <span class="zr-grow"></span>
+                    <button id="resetSelectedBtn" class="zr-btn zr-btn--danger">Reset selected</button>
+                    <button id="resetAllBtn" class="zr-btn zr-btn--danger">Reset all</button>
+                </div>
+
+                <div class="zr-alert zr-alert--info" style="margin-bottom: var(--zr-4)">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-info"/></svg>
+                    <div class="zr-alert__body">
+                        <p class="zr-sm">History is reconciled automatically. To run it by hand, go to
+                        <a href="/settings#troubleshooting-tab" class="zr-link">Settings &rarr; Maintenance</a>.</p>
                     </div>
                 </div>
 
                 <!-- Loading Indicator -->
                 <div id="historyLoadingIndicator" class="zr-module mb-6">
-                    <div class="text-center py-8">
-                        <div class="mb-4">
+                    <div class="zr-empty">
+                        <div >
                             <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                         </div>
-                        <div class="mb-2 text-xl font-semibold">Loading history...</div>
-                        <div id="historyProgressContainer" class="w-full max-w-md mx-auto bg-gray-200 rounded-full h-3 mb-3"
+                        <div class="zr-empty__title">Loading history…</div>
+                        <div id="historyProgressContainer" class="zr-meter" style="max-width: 320px; margin: var(--zr-3) auto"
                              role="progressbar"
                              aria-valuemin="0"
                              aria-valuemax="100"
                              aria-valuenow="0"
                              aria-label="Loading progress">
-                            <div id="historyLoadProgress" class="bg-blue-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            <div id="historyLoadProgress" class="zr-meter__fill" style="width: 0%"></div>
                         </div>
                         <div id="historyLoadStatus" class="zr-sm zr-muted" aria-live="polite">Preparing to load history data...</div>
                     </div>
@@ -102,7 +101,7 @@
             <div class="modal-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;">
                 <div>
                     <h3 class="modal-title" id="infoModalTitle">AI Analysis Details</h3>
-                    <a id="infoModalLink" href="#" target="_blank" class="text-sm text-blue-500 hover:underline" style="display:none;">
+                    <a id="infoModalLink" href="#" target="_blank" class="zr-link zr-sm" style="display:none;">
                         <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-external"/></svg> Open in Paperless-ngx
                     </a>
                 </div>
@@ -110,68 +109,68 @@
             </div>
             <div class="modal-content" style="flex:1;min-height:0;overflow-y:auto;max-height:none;">
                 <!-- Loading State -->
-                <div id="infoModalLoading" class="text-center py-8">
+                <div id="infoModalLoading" class="zr-empty">
                     <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
-                    <div class="text-gray-600 mt-3">Loading details...</div>
+                    <div class="zr-muted">Loading details...</div>
                 </div>
                 <!-- Content -->
                 <div id="infoModalBody" style="display:none;">
                     <!-- Tags Section -->
-                    <div class="mb-5">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
+                    <div >
+                        <h4 class="zr-label">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-tag"/></svg> AI-Set Tags
-                            <span id="infoModalLiveHint" class="ml-2 text-xs font-normal text-gray-400"></span>
+                            <span id="infoModalLiveHint" class="zr-xs zr-faint"></span>
                         </h4>
                         <div id="infoModalTags" class="flex flex-wrap gap-2 mb-2"></div>
-                        <div id="infoModalExternalTags" class="flex flex-wrap gap-2"></div>
+                        <div id="infoModalExternalTags" class="zr-row zr-row--wrap"></div>
                     </div>
                     <!-- Correspondent Section -->
-                    <div class="mb-5">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
+                    <div >
+                        <h4 class="zr-label">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-user"/></svg> Correspondent
                         </h4>
-                        <div id="infoModalCorrespondent" class="text-sm"></div>
+                        <div id="infoModalCorrespondent" class="zr-sm"></div>
                     </div>
                     <!-- Document Classification Section -->
-                    <div class="mb-5" id="infoModalClassificationSection">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
+                    <div  id="infoModalClassificationSection">
+                        <h4 class="zr-label">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-folder"/></svg> Document Classification
                         </h4>
                         <div class="flex flex-wrap gap-3 text-sm">
                             <div>
-                                <span class="text-gray-400 text-xs block mb-1">Type</span>
-                                <span id="infoModalDocType" class="px-3 py-1 rounded-full theme-pill-info text-xs font-medium">–</span>
+                                <span class="zr-label">Type</span>
+                                <span id="infoModalDocType" class="zr-badge zr-badge--info">–</span>
                             </div>
                             <div>
-                                <span class="text-gray-400 text-xs block mb-1">Language</span>
-                                <span id="infoModalLanguage" class="px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">–</span>
+                                <span class="zr-label">Language</span>
+                                <span id="infoModalLanguage" class="zr-badge zr-badge--brand">–</span>
                             </div>
                         </div>
                     </div>
                     <!-- Custom Fields Section -->
-                    <div class="mb-5" id="infoModalCustomFieldsSection">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
+                    <div  id="infoModalCustomFieldsSection">
+                        <h4 class="zr-label">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-list"/></svg> Custom Fields
                         </h4>
-                        <div id="infoModalCustomFields" class="text-sm"></div>
+                        <div id="infoModalCustomFields" class="zr-sm"></div>
                     </div>
                     <!-- Processed At -->
-                    <div class="mb-5">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
+                    <div >
+                        <h4 class="zr-label">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-clock"/></svg> Processed At
                         </h4>
-                        <div id="infoModalProcessedAt" class="text-sm"></div>
+                        <div id="infoModalProcessedAt" class="zr-sm"></div>
                     </div>
                     <!-- Token Usage -->
-                    <div class="mb-2" id="infoModalTokensSection">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
+                    <div  id="infoModalTokensSection">
+                        <h4 class="zr-label">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-coins"/></svg> Token Usage
                         </h4>
                         <div id="infoModalTokens" class="flex gap-4 flex-wrap text-sm"></div>
                     </div>
                     <!-- Original State (collapsible) -->
-                    <div class="mb-2" id="infoModalOriginalSection" style="display:none;">
-                        <button id="infoModalOriginalToggle" class="flex items-center gap-2 font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2 focus:outline-none w-full text-left">
+                    <div  id="infoModalOriginalSection" style="display:none;">
+                        <button id="infoModalOriginalToggle" class="zr-label zr-row" style="width:100%; text-align:left">
                             <svg class="zr-icon" id="infoModalOriginalChevron" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-history"/></svg> Original State (before AI)
                         </button>
@@ -182,12 +181,12 @@
                 </div>
             </div>
             <!-- Footer: outside scrollable area so buttons are always visible -->
-            <div class="flex justify-end gap-3 px-5 py-4 border-t flex-shrink-0" style="background:var(--card-bg);border-radius:0 0 12px 12px;">
+            <div class="zr-dialog__foot" style="background:var(--card-bg);border-radius:0 0 12px 12px;">
                 <button id="infoModalRestoreBtn" class="zr-btn zr-btn--danger" style="display:none;">
-                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg> Restore Original
+                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg> Restore Original
                 </button>
                 <button id="infoModalRescanBtn" class="zr-btn">
-                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Rescan
+                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Rescan
                 </button>
                 <button id="infoModalCloseBtn" class="zr-btn">
                     Close
@@ -197,8 +196,8 @@
     </div>
 
     <!-- Toast Notification -->
-    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 hidden" style="z-index:9999;">
-        <div id="toastInner" class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
+    <div id="toastNotification" class="zr-toasts hidden" style="z-index:9999;">
+        <div id="toastInner" class="zr-toast zr-toast--ok">
             <svg class="zr-icon" id="toastIcon" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg>
             <span id="toastMessage">Operation successful</span>
         </div>
@@ -213,8 +212,8 @@
                 <button class="modal-close"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
             </div>
             <div class="modal-content">
-                <p class="mb-4">Are you sure you want to reset the selected documents to their original values? This action cannot be undone.</p>
-                <div class="flex justify-end gap-4">
+                <p >Are you sure you want to reset the selected documents to their original values? This action cannot be undone.</p>
+                <div class="zr-row" style="justify-content: flex-end">
                     <button id="cancelReset" class="zr-btn">Cancel</button>
                     <button id="confirmReset" class="zr-btn zr-btn--danger">Confirm Reset</button>
                 </div>
@@ -231,8 +230,8 @@
                 <button class="modal-close"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
             </div>
             <div class="modal-content">
-                <p class="mb-4">Are you sure you want to reset <b>all</b> documents to their original values? This action cannot be undone.</p>
-                <div class="flex justify-end gap-4">
+                <p >Are you sure you want to reset <b>all</b> documents to their original values? This action cannot be undone.</p>
+                <div class="zr-row" style="justify-content: flex-end">
                     <button id="cancelResetAll" class="zr-btn">Cancel</button>
                     <button id="confirmResetAll" class="zr-btn zr-btn--danger">Confirm Reset</button>
                 </div>
