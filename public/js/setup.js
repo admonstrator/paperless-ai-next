@@ -719,14 +719,14 @@ class SetupWizard {
 
     tags.forEach((tag) => {
       const chip = document.createElement('div');
-      chip.className =
-        'bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2';
+      chip.className = 'zr-chip';
       chip.innerHTML = `<span>${tag}</span>`;
 
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
-      removeBtn.className = 'hover:text-blue-600';
-      removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+      removeBtn.className = '';
+      removeBtn.innerHTML =
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>';
       removeBtn.addEventListener('click', () => this.removeIncludeTag(tag));
 
       chip.appendChild(removeBtn);
@@ -850,7 +850,7 @@ class SetupWizard {
         button.dataset.originalHtml = button.innerHTML;
       }
       button.disabled = true;
-      button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${loadingText}`;
+      button.innerHTML = `<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> ${loadingText}`;
       return;
     }
 
@@ -1123,7 +1123,7 @@ class SetupWizard {
       const label = document.createElement('span');
       label.textContent = tag;
       const icon = document.createElement('i');
-      icon.className = 'fas fa-xmark';
+      icon.className = 'zr-icon';
       chip.append(label, icon);
       chip.addEventListener('click', () => this.removeExcludeTag(tag));
       this.excludeTagsContainer.appendChild(chip);
@@ -1376,16 +1376,31 @@ class SetupWizard {
     }
 
     const iconPresets = {
-      pending: { className: 'fas fa-spinner fa-spin', color: '' },
-      success: { className: 'fas fa-circle-check', color: '#16a34a' },
-      error: { className: 'fas fa-circle-xmark', color: '#dc2626' },
-      skipped: { className: 'fas fa-circle-minus', color: '#94a3b8' },
+      pending: { symbol: 'i-refresh', spin: true, color: '' },
+      success: { symbol: 'i-check-circle', spin: false, color: 'var(--zr-ok)' },
+      error: {
+        symbol: 'i-alert-circle',
+        spin: false,
+        color: 'var(--zr-danger)',
+      },
+      skipped: {
+        symbol: 'i-minus',
+        spin: false,
+        color: 'var(--zr-text-faint)',
+      },
     };
     const preset = iconPresets[state] || iconPresets.pending;
 
     row.innerHTML = '';
-    const icon = document.createElement('i');
-    icon.className = preset.className;
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute(
+      'class',
+      `zr-icon zr-icon--sm${preset.spin ? ' zr-icon--spin' : ''}`
+    );
+    icon.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', `/icons.svg#${preset.symbol}`);
+    icon.appendChild(use);
     if (preset.color) {
       icon.style.color = preset.color;
     }

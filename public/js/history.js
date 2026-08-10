@@ -646,7 +646,7 @@ class HistoryManager {
 
       if (!data.tags.aiSet.length && !data.tags.external.length) {
         tagsEl.innerHTML =
-          '<span class="text-gray-400 text-sm">No tags set by AI</span>';
+          '<span class="zr-sm zr-faint">No tags set by AI</span>';
       }
 
       data.tags.aiSet.forEach((tag) => {
@@ -667,7 +667,7 @@ class HistoryManager {
 
       if (data.tags.external.length) {
         const label = document.createElement('div');
-        label.className = 'w-full text-xs text-gray-400 mt-1 mb-1';
+        label.className = 'zr-xs zr-faint';
         label.textContent = 'Tags in Paperless not set by AI:';
         extTagsEl.appendChild(label);
         data.tags.external.forEach((tag) => {
@@ -705,7 +705,7 @@ class HistoryManager {
           Object.keys(cf).length === 0)
       ) {
         cfEl.innerHTML =
-          '<span class="text-gray-400 text-sm">No custom fields were detected or applied for this document</span>';
+          '<span class="zr-sm zr-faint">No custom fields were detected or applied for this document</span>';
       } else {
         const items = Array.isArray(cf) ? cf : Object.values(cf);
         cfEl.innerHTML = items
@@ -714,9 +714,9 @@ class HistoryManager {
               item.field_name || item.name || 'Unknown field'
             );
             const value = this._esc(String(item.value ?? ''));
-            return `<div class="flex gap-2 py-1 border-b border-gray-100">
-                        <span class="font-medium text-gray-700 min-w-[140px]">${name}</span>
-                        <span class="text-gray-600">${value}</span>
+            return `<div class="zr-kv">
+                        <span class="zr-strong zr-detail-label">${name}</span>
+                        <span class="zr-muted">${value}</span>
                     </div>`;
           })
           .join('');
@@ -740,8 +740,8 @@ class HistoryManager {
         ]
           .map(
             ([label, val]) =>
-              `<span class="px-3 py-1 rounded bg-gray-100 text-gray-700">
-                        <span class="font-medium">${label}:</span> ${(val ?? 0).toLocaleString()}
+              `<span class="zr-badge">
+                        <span class="zr-strong">${label}:</span> ${(val ?? 0).toLocaleString()}
                     </span>`
           )
           .join('');
@@ -760,28 +760,28 @@ class HistoryManager {
           ? data.original.tags.length
           : 0;
         origContent.innerHTML = [
-          `<div class="flex gap-2 py-1 border-b border-gray-100">
-                        <span class="font-medium text-gray-700 min-w-[140px]">Title</span>
-                        <span class="text-gray-600">${this._esc(data.original.title || '\u2013')}</span>
+          `<div class="zr-kv">
+                        <span class="zr-strong zr-detail-label">Title</span>
+                        <span class="zr-muted">${this._esc(data.original.title || '\u2013')}</span>
                     </div>`,
-          `<div class="flex gap-2 py-1 border-b border-gray-100">
-                        <span class="font-medium text-gray-700 min-w-[140px]">Correspondent</span>
-                        <span class="text-gray-600">${data.original.correspondent ? `ID ${data.original.correspondent}` : 'None'}</span>
+          `<div class="zr-kv">
+                        <span class="zr-strong zr-detail-label">Correspondent</span>
+                        <span class="zr-muted">${data.original.correspondent ? `ID ${data.original.correspondent}` : 'None'}</span>
                     </div>`,
-          `<div class="flex gap-2 py-1 border-b border-gray-100">
-                        <span class="font-medium text-gray-700 min-w-[140px]">Tags</span>
-                        <span class="text-gray-600">${tagCount} tag${tagCount !== 1 ? 's' : ''} (IDs: ${this._esc(data.original.tags.join(', ') || 'none')})</span>
+          `<div class="zr-kv">
+                        <span class="zr-strong zr-detail-label">Tags</span>
+                        <span class="zr-muted">${tagCount} tag${tagCount !== 1 ? 's' : ''} (IDs: ${this._esc(data.original.tags.join(', ') || 'none')})</span>
                     </div>`,
           data.original.documentType != null
-            ? `<div class="flex gap-2 py-1 border-b border-gray-100">
-                        <span class="font-medium text-gray-700 min-w-[140px]">Document Type</span>
-                        <span class="text-gray-600">ID ${data.original.documentType}</span>
+            ? `<div class="zr-kv">
+                        <span class="zr-strong zr-detail-label">Document Type</span>
+                        <span class="zr-muted">ID ${data.original.documentType}</span>
                     </div>`
             : '',
           data.original.language
-            ? `<div class="flex gap-2 py-1">
-                        <span class="font-medium text-gray-700 min-w-[140px]">Language</span>
-                        <span class="text-gray-600">${this._esc(data.original.language)}</span>
+            ? `<div class="zr-row">
+                        <span class="zr-strong zr-detail-label">Language</span>
+                        <span class="zr-muted">${this._esc(data.original.language)}</span>
                     </div>`
             : '',
         ]
@@ -796,8 +796,8 @@ class HistoryManager {
       body.style.display = 'block';
     } catch (err) {
       console.error('Error loading info modal:', err);
-      loading.innerHTML = `<div class="text-red-500 py-4">
-                <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
+      loading.innerHTML = `<div class="zr-empty zr-danger-text">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
                 <div>Failed to load details: ${this._esc(err.message)}</div>
             </div>`;
     }
@@ -836,7 +836,7 @@ class HistoryManager {
     if (btn) {
       btn.disabled = true;
       btn.innerHTML =
-        '<i class="fas fa-spinner fa-spin mr-1"></i> Restoring...';
+        '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Restoring...';
     }
     try {
       const res = await fetch(`/api/history/${documentId}/restore`, {
@@ -871,7 +871,8 @@ class HistoryManager {
     const origHtml = btn?.innerHTML;
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rescanning...';
+      btn.innerHTML =
+        '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Rescanning...';
     }
 
     try {
@@ -906,7 +907,7 @@ class HistoryManager {
     if (btn) {
       btn.disabled = true;
       btn.innerHTML =
-        '<i class="fas fa-spinner fa-spin mr-1"></i> Rescanning...';
+        '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Rescanning...';
     }
 
     try {
@@ -945,9 +946,8 @@ class HistoryManager {
     const msgEl = document.getElementById('toastMessage');
 
     msgEl.textContent = message;
-    icon.className =
-      type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
-    inner.className = `${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3`;
+    icon.className = type === 'success' ? 'zr-icon' : 'zr-icon';
+    inner.className = `zr-toast zr-toast--${type === 'success' ? 'ok' : 'danger'}`;
 
     toast.classList.remove('hidden');
     setTimeout(() => toast.classList.add('hidden'), 4000);

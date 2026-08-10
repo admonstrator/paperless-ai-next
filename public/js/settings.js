@@ -313,7 +313,7 @@ class TagsManager {
   }
 
   initializeExistingTags() {
-    const existingTags = this.tagsContainer.querySelectorAll('.bg-blue-100');
+    const existingTags = this.tagsContainer.querySelectorAll('.zr-chip');
     existingTags.forEach((tagElement) => {
       const removeButton = tagElement.querySelector('button');
       if (removeButton) {
@@ -339,7 +339,7 @@ class TagsManager {
       });
 
       if (result.isConfirmed) {
-        const tagElement = button.closest('.bg-blue-100');
+        const tagElement = button.closest('.zr-chip');
         if (tagElement) {
           tagElement.remove();
           this.updateHiddenInput();
@@ -378,16 +378,16 @@ class TagsManager {
 
   createTagElement(text) {
     const tag = document.createElement('div');
-    tag.className =
-      'bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2 animate-fade-in';
+    tag.className = 'zr-chip';
 
     const tagText = document.createElement('span');
     tagText.textContent = text;
 
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
-    removeButton.className = 'hover:text-blue-600';
-    removeButton.innerHTML = '<i class="fas fa-times"></i>';
+    removeButton.className = '';
+    removeButton.innerHTML =
+      '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>';
 
     this.initializeTagRemoval(removeButton);
 
@@ -401,7 +401,7 @@ class TagsManager {
     if (!this.tagsHiddenInput || !this.tagsContainer) return;
 
     const tags = Array.from(
-      this.tagsContainer.querySelectorAll('.bg-blue-100 span')
+      this.tagsContainer.querySelectorAll('.zr-chip span')
     )
       .map((span) => span.textContent.trim())
       .filter((tag) => tag); // Remove any empty tags
@@ -518,7 +518,7 @@ function initializeFormHandlers() {
         button.dataset.originalHtml = button.innerHTML;
       }
       button.disabled = true;
-      button.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>${loadingText}</span>`;
+      button.innerHTML = `<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg><span>${loadingText}</span>`;
       return;
     }
 
@@ -1362,16 +1362,31 @@ function initializeFormHandlers() {
     }
 
     const iconPresets = {
-      pending: { className: 'fas fa-spinner fa-spin', color: '' },
-      success: { className: 'fas fa-circle-check', color: '#16a34a' },
-      error: { className: 'fas fa-circle-xmark', color: '#dc2626' },
-      skipped: { className: 'fas fa-circle-minus', color: '#94a3b8' },
+      pending: { symbol: 'i-refresh', spin: true, color: '' },
+      success: { symbol: 'i-check-circle', spin: false, color: 'var(--zr-ok)' },
+      error: {
+        symbol: 'i-alert-circle',
+        spin: false,
+        color: 'var(--zr-danger)',
+      },
+      skipped: {
+        symbol: 'i-minus',
+        spin: false,
+        color: 'var(--zr-text-faint)',
+      },
     };
     const preset = iconPresets[state] || iconPresets.pending;
 
     row.innerHTML = '';
-    const icon = document.createElement('i');
-    icon.className = preset.className;
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute(
+      'class',
+      `zr-icon zr-icon--sm${preset.spin ? ' zr-icon--spin' : ''}`
+    );
+    icon.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', `/icons.svg#${preset.symbol}`);
+    icon.appendChild(use);
     if (preset.color) {
       icon.style.color = preset.color;
     }
@@ -1550,7 +1565,7 @@ function initializeFormHandlers() {
       const originalHtml = testOcrBtn.innerHTML;
       testOcrBtn.disabled = true;
       testOcrBtn.innerHTML =
-        '<i class="fas fa-spinner fa-spin"></i><span>Testing...</span>';
+        '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg><span>Testing...</span>';
       setOcrTestPill('loading', 'Testing...');
 
       try {
@@ -1883,7 +1898,7 @@ function initializeFormHandlers() {
         // Disable button and show loading state
         btn.disabled = true;
         btn.innerHTML =
-          '<i class="fas fa-spinner fa-spin"></i> Clearing Cache...';
+          '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Clearing Cache...';
 
         const response = await fetch('/api/settings/clear-tag-cache', {
           method: 'POST',
@@ -1953,7 +1968,7 @@ function initializeFormHandlers() {
       try {
         clearThumbnailCacheBtn.disabled = true;
         clearThumbnailCacheBtn.innerHTML =
-          '<i class="fas fa-spinner fa-spin"></i> Clearing...';
+          '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Clearing...';
 
         const response = await fetch('/api/settings/thumbnail-cache/clear', {
           method: 'POST',
@@ -2030,7 +2045,7 @@ function initializeFormHandlers() {
       try {
         resetLocalOverridesBtn.disabled = true;
         resetLocalOverridesBtn.innerHTML =
-          '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+          '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Resetting...';
 
         const response = await fetch('/api/settings/reset-local-overrides', {
           method: 'POST',
@@ -2079,11 +2094,12 @@ function initializeFormHandlers() {
       const originalHtml = btn.innerHTML;
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+      btn.innerHTML =
+        '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Running...';
       if (resultDiv) {
         resultDiv.className = 'mt-3';
         resultDiv.innerHTML =
-          '<span class="text-sm text-gray-500"><i class="fas fa-spinner fa-spin mr-1"></i> Reconciliation in progress...</span>';
+          '<span class="zr-sm zr-faint"><svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Reconciliation in progress...</span>';
       }
 
       try {
@@ -2134,12 +2150,12 @@ function initializeFormHandlers() {
           if (resultDiv) {
             if (lastEvent.skipped) {
               resultDiv.innerHTML =
-                '<span class="text-sm text-yellow-600"><i class="fas fa-exclamation-triangle mr-1"></i> Skipped: a scan or reconciliation is already in progress.</span>';
+                '<span class="zr-sm zr-warn-text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg> Skipped: a scan or reconciliation is already in progress.</span>';
             } else if (lastEvent.removed > 0) {
-              resultDiv.innerHTML = `<span class="text-sm text-green-600"><i class="fas fa-check-circle mr-1"></i> Removed ${lastEvent.removed} stale entr${lastEvent.removed === 1 ? 'y' : 'ies'} in ${lastEvent.durationMs}ms.</span>`;
+              resultDiv.innerHTML = `<span class="zr-sm zr-ok-text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg> Removed ${lastEvent.removed} stale entr${lastEvent.removed === 1 ? 'y' : 'ies'} in ${lastEvent.durationMs}ms.</span>`;
             } else {
               resultDiv.innerHTML =
-                '<span class="text-sm text-green-600"><i class="fas fa-check-circle mr-1"></i> No stale entries found.</span>';
+                '<span class="zr-sm zr-ok-text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg> No stale entries found.</span>';
             }
           }
         } else if (lastEvent && lastEvent.type === 'error') {
@@ -2148,7 +2164,7 @@ function initializeFormHandlers() {
       } catch (error) {
         console.error('Error during reconciliation:', error);
         if (resultDiv) {
-          resultDiv.innerHTML = `<span class="text-sm text-red-600"><i class="fas fa-times-circle mr-1"></i> ${error.message || 'Reconciliation failed.'}</span>`;
+          resultDiv.innerHTML = `<span class="zr-sm zr-danger-text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg> ${error.message || 'Reconciliation failed.'}</span>`;
         }
       } finally {
         btn.disabled = false;
@@ -2168,7 +2184,8 @@ function initializeFormHandlers() {
     const submitBtn = setupForm.querySelector('button[type="submit"]');
     const originalBtnText = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    submitBtn.innerHTML =
+      '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Saving...';
 
     try {
       const formData = new FormData(setupForm);
@@ -2747,7 +2764,7 @@ class SettingsHintManager {
       trigger.style.minWidth = '1.125rem';
       trigger.style.minHeight = '1.125rem';
       trigger.innerHTML =
-        '<i class="fas fa-circle-question" style="font-size:0.875rem;line-height:1;"></i>';
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-help"/></svg>';
       trigger.dataset.hintContent = hint.innerHTML;
       trigger.dataset.hintFallback = label ? 'false' : 'true';
 
@@ -3132,8 +3149,7 @@ function initializeRuntimeOverridePills() {
       !targetLabel.querySelector('.override-pill')
     ) {
       const pill = document.createElement('span');
-      pill.className =
-        'override-pill inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 cursor-help';
+      pill.className = 'override-pill zr-badge zr-badge--warn';
       pill.textContent = 'Overwritten';
       const overrideDetails = parsedOverrideDetails[envKey] || {};
       const injectedValue = overrideDetails.injected || '[unknown]';
@@ -3164,8 +3180,7 @@ function initializeRuntimeOverridePills() {
 
       if (!targetLabel.querySelector('.locked-pill')) {
         const lockedPill = document.createElement('span');
-        lockedPill.className =
-          'locked-pill inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200 text-slate-700 cursor-help';
+        lockedPill.className = 'locked-pill zr-badge';
         lockedPill.textContent = 'Managed by ENV';
         const lockedDetails = parsedLockedEnvDetails[envKey] || {};
         const managedValue = lockedDetails.managed || '[unknown]';
@@ -3186,7 +3201,7 @@ function initializeRuntimeOverridePills() {
       let lockedHelpText = container.querySelector('.locked-env-help');
       if (!lockedHelpText) {
         lockedHelpText = document.createElement('p');
-        lockedHelpText.className = 'locked-env-help text-xs text-slate-500';
+        lockedHelpText.className = 'locked-env-help zr-xs zr-faint';
         lockedHelpText.textContent =
           'Managed by container environment. Change it in Docker Compose or your container environment, then restart the service.';
         container.appendChild(lockedHelpText);
@@ -3335,18 +3350,13 @@ class MfaSettingsManager {
       return;
     }
 
-    this.resultMessage.className = 'rounded-lg p-3 text-sm';
+    this.resultMessage.className = 'zr-alert';
     if (type === 'success') {
-      this.resultMessage.classList.add('theme-alert-success', 'border');
+      this.resultMessage.classList.add('zr-alert--ok');
     } else if (type === 'error') {
-      this.resultMessage.classList.add('theme-alert-error', 'border');
+      this.resultMessage.classList.add('zr-alert--danger');
     } else {
-      this.resultMessage.classList.add(
-        'bg-blue-50',
-        'text-blue-800',
-        'border',
-        'border-blue-200'
-      );
+      this.resultMessage.classList.add('zr-alert--info');
     }
 
     this.resultMessage.textContent = text;
@@ -3364,7 +3374,7 @@ class MfaSettingsManager {
       return;
     }
 
-    this.tokenHint.className = 'text-xs';
+    this.tokenHint.className = 'zr-xs';
     if (type === 'error') {
       this.tokenHint.classList.add('text-red-600');
       this.tokenInput?.classList.add(
@@ -3478,7 +3488,7 @@ class MfaSettingsManager {
         button.dataset.originalHtml = button.innerHTML;
       }
       button.disabled = true;
-      button.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>${loadingText}</span>`;
+      button.innerHTML = `<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg><span>${loadingText}</span>`;
       return;
     }
 
@@ -3495,11 +3505,7 @@ class MfaSettingsManager {
 
     if (this.statusBadge) {
       this.statusBadge.textContent = this.enabled ? 'Enabled' : 'Disabled';
-      this.statusBadge.className = `px-2 py-1 rounded-full text-xs font-semibold ${
-        this.enabled
-          ? 'bg-green-100 text-green-800'
-          : 'bg-gray-100 text-gray-700'
-      }`;
+      this.statusBadge.className = `zr-badge${this.enabled ? ' zr-badge--ok' : ''}`;
     }
 
     if (this.disableBtn) {
@@ -3945,11 +3951,7 @@ function updateCustomFieldsJson() {
 
 function createFieldElement(fieldName, data_type, currency = null) {
   const div = document.createElement('div');
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-
-  div.className = `custom-field-item flex items-center gap-2 p-3 rounded-lg border hover:border-blue-500 transition-colors ${
-    isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-  }`;
+  div.className = 'custom-field-item zr-row';
 
   let typeDisplay = `Type: ${data_type}`;
   if (data_type === 'monetary' && currency) {
@@ -3957,17 +3959,17 @@ function createFieldElement(fieldName, data_type, currency = null) {
   }
 
   div.innerHTML = `
-        <div class="cursor-move text-gray-400">
-            <i class="fas fa-grip-vertical"></i>
+        <div class="zr-faint">
+            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-grip"/></svg>
         </div>
         <div class="flex-1">
-            <p class="font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}" data-field-name></p>
-            <p class="text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}" data-field-type></p>
+            <p class="zr-strong" data-field-name></p>
+            <p class="zr-sm zr-faint" data-field-type></p>
         </div>
         <button type="button"
                 onclick="removeCustomField(this)"
-                class="text-gray-400 hover:text-red-500 transition-colors">
-            <i class="fas fa-trash"></i>
+                class="zr-btn zr-btn--ghost zr-btn--icon zr-btn--danger">
+            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>
         </button>
     `;
 

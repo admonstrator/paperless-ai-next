@@ -91,7 +91,7 @@
 
   async function _doLoad() {
     if (!tableBody) return;
-    tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Loading…</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="6" class="zr-empty"><svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Loading…</td></tr>`;
 
     try {
       const params = new URLSearchParams({
@@ -109,32 +109,35 @@
       renderTable(data.data || []);
       updatePagination();
     } catch (err) {
-      tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-red-500"><i class="fas fa-exclamation-triangle mr-2"></i>${escHtml(err.message)}</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="6" class="zr-empty zr-danger-text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>${escHtml(err.message)}</td></tr>`;
     }
   }
 
   // ── Render table ───────────────────────────────────────────────────────
   function formatReasonLabel(reason) {
     if (!reason) {
-      return '<i class="fas fa-question-circle mr-1"></i>Unknown';
+      return '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-help"/></svg>Unknown';
     }
 
     const reasonMap = {
-      short_content: '<i class="fas fa-file-slash mr-1"></i>Content too short',
+      short_content:
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>Content too short',
       short_content_lt_10:
-        '<i class="fas fa-file-slash mr-1"></i>Content too short (&lt; 10 chars)',
-      ai_failed: '<i class="fas fa-robot mr-1"></i>AI analysis failed',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>Content too short (&lt; 10 chars)',
+      ai_failed:
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg>AI analysis failed',
       ai_insufficient_content:
-        '<i class="fas fa-robot mr-1"></i>AI: insufficient content',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg>AI: insufficient content',
       ai_invalid_json:
-        '<i class="fas fa-brackets-curly mr-1"></i>AI: invalid JSON response',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-code"/></svg>AI: invalid JSON response',
       ai_invalid_response_structure:
-        '<i class="fas fa-diagram-project mr-1"></i>AI: no tags/correspondent found',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-layers"/></svg>AI: no tags/correspondent found',
       ai_invalid_api_response_structure:
-        '<i class="fas fa-server mr-1"></i>AI: invalid API response structure',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-server"/></svg>AI: invalid API response structure',
       ai_failed_unknown:
-        '<i class="fas fa-triangle-exclamation mr-1"></i>AI failed (unknown)',
-      manual: '<i class="fas fa-hand-pointer mr-1"></i>Manual',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>AI failed (unknown)',
+      manual:
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-user"/></svg>Manual',
     };
 
     if (reasonMap[reason]) {
@@ -144,7 +147,7 @@
     if (reason.startsWith('short_content_lt_')) {
       const threshold = reason.replace('short_content_lt_', '');
       if (/^\d+$/.test(threshold)) {
-        return `<i class="fas fa-file-slash mr-1"></i>Content too short (&lt; ${threshold} chars)`;
+        return `<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>Content too short (&lt; ${threshold} chars)`;
       }
     }
 
@@ -153,14 +156,14 @@
 
   function renderTable(items) {
     if (!items.length) {
-      tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-gray-400"><i class="fas fa-inbox text-2xl mb-2 block"></i>Queue is empty</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="6" class="zr-empty"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-inbox"/></svg>Queue is empty</td></tr>`;
       return;
     }
 
     tableBody.innerHTML = items
       .map((item) => {
         const docLink = paperlessUrl
-          ? `<a href="${paperlessUrl}/documents/${item.document_id}/details" target="_blank" class="text-blue-500 hover:underline font-mono">#${item.document_id}</a>`
+          ? `<a href="${paperlessUrl}/documents/${item.document_id}/details" target="_blank" class="zr-link zr-mono">#${item.document_id}</a>`
           : `<span class="font-mono">#${item.document_id}</span>`;
 
         const reasonLabel = formatReasonLabel(item.reason);
@@ -173,31 +176,31 @@
 
         const processBtn =
           item.status === 'pending' || item.status === 'failed'
-            ? `<button class="toolbar-btn toolbar-btn--primary toolbar-btn--sm process-btn" data-id="${item.document_id}" title="Send to OCR provider"><i class="fas fa-play"></i> Process</button>`
+            ? `<button class="zr-btn zr-btn--primary process-btn" data-id="${item.document_id}" title="Send to OCR provider"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process</button>`
             : '';
 
         const hasOcrText = !!(item.ocr_text && String(item.ocr_text).trim());
         const analyzeBtn =
           item.status === 'done' && hasOcrText
-            ? `<button class="toolbar-btn toolbar-btn--warning toolbar-btn--sm analyze-btn" data-id="${item.document_id}" title="Start AI analysis using existing OCR text"><i class="fas fa-robot"></i> Analyze with AI now</button>`
+            ? `<button class="zr-btn analyze-btn" data-id="${item.document_id}" title="Start AI analysis using existing OCR text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg> Analyze with AI now</button>`
             : '';
 
         const infoBtn = hasOcrText
-          ? `<button class="toolbar-btn toolbar-btn--ghost toolbar-btn--sm info-btn" data-id="${item.document_id}" title="Show OCR output" aria-label="Show OCR output"><i class="fas fa-circle-info"></i></button>`
+          ? `<button class="zr-btn zr-btn--ghost zr-btn--icon info-btn" data-id="${item.document_id}" title="Show OCR output" aria-label="Show OCR output"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg></button>`
           : '';
 
         const removeBtn =
           item.status !== 'processing'
-            ? `<button class="toolbar-btn toolbar-btn--danger toolbar-btn--sm remove-btn" data-id="${item.document_id}" title="Remove from queue" aria-label="Remove from queue"><i class="fas fa-trash"></i></button>`
+            ? `<button class="zr-btn zr-btn--danger remove-btn" data-id="${item.document_id}" title="Remove from queue" aria-label="Remove from queue"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg></button>`
             : '';
 
-        return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-700">
-                <td class="py-3 px-4">${docLink}</td>
-                <td class="py-3 px-4 max-w-xs truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
-                <td class="py-3 px-4"><span class="reason-badge">${reasonLabel}</span></td>
-                <td class="py-3 px-4">${statusHtml}</td>
-                <td class="py-3 px-4 text-sm text-gray-500 whitespace-nowrap">${addedDate}</td>
-                <td class="py-3 px-4">
+        return `<tr>
+                <td>${docLink}</td>
+                <td class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
+                <td><span class="reason-badge">${reasonLabel}</span></td>
+                <td>${statusHtml}</td>
+                <td class="zr-sm zr-faint">${addedDate}</td>
+                <td>
                     <div class="flex flex-wrap items-center gap-2">
                         ${processBtn}
                         ${analyzeBtn}
@@ -235,10 +238,13 @@
   function statusIcon(status) {
     return (
       {
-        pending: '<i class="fas fa-hourglass-half"></i>',
-        processing: '<i class="fas fa-spinner fa-spin"></i>',
-        done: '<i class="fas fa-check"></i>',
-        failed: '<i class="fas fa-times"></i>',
+        pending:
+          '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-clock"/></svg>',
+        processing:
+          '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>',
+        done: '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check"/></svg>',
+        failed:
+          '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>',
       }[status] || ''
     );
   }
@@ -654,7 +660,7 @@
     const msg = document.getElementById('toastMessage');
     if (!toast) return;
 
-    inner.className = `${type === 'error' ? 'bg-red-500' : 'bg-green-500'} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3`;
+    inner.className = `zr-toast zr-toast--${type === 'error' ? 'danger' : 'ok'}`;
     icon.className = `fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}`;
     msg.textContent = message;
 

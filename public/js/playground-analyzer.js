@@ -5,7 +5,7 @@ class PromptRatingSystem {
     this.savedPrompts = this.loadSavedPrompts();
     this.currentPrompt = '';
 
-    // Erst Modal erstellen, dann UI Setup
+    // The modal has to exist before the UI wires itself to it.
     this.createRatingModal();
     this.setupUI();
     this.setupEventListeners();
@@ -23,7 +23,7 @@ class PromptRatingSystem {
 
   setupUI() {
     try {
-      // Rate Button hinzufügen
+      // Add the rate button
       const analyzeButton = document.getElementById('analyzeButton');
       if (!analyzeButton) {
         console.error('Analyze button not found');
@@ -32,14 +32,14 @@ class PromptRatingSystem {
 
       const rateButton = document.createElement('button');
       rateButton.id = 'rateButton';
-      rateButton.className =
-        'hidden toolbar-btn toolbar-btn--success toolbar-btn--sm';
-      rateButton.innerHTML = '<i class="fas fa-star mr-2"></i>Rate Prompt';
+      rateButton.className = 'hidden zr-btn';
+      rateButton.innerHTML =
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-star"/></svg>Rate Prompt';
       const actionsContainer =
         document.getElementById('analysisActions') || analyzeButton.parentNode;
       actionsContainer.appendChild(rateButton);
 
-      // Saved Prompts Section erstellen
+      // Build the saved prompts section
       this.createSavedPromptsSection();
       this.addStyles();
     } catch (error) {
@@ -125,24 +125,24 @@ class PromptRatingSystem {
     const modalHtml = `
             <div id="ratingModal" class="fixed inset-0 z-50 hidden">
                 <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"></div>
-                <div class="fixed inset-0 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-lg shadow-xl max-w-md w-full relative" style="background: var(--bg-primary); color: var(--text-primary)">
-                        <div class="p-4 flex justify-between items-center border-b" style="border-color: var(--border-color)">
-                            <h3 class="text-lg font-semibold">Rate this Prompt</h3>
-                            <button class="modal-close hover:opacity-70">
-                                <i class="fas fa-times"></i>
+                <div class="zr-modal-center">
+                    <div class="zr-module zr-modal-card" style="background: var(--zr-surface); color: var(--zr-text)">
+                        <div class="zr-module__head" style="border-color: var(--zr-line)">
+                            <h3 class="zr-module__title">Rate this Prompt</h3>
+                            <button class="modal-close zr-btn zr-btn--ghost zr-btn--icon">
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
                             </button>
                         </div>
-                        <div class="p-4">
-                            <div class="prompt-preview mb-4 p-2 rounded" style="background: var(--bg-secondary)">
-                                <code class="text-sm break-all whitespace-pre-wrap"></code>
+                        <div class="zr-module__body">
+                            <div class="prompt-preview zr-panel" style="background: var(--zr-surface-2)">
+                                <code class="zr-sm zr-mono"></code>
                             </div>
                             <div class="star-rating flex justify-center gap-2" id="starRating">
                                 ${Array.from(
                                   { length: 10 },
                                   (_, i) => `
-                                    <button data-rating="${i + 1}" class="text-2xl focus:outline-none hover:scale-110 transition-transform">
-                                        <i class="fas fa-star"></i>
+                                    <button data-rating="${i + 1}" class="zr-btn zr-btn--ghost zr-btn--icon">
+                                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-star"/></svg>
                                     </button>
                                 `
                                 ).join('')}
@@ -150,11 +150,11 @@ class PromptRatingSystem {
                             <textarea
                                 id="ratingComment"
                                 placeholder="Add your comments about this prompt..."
-                                class="w-full p-2 mt-4 rounded"
-                                style="background: var(--bg-primary); border: 1px solid var(--border-color);"
+                                class="zr-textarea"
+                                style="background: var(--zr-surface); border: 1px solid var(--zr-line);"
                                 rows="3"
                             ></textarea>
-                            <button id="saveRating" class="w-full mt-4 toolbar-btn toolbar-btn--primary">
+                            <button id="saveRating" class="zr-btn zr-btn--primary zr-btn--block">
                                 Save Rating
                             </button>
                         </div>
@@ -173,19 +173,19 @@ class PromptRatingSystem {
     }
 
     const promptsSection = document.createElement('div');
-    promptsSection.className = 'material-card mb-8 saved-prompts-section';
+    promptsSection.className = 'zr-module saved-prompts-section';
     promptsSection.innerHTML = `
-            <h2 class="card-title flex justify-between items-center">
+            <h2 class="zr-module__title zr-row zr-row--between">
                 Saved Prompts
-                <button id="clearPrompts" class="toolbar-btn toolbar-btn--danger toolbar-btn--sm text-sm">
+                <button id="clearPrompts" class="zr-btn zr-btn--danger">
                     Clear All
                 </button>
             </h2>
             <div id="savedPromptsList"></div>
         `;
 
-    // Nach der Analyse-Sektion einfügen
-    const analysisSection = document.querySelector('.material-card');
+    // Insert after the analysis section
+    const analysisSection = document.querySelector('.zr-module');
     if (analysisSection) {
       analysisSection.parentNode.insertBefore(
         promptsSection,
@@ -247,8 +247,8 @@ class PromptRatingSystem {
 
             .saved-prompt-card {
                 position: relative;
-                background: var(--card-bg);
-                border: 1px solid var(--border-color);
+                background: var(--zr-surface);
+                border: 1px solid var(--zr-line);
                 border-radius: 0.5rem;
                 padding: 1rem;
                 margin-bottom: 1rem;
@@ -266,7 +266,7 @@ class PromptRatingSystem {
 
             .saved-prompt-card .prompt-text {
                 font-family: monospace;
-                background: var(--bg-secondary);
+                background: var(--zr-surface-2);
                 padding: 0.5rem;
                 border-radius: 0.25rem;
                 margin: 0.5rem 0;
@@ -355,30 +355,29 @@ class PromptRatingSystem {
         .map(
           (prompt) => `
             <div class="saved-prompt-card" data-id="${prompt.id}">
-                <div class="rating text-lg mb-2">
-                    ${Array.from({ length: prompt.rating }, () => '<i class="fas fa-star"></i>').join('')}
-                    <span class="ml-2 text-sm">${prompt.rating}/10</span>
+                <div class="rating zr-strong">
+                    ${Array.from({ length: prompt.rating }, () => '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-star"/></svg>').join('')}
+                    <span class="zr-sm">${prompt.rating}/10</span>
                 </div>
-                <div class="prompt-text text-sm">${prompt.prompt}</div>
-                ${prompt.comment ? `<div class="mt-2 text-sm italic text-gray-600">${prompt.comment}</div>` : ''}
-                <div class="mt-2 text-xs text-gray-500">${new Date(prompt.date).toLocaleString()}</div>
+                <div class="prompt-text zr-sm zr-mono">${prompt.prompt}</div>
+                ${prompt.comment ? `<div class="zr-sm zr-muted">${prompt.comment}</div>` : ''}
+                <div class="zr-xs zr-faint">${new Date(prompt.date).toLocaleString()}</div>
                 <div class="absolute top-2 right-2 flex gap-2">
                     <button onclick="window.promptRating.usePrompt(${prompt.id})" 
-                            class="toolbar-btn toolbar-btn--primary toolbar-btn--sm"
+                            class="zr-btn zr-btn--primary"
                             title="Use this prompt">
-                        <i class="fas fa-play"></i>
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg>
                     </button>
                     <button onclick="window.promptRating.deletePrompt(${prompt.id})"
-                            class="toolbar-btn toolbar-btn--danger toolbar-btn--sm"
+                            class="zr-btn zr-btn--danger"
                             title="Delete this prompt">
-                        <i class="fas fa-trash"></i>
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>
                     </button>
                 </div>
             </div>
         `
         )
-        .join('') ||
-      '<p class="text-gray-500 italic p-4">No saved prompts yet</p>';
+        .join('') || '<p class="zr-empty">No saved prompts yet</p>';
   }
 
   usePrompt(id) {
@@ -486,7 +485,7 @@ class PlaygroundAnalyzer {
           .map((tagId) => {
             const normalizedTagId = Number(tagId);
             const tagName = tagNames?.[normalizedTagId] || 'Unknown';
-            return `<span class="tag text-xs px-2 py-1 rounded-full bg-blue-600 text-white" data-tag-id="${this.escapeHtml(normalizedTagId)}">${this.escapeHtml(tagName)}</span>`;
+            return `<span class="tag zr-badge zr-badge--brand" data-tag-id="${this.escapeHtml(normalizedTagId)}">${this.escapeHtml(tagName)}</span>`;
           })
           .join('');
 
@@ -497,20 +496,20 @@ class PlaygroundAnalyzer {
           : '';
 
         return `
-                <div class="material-card document-card" data-document-id="${this.escapeHtml(documentId)}">
+                <div class="zr-module document-card" data-document-id="${this.escapeHtml(documentId)}">
                     <div class="relative aspect-[3/4]">
                         <div class="thumbnail-skeleton" data-thumb-skeleton aria-hidden="true"></div>
-                        <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" data-thumb-src="/thumb/${this.escapeHtml(documentId)}" alt="${safeTitle}" class="playground-thumb w-full h-full object-cover rounded-lg" loading="lazy" decoding="async">
+                        <img src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" data-thumb-src="/thumb/${this.escapeHtml(documentId)}" alt="${safeTitle}" class="playground-thumb" loading="lazy" decoding="async">
                         <div class="tags-container absolute top-2 left-2 right-2 flex flex-wrap gap-1">${tagsMarkup}</div>
                     </div>
                     <div class="document-info">
                         <div class="info-container">
                             <div class="info-item">
-                                <h3 class="text-sm font-medium truncate">${safeTitle}</h3>
+                                <h3 class="zr-sm zr-strong zr-truncate">${safeTitle}</h3>
                             </div>
                             <div class="info-item">
-                                <p class="text-xs text-gray-600 truncate">${this.escapeHtml(createdAt)}</p>
-                                ${hasCorrespondent ? `<p class="text-xs text-gray-600 truncate" data-correspondent="${this.escapeHtml(correspondentId)}">${this.escapeHtml(correspondentName)}</p>` : ''}
+                                <p class="zr-xs zr-muted zr-truncate">${this.escapeHtml(createdAt)}</p>
+                                ${hasCorrespondent ? `<p class="zr-xs zr-muted zr-truncate" data-correspondent="${this.escapeHtml(correspondentId)}">${this.escapeHtml(correspondentName)}</p>` : ''}
                             </div>
                         </div>
                     </div>
@@ -739,7 +738,7 @@ class PlaygroundAnalyzer {
             }
             
             @keyframes highlight {
-                0% { box-shadow: 0 0 0 2px var(--accent-primary); }
+                0% { box-shadow: 0 0 0 2px var(--zr-brand); }
                 100% { box-shadow: none; }
             }
             
@@ -756,7 +755,7 @@ class PlaygroundAnalyzer {
 
             /* Text-Updates */
             .updated-text {
-                color: var(--accent-primary);
+                color: var(--zr-brand);
                 font-weight: 600;
             }
 
@@ -960,8 +959,7 @@ class PlaygroundAnalyzer {
         analysisResult.tags.forEach((tagId) => {
           if (!existingTagIds.includes(tagId)) {
             const tagSpan = document.createElement('span');
-            tagSpan.className =
-              'tag new-tag text-xs px-2 py-1 rounded-full text-white';
+            tagSpan.className = 'tag new-tag zr-badge zr-badge--brand';
             tagSpan.dataset.tagId = tagId;
             tagSpan.textContent = tagId;
             tagsContainer.appendChild(tagSpan);
@@ -1016,7 +1014,7 @@ class PlaygroundAnalyzer {
         infoContainer.className = 'info-item';
 
         const newValue = document.createElement('span');
-        newValue.className = 'updated-text text-sm font-medium truncate';
+        newValue.className = 'updated-text zr-sm zr-strong zr-truncate';
         newValue.textContent = analysisResult.title;
 
         const oldValue = document.createElement('span');
@@ -1038,45 +1036,40 @@ class PlaygroundAnalyzer {
   }
 
   showMessage(message, type = 'info') {
+    const tones = {
+      error: 'danger',
+      success: 'ok',
+      warning: 'warn',
+      info: 'info',
+    };
+    const icons = {
+      danger: 'i-alert-circle',
+      ok: 'i-check-circle',
+      warn: 'i-alert',
+      info: 'i-info',
+    };
+    const tone = tones[type] || 'info';
+
     let messageArea = document.getElementById('messageArea');
     if (!messageArea) {
       messageArea = document.createElement('div');
       messageArea.id = 'messageArea';
-      const analysisSection = document.querySelector('.material-card');
-      analysisSection.parentNode.insertBefore(messageArea, analysisSection);
+      const anchor = document.querySelector('.zr-module');
+      if (anchor && anchor.parentNode) {
+        anchor.parentNode.insertBefore(messageArea, anchor);
+      } else {
+        document.querySelector('.zr-view')?.prepend(messageArea);
+      }
     }
 
-    const colors = {
-      error: 'red',
-      success: 'green',
-      info: 'blue',
-      warning: 'yellow',
-    };
+    messageArea.className = `zr-alert zr-alert--${tone}`;
+    messageArea.setAttribute('role', tone === 'danger' ? 'alert' : 'status');
+    messageArea.innerHTML =
+      `<svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#${icons[tone]}"/></svg>` +
+      '<div class="zr-alert__body"><p data-message-text></p></div>';
 
-    const color = colors[type] || colors.info;
-
-    messageArea.className = `mb-4 p-4 rounded-md bg-${color}-50 border border-${color}-200 text-${color}-700`;
-    messageArea.innerHTML = `
-            <div class="flex">
-                <div class="flex-shrink-0">
-                    <i class="fas fa-${
-                      type === 'error'
-                        ? 'exclamation-circle'
-                        : type === 'success'
-                          ? 'check-circle'
-                          : type === 'warning'
-                            ? 'exclamation-triangle'
-                            : 'info-circle'
-                    } text-${color}-400"></i>
-                </div>
-                <div class="ml-3">
-                    <p class="text-sm" data-message-text></p>
-                </div>
-            </div>
-        `;
-
-    // Messages can carry error text from the backend, so they are rendered
-    // as text rather than interpolated into the markup above.
+    // Messages can carry error text from the backend, so they are rendered as
+    // text rather than interpolated into the markup above.
     messageArea.querySelector('[data-message-text]').textContent = message;
 
     if (type === 'success') {

@@ -425,18 +425,6 @@
 }
 
 /* --- history ------------------------------------------------------------- */
-.dataTables_wrapper .dataTables_length,
-.dataTables_wrapper .dataTables_filter {
-  margin-bottom: 1rem;
-}
-
-.dataTables_wrapper .dataTables_info {
-  margin-top: 1rem;
-}
-
-.dataTables_wrapper .dataTables_paginate {
-  margin-top: 1rem;
-}
 
 .highlight-row {
   background-color: rgba(59, 130, 246, 0.1);
@@ -1029,43 +1017,16 @@ img {
 }
 
 /* Base chart container sizing */
-.material-card .chart-container {
-  position: relative;
-  width: 100%;
-  margin: 0 auto;
-}
 
 /* Token Distribution chart sizing */
-.material-card:has(#tokenDistribution) .chart-container {
-  height: 220px;
-}
 
 /* Document Types chart sizing */
-.material-card:has(#documentTypes) .chart-container {
-  height: 220px;
-  max-width: 220px;
-  margin: 0 auto;
-}
 
 /* Token trend chart sizing */
-.material-card:has(#tokenTrend) .chart-container {
-  height: 220px;
-}
 
 /* Dark mode compatibility */
-[data-theme='dark'] .material-card .chart-container {
-  background-color: var(--zr-surface);
-}
-
-[data-theme='dark'] .material-card:has(#documentTypes) .chart-container {
-  background-color: var(--zr-surface);
-}
 
 /* Chart Containers */
-[data-theme='dark'] .chart-container {
-  background-color: var(--zr-surface);
-  border-color: var(--zr-line);
-}
 
 /* Ensure text remains visible in dark mode */
 [data-theme='dark'] .card-title {
@@ -1087,30 +1048,6 @@ img {
   font-weight: 650;
   margin-bottom: 1rem;
   color: var(--zr-text);
-}
-
-.activity-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.activity-item {
-  padding: 0.75rem;
-  border: 1px solid var(--zr-line);
-  background: var(--zr-surface-2);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.activity-item-title {
-  color: var(--zr-text);
-  font-weight: 600;
-  font-size: 0.92rem;
-  line-height: 1.3;
 }
 
 /* Stats Box */
@@ -1222,11 +1159,6 @@ img {
   background: var(--zr-surface);
 }
 
-.activity-item {
-  flex-direction: column;
-  align-items: flex-start;
-}
-
 .modal-container {
   width: 95%;
   margin: 1rem;
@@ -1319,4 +1251,28 @@ img {
   border-radius: var(--zr-r-md);
   background: var(--zr-surface);
   color: var(--zr-text);
+}
+
+/* --- pieces used by markup the page scripts generate -------------------- */
+/* history detail rows */
+.zr-detail-label {
+  min-width: 140px;
+  flex: none;
+  color: var(--zr-text-muted);
+}
+
+/* the playground rating dialog is built in JS, not as a <dialog> */
+.zr-modal-center {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--zr-4);
+  z-index: 60;
+}
+.zr-modal-card {
+  width: 100%;
+  max-width: 440px;
+  position: relative;
 }
