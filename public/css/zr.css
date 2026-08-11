@@ -1290,8 +1290,11 @@ a.zr-list__item:hover {
 .zr-check::after {
   content: '';
   position: absolute;
-  left: 4px;
-  top: 1px;
+  /* The ink is the right and bottom border of this box, so after the rotation it
+     sits left of and above the box it was drawn from — 1px and 1.29px, measured
+     off the rotated corners. The offsets centre the tick, not the box. */
+  left: 5px;
+  top: 2.3px;
   width: 4px;
   height: 8px;
   border: solid var(--zr-on-brand);
@@ -1306,7 +1309,8 @@ a.zr-list__item:hover {
 /* Some rows selected: a dash, the same shape the native control uses. */
 .zr-check:indeterminate::after {
   left: 2px;
-  top: 5px;
+  /* height: 0 puts the whole bar in the bottom border, below `top`. */
+  top: 6px;
   width: 10px;
   height: 0;
   border-width: 0 0 2px 0;
