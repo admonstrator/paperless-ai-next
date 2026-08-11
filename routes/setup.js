@@ -6590,9 +6590,9 @@ router.get('/settings', async (req, res) => {
     aiProviderPresets,
     mfaSettings,
     changelogReleases: changelog.releases,
-    success: isConfigured
-      ? 'The application is already configured. You can update the configuration below.'
-      : undefined,
+    // No banner for the normal case: "already configured" was shown on every
+    // visit to a configured instance, i.e. always, and said nothing.
+    success: undefined,
     settingsError: showErrorCheckSettings
       ? 'Please check your settings. Something is not working correctly.'
       : undefined,

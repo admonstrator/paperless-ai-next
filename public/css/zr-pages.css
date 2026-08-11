@@ -340,6 +340,22 @@
   background-color: rgba(59, 130, 246, 0.1);
 }
 
+/* --- settings ------------------------------------------------------------ */
+
+/* The "field name + type + Add" row: its controls sit in wrapper divs (a bare
+   width:100% control would hijack the whole flex row), so the generic
+   full-width phone rule cannot reach them. Stack the wrappers instead. */
+@media (max-width: 860px) {
+  .customfield-add > div {
+    flex: 1 1 100%;
+  }
+  /* The currency select hides until the type is monetary; stacked, its empty
+     wrapper would still claim a row of gap. */
+  .customfield-add > div:has(> .hidden:only-child) {
+    display: none;
+  }
+}
+
 .modal {
   transition: opacity 0.3s ease-in-out;
   opacity: 0;

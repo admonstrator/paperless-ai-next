@@ -2957,6 +2957,7 @@ class MfaSettingsManager {
     this.enableBtn = document.getElementById('mfaEnableBtn');
     this.verifyBtn = document.getElementById('mfaVerifyBtn');
     this.disableBtn = document.getElementById('mfaDisableBtn');
+    this.tokenField = document.getElementById('mfaTokenField');
 
     this.setupReady = false;
     this.invalidTotpAttempts = 0;
@@ -3099,16 +3100,31 @@ class MfaSettingsManager {
       this.statusBadge.className = `zr-badge${this.enabled ? ' zr-badge--ok' : ''}`;
     }
 
+    // Only the controls of the current state exist. With everything rendered
+    // at once the card showed Enable, Disable and Validate side by side, and
+    // which one applied was anyone's guess.
     if (this.disableBtn) {
       this.disableBtn.disabled = !this.enabled;
+      this.disableBtn.classList.toggle('hidden', !this.enabled);
     }
 
     if (this.enableBtn) {
       this.enableBtn.disabled = this.enabled;
+      this.enableBtn.classList.toggle('hidden', this.enabled);
     }
 
     if (this.verifyBtn) {
       this.verifyBtn.disabled = !this.enabled && !this.setupReady;
+    }
+
+    if (this.tokenField) {
+      // Visible during activation (code confirms the pairing) and while
+      // enabled (code check against the authenticator); hidden in the plain
+      // disabled state, where there is nothing to validate against.
+      this.tokenField.classList.toggle(
+        'hidden',
+        !this.enabled && !this.setupReady
+      );
     }
 
     if (this.verifyBtnLabel) {

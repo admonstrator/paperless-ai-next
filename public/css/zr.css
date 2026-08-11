@@ -1037,6 +1037,16 @@ a.zr-list__item:hover {
   gap: 5px;
   padding: 0;
   border-bottom: 0;
+  /* Children fill the column again: the label-column grid of .zr-field sets
+     align-items: start, which this display: flex inherits — and a width:auto
+     child (an inputgroup, a nested field) then shrinks to its content, so
+     every field came out a different width. The 560px cap below still limits
+     the controls. */
+  align-items: stretch;
+}
+.zr-field--stacked > .zr-btn {
+  /* A lone button in a field keeps its natural size instead of stretching. */
+  align-self: flex-start;
 }
 .zr-field--stacked .zr-field__name {
   font-weight: 600;
@@ -2100,6 +2110,13 @@ a.zr-list__item:hover {
   flex-direction: column;
   gap: var(--zr-2);
 }
+/* A button dropped into a column keeps its natural size — the column's
+   cross-axis stretch was turning maintenance buttons into full-width slabs.
+   A deliberate full-width button says so with .zr-btn--block, whose
+   width: 100% wins regardless of align-self. */
+.zr-col > .zr-btn {
+  align-self: flex-start;
+}
 .zr-col--tight {
   gap: var(--zr-1);
 }
@@ -2280,10 +2297,27 @@ a.zr-list__item:hover {
   .zr-btn--icon {
     width: 38px;
   }
+  /* Docked onto the tab bar instead of floating above it: the floating island
+     left a strip of scrolling content visible between its bottom edge and the
+     tabs, which read as a rendering glitch. */
   .zr-actionbar {
-    bottom: calc(var(--zr-tabbar-h) + var(--zr-2));
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--zr-tabbar-h);
+    z-index: 25;
+    margin: 0;
     gap: var(--zr-2);
-    padding: var(--zr-2);
+    padding: var(--zr-2) var(--zr-3);
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    box-shadow: none;
+  }
+  /* The docked bar covers content the sticky island used to push away. */
+  .zr-view:has(.zr-actionbar) {
+    padding-bottom: calc(var(--zr-tabbar-h) + 72px);
   }
   .zr-actionbar__status {
     font-size: var(--zr-fs-xs);

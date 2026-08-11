@@ -11,9 +11,15 @@
             <div class="zr-settings" data-module="settings-form">
                 <aside class="zr-only-desktop">
                     <nav class="zr-sectionnav" data-module="section-nav">
+                        <!-- Same order as the sections on the page, or the
+                             scroll-spy highlight jumps around while scrolling. -->
                         <a href="#system-tab" aria-current="true">
                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-server"/></svg>
                             System
+                        </a>
+                        <a href="#mfa-tab">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg>
+                            Security
                         </a>
                         <a href="#ai-tab">
                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg>
@@ -22,10 +28,6 @@
                         <a href="#ocr-tab">
                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>
                             OCR
-                        </a>
-                        <a href="#mfa-tab">
-                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg>
-                            Security
                         </a>
                         <a href="#troubleshooting-tab">
                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-wrench"/></svg>
@@ -40,9 +42,9 @@
 
                 <nav class="zr-sectionnav zr-only-mobile">
                     <a href="#system-tab" aria-current="true">System</a>
+                    <a href="#mfa-tab">Security</a>
                     <a href="#ai-tab">AI</a>
                     <a href="#ocr-tab">OCR</a>
-                    <a href="#mfa-tab">Security</a>
                     <a href="#troubleshooting-tab">Maintenance</a>
                     <a href="#changelog-tab">Changelog</a>
                 </nav>
@@ -90,7 +92,8 @@
 
                                 <div class="zr-field zr-field--stacked">
                                     <label class="zr-field__name">Detected Public URL</label>
-                                    <div class="zr-col">
+                                    <!-- Same one-row value + button shape as the secret fields. -->
+                                    <div class="zr-inputgroup">
                                         <div id="paperlessDetectedUrlValue" class="zr-input zr-grow" style="height:auto; word-break:break-all">Loading…</div>
                                         <button type="button" id="refreshPublicUrlDetection" class="zr-btn">
                                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>Refresh
@@ -137,11 +140,11 @@
 
                                 <div class="zr-field zr-field--stacked">
                                     <div class="zr-switchrow">
-                                        <input type="checkbox" class="zr-toggle" id="disableAutomaticProcessing" <%= config.DISABLE_AUTOMATIC_PROCESSING === 'yes' ? 'checked' : '' %>>
                                         <div class="zr-grow">
                                             <label for="disableAutomaticProcessing" class="zr-field__name">Disable automatic processing</label>
                                             <p class="zr-field__hint">If enabled, scans are not processed by AI automatically · ENV: DISABLE_AUTOMATIC_PROCESSING · Restart required</p>
                                         </div>
+                                        <input type="checkbox" class="zr-toggle" id="disableAutomaticProcessing" <%= config.DISABLE_AUTOMATIC_PROCESSING === 'yes' ? 'checked' : '' %>>
                                     </div>
                                 </div>
 
@@ -236,7 +239,11 @@
                                 </div>
                             </section>
 
-                            <section class="zr-module" id="sec-account-security-totp" id="mfaSettingsSection" data-mfa-available="<%= mfaSettings && mfaSettings.available ? 'yes' : 'no' %>" data-mfa-enabled="<%= mfaSettings && mfaSettings.enabled ? 'yes' : 'no' %>" data-mfa-username="<%= mfaSettings && mfaSettings.username ? mfaSettings.username : '' %>">
+                            <!-- One id only: a second id attribute is dropped by the
+                                 parser, and getElementById('mfaSettingsSection')
+                                 returning null silently disabled the whole MFA
+                                 state machine. -->
+                            <section class="zr-module" id="mfaSettingsSection" data-mfa-available="<%= mfaSettings && mfaSettings.available ? 'yes' : 'no' %>" data-mfa-enabled="<%= mfaSettings && mfaSettings.enabled ? 'yes' : 'no' %>" data-mfa-username="<%= mfaSettings && mfaSettings.username ? mfaSettings.username : '' %>">
                                 <div class="zr-module__head">
                                     <h2 class="zr-module__title">Account Security (TOTP)</h2>
                                 </div>
@@ -300,7 +307,7 @@
                                             <p class="zr-field__hint">Use either the key or URI in your authenticator app, then enter a code below.</p>
                                         </div>
 
-                                        <div class="zr-field zr-field--stacked">
+                                        <div class="zr-field zr-field--stacked" id="mfaTokenField">
                                             <label for="mfaToken" class="zr-field__name">Authenticator Code</label>
                                             <div class="zr-inputgroup">
                                                 <input type="text" id="mfaToken" inputmode="numeric" autocomplete="one-time-code" class="zr-input" placeholder="Enter 6-digit code">
@@ -571,7 +578,7 @@
 
                                 <div class="zr-field zr-field--stacked">
                                     <label for="systemPrompt" class="zr-field__name">Prompt Description</label>
-                                    <textarea id="systemPrompt" name="systemPrompt" rows="8" class="zr-input" placeholder="Describe how the AI should analyze your documents..."><%= config.SYSTEM_PROMPT %></textarea>
+                                    <textarea id="systemPrompt" name="systemPrompt" rows="8" class="zr-textarea" placeholder="Describe how the AI should analyze your documents..."><%= config.SYSTEM_PROMPT %></textarea>
                                     <button id="systemPromptBtn" type="button" class="zr-btn">
                                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-bulb"/></svg>
                                         Example
@@ -610,11 +617,11 @@
                                 </div>
                                 <div class="zr-module__body zr-col zr-col--loose">
                                 <div class="zr-switchrow">
-                                    <input type="checkbox" class="zr-toggle" id="externalApiEnabled" name="externalApiEnabled" <%= config.EXTERNAL_API_ENABLED === 'yes' ? 'checked' : '' %>>
                                     <div class="zr-grow">
                                         <label for="externalApiEnabled" class="zr-field__name">Enable External API Integration</label>
                                         <p class="zr-field__hint">ENV: EXTERNAL_API_ENABLED · Restart required</p>
                                     </div>
+                                    <input type="checkbox" class="zr-toggle" id="externalApiEnabled" name="externalApiEnabled" <%= config.EXTERNAL_API_ENABLED === 'yes' ? 'checked' : '' %>>
                                 </div>
 
                                 <div id="externalApiSettings" class="zr-col zr-col--loose <%= config.EXTERNAL_API_ENABLED === 'yes' ? '' : 'hidden' %>">
@@ -632,11 +639,11 @@
                                     </div>
                                     <div class="zr-field zr-field--stacked">
                                         <label for="externalApiHeaders" class="zr-field__name">Headers (JSON)</label>
-                                        <textarea id="externalApiHeaders" name="externalApiHeaders" rows="3" class="zr-input"><%= config.EXTERNAL_API_HEADERS || '' %></textarea>
+                                        <textarea id="externalApiHeaders" name="externalApiHeaders" rows="3" class="zr-textarea"><%= config.EXTERNAL_API_HEADERS || '' %></textarea>
                                     </div>
                                     <div class="zr-field zr-field--stacked">
                                         <label for="externalApiBody" class="zr-field__name">Request Body (JSON)</label>
-                                        <textarea id="externalApiBody" name="externalApiBody" rows="3" class="zr-input"><%= config.EXTERNAL_API_BODY || '' %></textarea>
+                                        <textarea id="externalApiBody" name="externalApiBody" rows="3" class="zr-textarea"><%= config.EXTERNAL_API_BODY || '' %></textarea>
                                     </div>
                                     <div class="zr-field zr-field--stacked">
                                         <label for="externalApiTimeout" class="zr-field__name">Timeout (milliseconds)</label>
@@ -644,7 +651,7 @@
                                     </div>
                                     <div class="zr-field zr-field--stacked">
                                         <label for="externalApiTransform" class="zr-field__name">Transform Path</label>
-                                        <textarea id="externalApiTransform" name="externalApiTransform" rows="4" class="zr-input"><%= config.EXTERNAL_API_TRANSFORM || '' %></textarea>
+                                        <textarea id="externalApiTransform" name="externalApiTransform" rows="4" class="zr-textarea"><%= config.EXTERNAL_API_TRANSFORM || '' %></textarea>
                                     </div>
                                     <%- include('partials/settings-switch', {
                                         id: 'externalApiAllowPrivateIps',
@@ -694,7 +701,7 @@
                                     <% } %>
                                 </div>
 
-                                <div class="zr-row zr-row--wrap">
+                                <div class="zr-row zr-row--wrap customfield-add">
                                     <div class="zr-grow"><input type="text" id="newFieldName" class="zr-input" placeholder="Enter field name..."></div>
                                     <div>
                                         <select id="newFieldType" onchange="toggleCurrencySelect()" class="zr-input">
