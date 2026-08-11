@@ -49,60 +49,56 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
 
                 <!-- Toolbar -->
                 <div class="zr-module">
-                    <div class="app-toolbar app-toolbar--triple">
-                    <!-- Manual add -->
-                    <div class="app-toolbar-main">
+                    <!-- One row, one control height. The search field, its
+                         scope and the status filter sit on the left, the two
+                         actions on the right. -->
+                    <div class="app-toolbar">
                         <div class="manual-search-wrapper">
+                            <select id="searchModeSelect" class="zr-select app-toolbar-scope" aria-label="Search in">
+                                <option value="all">All fields</option>
+                                <option value="id">ID</option>
+                                <option value="title">Title</option>
+                                <option value="tags">Tags</option>
+                                <option value="correspondent">Correspondent</option>
+                            </select>
                             <input
                                 id="manualDocSearchInput"
                                 class="zr-input"
                                 type="search"
-                                placeholder="Search documents..."
+                                placeholder="Search documents to add..."
                                 autocomplete="off">
                             <div id="manualDocSearchResults" class="manual-search-results hidden" role="listbox" aria-label="OCR document search results"></div>
                             <input type="hidden" id="manualDocId" value="">
-                            <p id="manualDocSearchStatus" class="manual-search-status">Type to search documents...</p>
-                            <div id="searchModeToggles" class="search-mode-toggles">
-                                <button type="button" class="search-mode-btn active" data-mode="all">All</button>
-                                <button type="button" class="search-mode-btn" data-mode="id">ID</button>
-                                <button type="button" class="search-mode-btn" data-mode="title">Title</button>
-                                <button type="button" class="search-mode-btn" data-mode="tags">Tags</button>
-                                <button type="button" class="search-mode-btn" data-mode="correspondent">Correspondent</button>
-                            </div>
                         </div>
-                    </div>
 
-                    <div class="app-toolbar-controls">
-                        <!-- Auto-analyze toggle -->
-                        <label class="zr-switch">
-                            <input type="checkbox" id="autoAnalyzeToggle">
-                            <span class="zr-switch__track"><span class="zr-switch__thumb"></span></span>
-                            <span class="zr-switch__text">AI analysis after OCR</span>
-                        </label>
-
-                        <!-- Status filter -->
-                        <select id="statusFilter" class="zr-select">
+                        <select id="statusFilter" class="zr-select app-toolbar-scope">
                             <option value="">All statuses</option>
                             <option value="pending">Pending</option>
                             <option value="processing">Processing</option>
                             <option value="done">Done</option>
                             <option value="failed">Failed</option>
                         </select>
-                    </div>
 
-                    <div class="app-toolbar-actions">
-                        <!-- Process all button -->
+                        <span class="zr-grow"></span>
+
+                        <label class="zr-switch">
+                            <input type="checkbox" id="autoAnalyzeToggle">
+                            <span class="zr-switch__track"><span class="zr-switch__thumb"></span></span>
+                            <span class="zr-switch__text">AI analysis after OCR</span>
+                        </label>
+
                         <button id="processAllBtn"
-                                class="zr-btn"
+                                class="zr-btn zr-btn--primary"
                                 title="Process all pending items">
                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process All Pending
                         </button>
                     </div>
+                    <p id="manualDocSearchStatus" class="manual-search-status zr-xs zr-faint">Type to search documents...</p>
                     </div>
                 </div>
 
                 <!-- Queue Table -->
-                <div class="zr-module">
+                <div class="zr-module" data-module="row-menu">
                     <div class="zr-table-wrap">
                         <table id="ocrTable"  class="zr-table">
                             <thead>

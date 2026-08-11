@@ -94,12 +94,17 @@
                 <td class="zr-sm">${sourceLabel}</td>
                 <td class="zr-sm zr-faint">${updated}</td>
                 <td class="zr-table__actions"><div class="zr-row">
-                    <button class="zr-btn failed-reset-btn" data-id="${item.document_id}" title="Reset failed state and allow re-scan">
+                    <button class="zr-btn zr-btn--primary failed-reset-btn" data-id="${item.document_id}" title="Reset failed state and allow re-scan">
                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg> Reset
                     </button>
-                    <button class="zr-btn failed-ignore-btn" data-id="${item.document_id}" title="Permanently ignore this document (move to ignored list)">
-                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg> Ignore
+                    <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" popovertarget="failedRowMenu${item.document_id}" title="More actions" aria-label="More actions">
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg>
                     </button>
+                    <div id="failedRowMenu${item.document_id}" popover class="zr-menu">
+                        <button type="button" class="zr-menu__item failed-ignore-btn" data-id="${item.document_id}">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>Ignore permanently
+                        </button>
+                    </div>
                 </div></td>
             </tr>`;
       })

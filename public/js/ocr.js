@@ -174,25 +174,39 @@
           ? new Date(item.added_at).toLocaleString()
           : '–';
 
-        const processBtn =
-          item.status === 'pending' || item.status === 'failed'
-            ? `<button class="zr-btn zr-btn--primary process-btn" data-id="${item.document_id}" title="Send to OCR provider"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process</button>`
-            : '';
-
+        // One labelled action per row, everything else behind the "…" — which
+        // state a row is in decides what that primary action is, so the column
+        // keeps the same two slots throughout.
         const hasOcrText = !!(item.ocr_text && String(item.ocr_text).trim());
-        const analyzeBtn =
-          item.status === 'done' && hasOcrText
-            ? `<button class="zr-btn analyze-btn" data-id="${item.document_id}" title="Start AI analysis using existing OCR text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg> Analyze with AI now</button>`
-            : '';
+        const canProcess =
+          item.status === 'pending' || item.status === 'failed';
+        const canAnalyze = item.status === 'done' && hasOcrText;
 
-        const infoBtn = hasOcrText
-          ? `<button class="zr-btn zr-btn--ghost zr-btn--icon info-btn" data-id="${item.document_id}" title="Show OCR output" aria-label="Show OCR output"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg></button>`
-          : '';
+        let primaryBtn = '';
+        if (canProcess) {
+          primaryBtn = `<button class="zr-btn zr-btn--primary process-btn" data-id="${item.document_id}" title="Send to OCR provider"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process</button>`;
+        } else if (canAnalyze) {
+          primaryBtn = `<button class="zr-btn analyze-btn" data-id="${item.document_id}" title="Start AI analysis using existing OCR text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg> Analyze</button>`;
+        }
 
-        const removeBtn =
+        // Process and Analyze never apply to the same row, so whichever is
+        // available is already the primary button and never repeats here.
+        const menuId = `ocrRowMenu${item.document_id}`;
+        const menuItems = [
+          hasOcrText
+            ? `<button type="button" class="zr-menu__item info-btn" data-id="${item.document_id}"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg>Show OCR output</button>`
+            : '',
           item.status !== 'processing'
-            ? `<button class="zr-btn zr-btn--danger zr-btn--icon remove-btn" data-id="${item.document_id}" title="Remove from queue" aria-label="Remove from queue"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg></button>`
-            : '';
+            ? `<button type="button" class="zr-menu__item zr-menu__item--danger remove-btn" data-id="${item.document_id}"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>Remove from queue</button>`
+            : '',
+        ]
+          .filter(Boolean)
+          .join('');
+
+        const menu = menuItems
+          ? `<button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" popovertarget="${menuId}" title="More actions" aria-label="More actions"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg></button>
+             <div id="${menuId}" popover class="zr-menu">${menuItems}</div>`
+          : '';
 
         return `<tr>
                 <td>${docLink}</td>
@@ -202,10 +216,8 @@
                 <td class="zr-sm zr-faint">${addedDate}</td>
                 <td class="zr-table__actions">
                     <div class="zr-row">
-                        ${processBtn}
-                        ${analyzeBtn}
-                        ${infoBtn}
-                        ${removeBtn}
+                        ${primaryBtn}
+                        ${menu}
                     </div>
                 </td>
             </tr>`;
@@ -398,20 +410,16 @@
     }
   }
 
+  // The search scope used to be a row of pills below the field; it is a select
+  // in front of it now, so the toolbar stays one line high.
   function initializeSearchModeToggles() {
-    const container = document.getElementById('searchModeToggles');
-    if (!container || !manualDocumentOmnibox) return;
+    const select = document.getElementById('searchModeSelect');
+    if (!select || !manualDocumentOmnibox) return;
 
     applySearchModeHint('all');
 
-    container.addEventListener('click', function (e) {
-      const btn = e.target.closest('.search-mode-btn');
-      if (!btn) return;
-      container
-        .querySelectorAll('.search-mode-btn')
-        .forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      const mode = btn.dataset.mode || 'all';
+    select.addEventListener('change', function () {
+      const mode = this.value || 'all';
       manualDocumentOmnibox.setSearchMode(mode);
       applySearchModeHint(mode);
       const currentValue = manualDocSearchInput

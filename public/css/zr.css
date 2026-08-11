@@ -1562,6 +1562,53 @@ a.zr-list__item:hover {
   background: var(--zr-surface-2);
 }
 
+/* Row menu — the overflow behind the "…" button in an actions cell.
+   It is a popover, so it renders in the top layer and the scrolling table
+   wrapper cannot clip it, and Escape plus click-outside come for free.
+   js/modules/row-menu.js places it against its button. */
+.zr-menu {
+  position: fixed;
+  margin: 0;
+  padding: var(--zr-1);
+  min-width: 190px;
+  max-width: 280px;
+  border: 1px solid var(--zr-line);
+  border-radius: var(--zr-r-md);
+  background: var(--zr-surface);
+  box-shadow: var(--zr-shadow-md);
+  color: var(--zr-text);
+}
+.zr-menu:not(:popover-open) {
+  display: none;
+}
+.zr-menu__item {
+  display: flex;
+  align-items: center;
+  gap: var(--zr-2);
+  width: 100%;
+  padding: 6px var(--zr-2);
+  border-radius: var(--zr-r-sm);
+  font-size: var(--zr-fs-base);
+  text-align: left;
+  color: inherit;
+}
+.zr-menu__item:hover,
+.zr-menu__item:focus-visible {
+  background: var(--zr-surface-2);
+}
+.zr-menu__item--danger {
+  color: var(--zr-danger);
+}
+.zr-menu__item--danger:hover,
+.zr-menu__item--danger:focus-visible {
+  background: var(--zr-danger-soft);
+}
+.zr-menu__sep {
+  height: 1px;
+  margin: var(--zr-1) 0;
+  background: var(--zr-line);
+}
+
 /* server-paginated table (see js/modules/data-table.js) */
 .zr-table-toolbar {
   display: flex;

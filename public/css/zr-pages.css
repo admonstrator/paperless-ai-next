@@ -311,13 +311,6 @@
   }
 }
 
-.search-mode-toggles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  margin-top: 0.35rem;
-}
-
 /* --- history ------------------------------------------------------------- */
 
 .highlight-row {
@@ -804,96 +797,6 @@ img {
   color: var(--zr-danger);
 }
 
-.toolbar-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 0.65rem;
-}
-
-.app-toolbar {
-  display: grid;
-  align-items: start;
-  gap: 0.9rem 1rem;
-}
-
-.app-toolbar--triple {
-  grid-template-columns: minmax(22rem, 1fr) auto auto;
-}
-
-.app-toolbar-main {
-  display: flex;
-  align-items: flex-start;
-  gap: 0.65rem;
-  min-width: 0;
-}
-
-.app-toolbar-main .manual-search-wrapper {
-  flex: 1;
-  min-width: 0;
-}
-
-.app-toolbar-controls {
-  display: flex;
-  align-items: center;
-  gap: 0.9rem;
-  flex-wrap: wrap;
-  padding-top: 0.15rem;
-}
-
-.app-toolbar-actions {
-  display: flex;
-  justify-content: flex-end;
-  align-items: flex-start;
-  min-width: max-content;
-}
-
-.app-toolbar-filter,
-.toolbar-select {
-  min-width: 10rem;
-}
-
-.app-toolbar-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.9rem;
-}
-
-.app-toolbar-filters .filter-item {
-  min-width: 200px;
-  flex: 1 1 220px;
-  max-width: 320px;
-}
-
-.app-toolbar-controls {
-  padding-top: 0;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-.app-toolbar-actions {
-  justify-content: flex-start;
-}
-
-.app-toolbar-main {
-  flex-direction: column;
-}
-
-.app-toolbar-main .toolbar-btn,
-.app-toolbar-actions .toolbar-btn,
-.app-toolbar-filter,
-.toolbar-select,
-.app-toolbar-filters .filter-item {
-  width: 100%;
-  max-width: none;
-}
-
-.app-toolbar-controls {
-  flex-direction: column;
-  align-items: stretch;
-}
-
 /* Add image inversion for dark mode */
 [data-theme='dark'] img:not(.no-invert) {
   filter: invert(var(--zr-text));
@@ -1088,51 +991,35 @@ img {
   font-size: 0.875rem;
 }
 
-/* --- search mode toggles (OCR, manual) ---------------------------------- */
-.search-mode-toggles {
-  display: flex;
-  gap: 2px;
-  padding: 2px;
-  background: var(--zr-surface-sunken);
-  border-radius: var(--zr-r-md);
-  width: fit-content;
-  flex-wrap: wrap;
-}
-.search-mode-btn {
-  padding: 3px var(--zr-3);
-  border-radius: var(--zr-r-sm);
-  font-size: var(--zr-fs-sm);
-  font-weight: 500;
-  color: var(--zr-text-muted);
-  background: none;
-  border: 0;
-}
-.search-mode-btn:hover {
-  color: var(--zr-text);
-}
-.search-mode-btn.active {
-  background: var(--zr-surface);
-  color: var(--zr-text);
-  box-shadow: var(--zr-shadow-sm);
-}
-
-/* toolbar rows shared by the queue pages */
+/* The queue toolbar: one line, one control height. It used to be three
+   top-aligned columns of 99, 57 and 30px with the search scope wrapping below
+   the field, so the block ended ragged on every side. */
 .app-toolbar {
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--zr-3);
-}
-.app-toolbar-main {
-  flex: 1;
-  min-width: 240px;
-}
-.app-toolbar-controls,
-.app-toolbar-actions {
-  display: flex;
   align-items: center;
   gap: var(--zr-2);
-  flex-wrap: wrap;
+}
+/* The scope selects stay narrow so the search field keeps the room. */
+.app-toolbar-scope {
+  width: auto;
+  min-width: 132px;
+  flex: none;
+}
+/* The wrapper is a column elsewhere (manual page); in the toolbar the scope
+   select sits in front of the field on one line. */
+.app-toolbar .manual-search-wrapper {
+  position: relative;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--zr-2);
+  flex: 1 1 320px;
+  min-width: 220px;
+}
+.app-toolbar .manual-search-wrapper .zr-input {
+  flex: 1;
+  min-width: 0;
+  max-width: none;
 }
 .toolbar-input {
   height: 30px;
