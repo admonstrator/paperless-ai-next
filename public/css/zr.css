@@ -653,6 +653,12 @@ body {
   vertical-align: -3px;
   width: 16px;
   height: 16px;
+  /* Layer 1 also gives every svg max-width: 100%, which is meant for images that
+     have to fit their column. An icon has a fixed size, and inside a shrink-to-fit
+     table cell that percentage resolves against a width that is not known yet:
+     the icon collapses to 0 and, since svg clips by default, disappears — while
+     the gap in front of the label stays. */
+  max-width: none;
   fill: none;
   stroke: currentColor;
   stroke-width: 1.75;

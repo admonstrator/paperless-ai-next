@@ -47,9 +47,13 @@ function collect(dir, ext, found = []) {
   return found;
 }
 
-/** @returns {string} the rule body of the first selector matching `head` */
+/**
+ * @returns {string} the rule body of the first selector matching `head`.
+ * Anchored to the start of a line so a longer selector ending in the same text
+ * further up the file cannot answer for it.
+ */
 function ruleBody(head) {
-  const start = css.indexOf(head);
+  const start = css.indexOf(`\n${head}`);
   assert.notStrictEqual(start, -1, `The rule "${head}" is gone from zr.css`);
   const open = css.indexOf('{', start);
   return css.slice(open + 1, css.indexOf('}', open));
