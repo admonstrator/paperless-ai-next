@@ -37,8 +37,12 @@ function place(menu, button) {
   const menuBox = menu.getBoundingClientRect();
 
   // Right-aligned with the button, because the actions column sits at the end
-  // of the table and a left-aligned menu would hang off the screen.
-  let left = anchor.right - menuBox.width;
+  // of the table and a left-aligned menu would hang off the screen. A button on
+  // the other half of the screen is the mirror case: aligning it right would
+  // push the menu off the left edge, and the clamp would then park it a few
+  // pixels beside its own trigger.
+  const nearLeftEdge = anchor.left + anchor.width / 2 < window.innerWidth / 2;
+  let left = nearLeftEdge ? anchor.left : anchor.right - menuBox.width;
   left = Math.min(
     Math.max(EDGE, left),
     window.innerWidth - menuBox.width - EDGE

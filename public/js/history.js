@@ -417,18 +417,31 @@ class HistoryManager {
   }
 
   initializeSelectAll() {
+    // The two toolbar buttons do the same as the header checkbox and were never
+    // wired to anything, so they did nothing at all when clicked.
+    document
+      .getElementById('selectAllDocsBtn')
+      ?.addEventListener('click', () => this.setAllSelected(true));
+    document
+      .getElementById('deselectAllDocsBtn')
+      ?.addEventListener('click', () => this.setAllSelected(false));
+
     if (!this.selectAll) return;
 
     // Handle "Select All" checkbox
     this.selectAll.addEventListener('change', () => {
-      const isChecked = this.selectAll.checked;
-      const checkboxes = document.querySelectorAll('.doc-select');
-      checkboxes.forEach((checkbox) => {
-        checkbox.checked = isChecked;
-      });
+      this.setAllSelected(this.selectAll.checked);
     });
 
     // Initial state check
+    this.updateSelectAllState();
+  }
+
+  /** Checks or clears every row checkbox and brings the header state along. */
+  setAllSelected(selected) {
+    document.querySelectorAll('.doc-select').forEach((checkbox) => {
+      checkbox.checked = selected;
+    });
     this.updateSelectAllState();
   }
 

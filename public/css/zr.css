@@ -2434,7 +2434,9 @@ a.zr-list__item:hover {
   /* A bar of page-level buttons wraps into ragged rows on a phone: five labels
      of five different lengths, no two lines ending in the same place. A grid
      lines them up instead — two columns at 390px, more on a tablet, and never
-     narrower than the longest label the bar carries today. */
+     narrower than the longest label the bar carries today. Where the
+     toolbar-menu module is in play this is what shows until it has mounted, and
+     what stays if its import fails. */
   .zr-btnbar {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -2446,6 +2448,17 @@ a.zr-list__item:hover {
     display: block;
     grid-column: 1 / -1;
     height: 0;
+  }
+  /* Unless the toolbar-menu module has folded the bar into a single trigger.
+     That wants its own width rather than a full grid column, and the spacer has
+     nothing left to hold apart — left in place it would push the trigger to the
+     far edge on its own. Both rules match the ones above at equal specificity,
+     so they have to come after them. */
+  .zr-btnbar--collapsed {
+    display: flex;
+  }
+  .zr-btnbar--collapsed > .zr-grow:empty {
+    display: none;
   }
   /* Filters stack rather than leaving a different amount of the row unused on
      every line — but only where the group holds a control. The OCR head uses
