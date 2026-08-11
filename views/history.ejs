@@ -15,37 +15,34 @@
                         Documents Zettelrobbe has already processed. Resetting one makes it eligible
                         for the next scan again.
                     </p>
-                    <div class="zr-viewhead__actions">
-                        <select id="tagFilter" class="zr-select history-filter" aria-label="Filter by tag">
-                            <option value="">All tags</option>
-                            <% filters.allTags.forEach(function(tag) { %>
-                                <option value="<%= tag.id %>"><%= tag.name %></option>
-                            <% }); %>
-                        </select>
-                        <select id="correspondentFilter" class="zr-select history-filter" aria-label="Filter by correspondent">
-                            <option value="">All correspondents</option>
-                            <% filters.allCorrespondents.forEach(function(corr) { %>
-                                <option value="<%= corr %>"><%= corr %></option>
-                            <% }); %>
-                        </select>
-                        <button id="forceReloadBtn" class="zr-btn" title="Reload filters, bypassing the cache">
-                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
-                            Reload
-                        </button>
-                    </div>
+                </div>
+
+                <!-- Slotted into the table toolbar next to the search once the
+                     table exists, so every way to narrow the list is one row.
+                     Hidden until then to avoid a layout jump. -->
+                <div id="historyFilters" class="zr-row" hidden>
+                    <select id="tagFilter" class="zr-select history-filter" aria-label="Filter by tag">
+                        <option value="">All tags</option>
+                        <% filters.allTags.forEach(function(tag) { %>
+                            <option value="<%= tag.id %>"><%= tag.name %></option>
+                        <% }); %>
+                    </select>
+                    <select id="correspondentFilter" class="zr-select history-filter" aria-label="Filter by correspondent">
+                        <option value="">All correspondents</option>
+                        <% filters.allCorrespondents.forEach(function(corr) { %>
+                            <option value="<%= corr %>"><%= corr %></option>
+                        <% }); %>
+                    </select>
                 </div>
 
                 <div class="zr-row zr-row--wrap zr-btnbar" data-module="toolbar-menu" style="margin-bottom: var(--zr-3)">
-                    <button id="selectAllDocsBtn" class="zr-btn" title="Select all visible documents">
-                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check"/></svg>
-                        Select all
-                    </button>
-                    <button id="deselectAllDocsBtn" class="zr-btn" title="Deselect all visible documents">
-                        Deselect all
-                    </button>
                     <button id="rescanSelectedBtn" class="zr-btn" title="Reprocess selected documents (clears the local record and triggers a scan)">
                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                         Rescan selected
+                    </button>
+                    <button id="forceReloadBtn" class="zr-btn" title="Reload the tag and correspondent lists, bypassing the cache">
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                        Refresh filters
                     </button>
                     <span class="zr-grow"></span>
                     <button id="resetSelectedBtn" class="zr-btn zr-btn--danger">Reset selected</button>

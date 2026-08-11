@@ -12,6 +12,7 @@
  *     columns: [{ key, label, render?, sortable?, width?, cellClass?, mobileLabel? }],
  *     order: { column: 1, dir: 'desc' },
  *     extraParams: () => ({ tag: '…' }),
+ *     toolbar: element,   // optional page-owned filters, slotted after the search
  *   })
  *
  * Below 860 px every row is rendered as a card instead of a wide table, so the
@@ -38,6 +39,7 @@ export function createTable(root, options) {
     extraParams = () => ({}),
     emptyText = 'Nothing to show.',
     rowId = (row) => row.id ?? row.document_id,
+    toolbar = null,
   } = options;
 
   const state = {
@@ -101,6 +103,14 @@ export function createTable(root, options) {
   const el = (name) => root.querySelector(`[data-el="${name}"]`);
   const body = el('body');
   const cards = el('cards');
+
+  // Page-owned filter controls live next to the search so every way to narrow
+  // the table sits in one row. The element is moved, not copied: its ids and
+  // listeners stay valid.
+  if (toolbar) {
+    root.querySelector('.zr-table-search').after(toolbar);
+    toolbar.hidden = false;
+  }
 
   function renderHeaderState() {
     root.querySelectorAll('[data-sort]').forEach((th) => {

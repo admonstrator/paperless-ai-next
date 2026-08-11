@@ -94,9 +94,10 @@
           ? `<a href="${paperlessUrl}/documents/${item.document_id}/details" target="_blank" class="zr-link zr-mono">#${item.document_id}</a>`
           : `<span class="zr-mono">#${item.document_id}</span>`;
 
-        const added = item.created_at
-          ? new Date(item.created_at).toLocaleString()
-          : '–';
+        // Date only; the full timestamp stays reachable through the cell title.
+        const addedAt = item.created_at ? new Date(item.created_at) : null;
+        const added = addedAt ? addedAt.toLocaleDateString() : '–';
+        const addedTitle = addedAt ? escHtml(addedAt.toLocaleString()) : '';
 
         // data-label carries the column name into the stacked phone layout,
         // where the header row is hidden.
@@ -104,7 +105,7 @@
                 <td data-label="Doc ID">${docLink}</td>
                 <td data-label="Title" class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
                 <td data-label="Reason"><span class="zr-badge">${escHtml(item.reason || 'manual')}</span></td>
-                <td data-label="Added" class="zr-sm zr-faint">${added}</td>
+                <td data-label="Added" class="zr-sm zr-faint" title="${addedTitle}">${added}</td>
                 <td data-label="" class="zr-table__actions">
                     <div class="zr-row">
                         <button class="zr-btn ignored-unignore-btn" data-id="${item.document_id}" title="Remove from ignore list and allow scanning again">

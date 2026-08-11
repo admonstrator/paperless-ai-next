@@ -347,16 +347,20 @@ body {
   white-space: nowrap;
 }
 
-/* collapsed rail: icons only */
-.zr-shell[data-rail='collapsed'] .zr-rail__wordmark,
-.zr-shell[data-rail='collapsed'] .zr-navitem__label,
-.zr-shell[data-rail='collapsed'] .zr-rail__grouplabel,
-.zr-shell[data-rail='collapsed'] .zr-rail__version,
-.zr-shell[data-rail='collapsed'] .zr-badge--nav {
-  display: none;
-}
-.zr-shell[data-rail='collapsed'] .zr-navitem {
-  justify-content: center;
+/* collapsed rail: icons only. Desktop-scoped: the collapse state lives in a
+   cookie, and on a phone the same .zr-rail is the drawer — a drawer without
+   labels is unusable, so the cookie must not reach it. */
+@media (min-width: 861px) {
+  .zr-shell[data-rail='collapsed'] .zr-rail__wordmark,
+  .zr-shell[data-rail='collapsed'] .zr-navitem__label,
+  .zr-shell[data-rail='collapsed'] .zr-rail__grouplabel,
+  .zr-shell[data-rail='collapsed'] .zr-rail__version,
+  .zr-shell[data-rail='collapsed'] .zr-badge--nav {
+    display: none;
+  }
+  .zr-shell[data-rail='collapsed'] .zr-navitem {
+    justify-content: center;
+  }
 }
 
 /* main column */
@@ -1588,6 +1592,14 @@ a.zr-list__item:hover {
   padding: var(--zr-2) var(--zr-3);
   border-bottom: 1px solid var(--zr-line);
 }
+/* A truncating cell must not size the table: in an auto-layout table a nowrap
+   cell takes its full content width and text-overflow never fires. width:100%
+   hands the column the leftover space, max-width:0 lets it shrink below the
+   content so the ellipsis can appear. */
+.zr-table td.zr-truncate {
+  width: 100%;
+  max-width: 0;
+}
 .zr-table tr:last-child td {
   border-bottom: 0;
 }
@@ -2284,11 +2296,12 @@ a.zr-list__item:hover {
     max-width: none;
   }
 
-  /* bottom tab bar */
+  /* bottom tab bar. Below the drawer scrim (40): with the drawer open the
+     scrim has to cover the tabs, not float beneath them. */
   .zr-tabbar {
     position: fixed;
     inset: auto 0 0 0;
-    z-index: 45;
+    z-index: 30;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     height: var(--zr-tabbar-h);
@@ -2385,6 +2398,10 @@ a.zr-list__item:hover {
     font-size: var(--zr-fs-sm);
     color: var(--zr-text-faint);
   }
+  /* An empty label — the actions row — yields its 96px to the content. */
+  .zr-table--stack td[data-label='']::before {
+    display: none;
+  }
   /* The actions cell shrinks to its buttons on a wide screen; stacked it is a
      row like any other. */
   .zr-table--stack td.zr-table__actions {
@@ -2399,6 +2416,10 @@ a.zr-list__item:hover {
     text-overflow: clip;
     white-space: normal;
     overflow-wrap: anywhere;
+    /* Undo the table-sizing hack: as a stacked block, max-width: 0 would
+       collapse the row to nothing. */
+    width: auto;
+    max-width: none;
   }
   .zr-table-cards {
     display: flex;
@@ -2423,6 +2444,10 @@ a.zr-list__item:hover {
     width: 96px;
     font-size: var(--zr-fs-sm);
     color: var(--zr-text-faint);
+  }
+  /* An empty label — the actions row — yields its 96px to the content. */
+  .zr-table-card__label:empty {
+    display: none;
   }
   .zr-table-card__value {
     flex: 1;

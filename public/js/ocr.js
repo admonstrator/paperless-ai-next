@@ -170,9 +170,12 @@
 
         const statusHtml = `<span class="zr-badge ${statusTone(item.status)}">${statusIcon(item.status)} ${escHtml(item.status)}</span>`;
 
-        const addedDate = item.added_at
-          ? new Date(item.added_at).toLocaleString()
-          : '–';
+        // Date only: the exact second added nothing and its width forced the
+        // table to scroll sideways on ordinary desktop windows. The full
+        // timestamp stays reachable through the cell title.
+        const addedAt = item.added_at ? new Date(item.added_at) : null;
+        const addedDate = addedAt ? addedAt.toLocaleDateString() : '–';
+        const addedTitle = addedAt ? escHtml(addedAt.toLocaleString()) : '';
 
         // One labelled action per row, everything else behind the "…" — which
         // state a row is in decides what that primary action is, so the column
@@ -184,7 +187,7 @@
 
         let primaryBtn = '';
         if (canProcess) {
-          primaryBtn = `<button class="zr-btn zr-btn--primary process-btn" data-id="${item.document_id}" title="Send to OCR provider"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process</button>`;
+          primaryBtn = `<button class="zr-btn process-btn" data-id="${item.document_id}" title="Send to OCR provider"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process</button>`;
         } else if (canAnalyze) {
           primaryBtn = `<button class="zr-btn analyze-btn" data-id="${item.document_id}" title="Start AI analysis using existing OCR text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg> Analyze</button>`;
         }
@@ -215,7 +218,7 @@
                 <td data-label="Title" class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
                 <td data-label="Reason"><span class="zr-badge">${reasonLabel}</span></td>
                 <td data-label="Status">${statusHtml}</td>
-                <td data-label="Added" class="zr-sm zr-faint">${addedDate}</td>
+                <td data-label="Added" class="zr-sm zr-faint" title="${addedTitle}">${addedDate}</td>
                 <td data-label="" class="zr-table__actions">
                     <div class="zr-row">
                         ${primaryBtn}
@@ -371,27 +374,15 @@
     });
   }
 
+  // The placeholder carries the whole scope hint; the status line below is
+  // reserved for live feedback (searching, errors, selection) and stays empty
+  // while idle instead of paraphrasing the placeholder.
   const SEARCH_MODE_HINTS = {
-    all: {
-      placeholder: 'Search documents...',
-      status: 'Type to search documents...',
-    },
-    id: {
-      placeholder: 'Enter exact document ID…',
-      status: 'ID mode: type a positive integer Paperless document ID.',
-    },
-    title: {
-      placeholder: 'Search by title...',
-      status: 'Type to search by title...',
-    },
-    tags: {
-      placeholder: 'Search by tag name...',
-      status: 'Type to search by tag...',
-    },
-    correspondent: {
-      placeholder: 'Search by correspondent...',
-      status: 'Type to search by correspondent...',
-    },
+    all: { placeholder: 'Search documents...' },
+    id: { placeholder: 'Enter a numeric document ID…' },
+    title: { placeholder: 'Search by title...' },
+    tags: { placeholder: 'Search by tag name...' },
+    correspondent: { placeholder: 'Search by correspondent...' },
   };
 
   function applySearchModeHint(mode) {
@@ -405,9 +396,9 @@
     ) {
       const hasQuery =
         manualDocSearchInput && manualDocSearchInput.value.trim();
-      // Only replace the idle status; keep live search results status intact.
+      // Only clear the idle status; keep live search results status intact.
       if (!hasQuery) {
-        manualDocumentOmnibox.setStatus(hint.status, false);
+        manualDocumentOmnibox.setStatus('', false);
       }
     }
   }

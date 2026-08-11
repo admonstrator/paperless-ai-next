@@ -220,6 +220,7 @@ class HistoryManager {
       pageLength: 10,
       order: { column: 1, dir: 'desc' },
       emptyText: 'No processed documents yet.',
+      toolbar: document.getElementById('historyFilters'),
       extraParams: () => ({
         tag: document.getElementById('tagFilter')?.value || '',
         correspondent:
@@ -231,9 +232,11 @@ class HistoryManager {
           label: '',
           sortable: false,
           width: '36px',
-          mobile: false,
+          // Kept in the card layout: without the checkbox a phone has no way
+          // to feed "Rescan selected" or "Reset selected".
+          mobileLabel: 'Select',
           render: (value) =>
-            `<input type="checkbox" class="doc-select zr-check" value="${escape(value)}">`,
+            `<input type="checkbox" class="doc-select zr-check" value="${escape(value)}" aria-label="Select document">`,
         },
         { key: 'document_id', label: 'ID', width: '64px', mobileLabel: 'ID' },
         {
@@ -241,7 +244,8 @@ class HistoryManager {
           label: 'Title',
           render: (value, row) =>
             `<div class="zr-strong">${escape(value)}</div>` +
-            `<div class="zr-sm zr-faint">Modified: ${escape(new Date(row.created_at).toLocaleString())}</div>`,
+            // Date only, like the queue pages; the full timestamp sits in the title.
+            `<div class="zr-sm zr-faint" title="${escape(new Date(row.created_at).toLocaleString())}">Modified: ${escape(new Date(row.created_at).toLocaleDateString())}</div>`,
         },
         {
           key: 'correspondent',
@@ -267,7 +271,7 @@ class HistoryManager {
             const menuId = `historyRowMenu${docId}`;
             return (
               '<div class="zr-row zr-row--wrap">' +
-              `<button type="button" class="history-info-btn zr-btn zr-btn--primary" data-docid="${escape(value)}" title="Show AI analysis details">` +
+              `<button type="button" class="history-info-btn zr-btn" data-docid="${escape(value)}" title="Show AI analysis details">` +
               '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg><span>Details</span></button>' +
               `<button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" popovertarget="${menuId}" title="More actions" aria-label="More actions">` +
               '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg></button>' +
@@ -417,15 +421,6 @@ class HistoryManager {
   }
 
   initializeSelectAll() {
-    // The two toolbar buttons do the same as the header checkbox and were never
-    // wired to anything, so they did nothing at all when clicked.
-    document
-      .getElementById('selectAllDocsBtn')
-      ?.addEventListener('click', () => this.setAllSelected(true));
-    document
-      .getElementById('deselectAllDocsBtn')
-      ?.addEventListener('click', () => this.setAllSelected(false));
-
     if (!this.selectAll) return;
 
     // Handle "Select All" checkbox
@@ -451,7 +446,9 @@ class HistoryManager {
       // Remove existing listeners to prevent duplicates
       checkbox.removeEventListener('change', this.handleCheckboxChange);
       // Add new listener
-      checkbox.addEventListener('change', () => this.handleCheckboxChange());
+      checkbox.addEventListener('change', () =>
+        this.handleCheckboxChange(checkbox)
+      );
     });
   }
 
@@ -585,7 +582,17 @@ class HistoryManager {
     }
   }
 
-  handleCheckboxChange() {
+  handleCheckboxChange(changed) {
+    // The table and the card layout are both in the DOM (CSS shows one), so
+    // every document has two checkboxes. Keep the hidden twin in step or the
+    // counts and the selection would depend on the viewport.
+    if (changed) {
+      document.querySelectorAll('.doc-select').forEach((checkbox) => {
+        if (checkbox !== changed && checkbox.value === changed.value) {
+          checkbox.checked = changed.checked;
+        }
+      });
+    }
     this.updateSelectAllState();
   }
 
@@ -619,9 +626,15 @@ class HistoryManager {
   }
 
   getSelectedDocuments() {
-    return Array.from(document.querySelectorAll('.doc-select:checked')).map(
-      (checkbox) => checkbox.value
-    );
+    // Deduplicated: each document renders a checkbox in the table and one in
+    // the card layout, and both are checked after "Select all".
+    return [
+      ...new Set(
+        Array.from(document.querySelectorAll('.doc-select:checked')).map(
+          (checkbox) => checkbox.value
+        )
+      ),
+    ];
   }
 
   async resetDocuments(ids) {

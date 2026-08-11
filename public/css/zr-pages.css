@@ -313,14 +313,26 @@
 
 /* --- history ------------------------------------------------------------- */
 
-/* The two filters sit beside each other and the Reload button on a wide screen,
-   so they are capped well below the 460px a select is otherwise allowed. Only
-   above the phone breakpoint: below it they take the full width like every
-   other control, and a cap declared for both widths would win against zr.css
-   on equal specificity by being in the later file. */
+/* The two filters live in the table toolbar next to the search, so they are
+   capped well below the 460px a select is otherwise allowed. Only above the
+   phone breakpoint: below it they split the toolbar row between them, and a
+   cap declared for both widths would win against zr.css on equal specificity
+   by being in the later file. */
 @media (min-width: 861px) {
   .history-filter {
     max-width: 220px;
+  }
+}
+@media (max-width: 860px) {
+  /* Two short selects share one row instead of stacking full-width; the
+     flex-basis override beats the generic 100% row rule through the later
+     file on equal specificity. */
+  #historyFilters {
+    flex: 1 1 100%;
+  }
+  #historyFilters > .history-filter {
+    flex: 1 1 0;
+    min-width: 0;
   }
 }
 

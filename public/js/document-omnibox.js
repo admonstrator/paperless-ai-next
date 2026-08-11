@@ -28,7 +28,9 @@
       searchingMessage: 'Searching documents...',
       noResultsMessage: 'No matching documents found.',
       loadErrorMessage: 'Could not load documents. Please try again.',
-      initialStatusMessage: 'Type to search documents...',
+      // Idle keeps the line empty: the input placeholder already says
+      // "Search documents...", and repeating it below reads as noise.
+      initialStatusMessage: '',
       selectedStatusFormatter: (doc) => `Selected: ${defaultGetTitle(doc)}`,
       availableStatusFormatter: () => '',
     },
@@ -36,7 +38,9 @@
       searchingMessage: 'Searching documents...',
       noResultsMessage: 'No matching documents found.',
       loadErrorMessage: 'Could not load documents. Please try again.',
-      initialStatusMessage: 'Type to search documents...',
+      // Idle keeps the line empty: the input placeholder already says
+      // "Search documents...", and repeating it below reads as noise.
+      initialStatusMessage: '',
       selectedStatusFormatter: (doc) => `Selected: ${defaultGetTitle(doc)}`,
       availableStatusFormatter: () => '',
     },
@@ -44,7 +48,9 @@
       searchingMessage: 'Searching documents...',
       noResultsMessage: 'No matching documents found.',
       loadErrorMessage: 'Could not load documents. Please try again.',
-      initialStatusMessage: 'Type to search documents...',
+      // Idle keeps the line empty: the input placeholder already says
+      // "Search documents...", and repeating it below reads as noise.
+      initialStatusMessage: '',
       selectedStatusFormatter: (doc) => `Selected: ${defaultGetTitle(doc)}`,
       availableStatusFormatter: () => '',
     },
@@ -52,7 +58,9 @@
       searchingMessage: 'Searching documents...',
       noResultsMessage: 'No matching documents found.',
       loadErrorMessage: 'Could not load documents. Please try again.',
-      initialStatusMessage: 'Type to search documents...',
+      // Idle keeps the line empty: the input placeholder already says
+      // "Search documents...", and repeating it below reads as noise.
+      initialStatusMessage: '',
       selectedStatusFormatter: (doc) =>
         `Selected: ${defaultGetTitle(doc)} (ID ${doc && doc.id ? doc.id : '-'})`,
       availableStatusFormatter: () => '',
@@ -288,6 +296,9 @@
       if (!normalizedSearchTerm) {
         cancelPendingSearch();
         clearResults();
+        // Back to the idle status, or a stale "No matching documents found."
+        // would outlive the query it belonged to.
+        setStatus(settings.initialStatusMessage, false);
         return;
       }
 

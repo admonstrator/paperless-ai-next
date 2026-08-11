@@ -49,10 +49,8 @@
 
         <div class="zr-main">
             <header class="zr-topbar">
-                <button class="zr-btn zr-btn--ghost zr-btn--icon zr-only-mobile" type="button" data-action="drawer-open"
-                    aria-label="Open navigation">
-                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-menu"/></svg>
-                </button>
+                <!-- No hamburger: on phones the More tab in the bottom bar opens
+                     the same drawer, and one trigger is enough. -->
                 <h1 class="zr-topbar__title"><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Zettelrobbe' %></h1>
                 <span class="zr-topbar__spacer"></span>
 
