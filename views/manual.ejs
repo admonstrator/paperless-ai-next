@@ -46,6 +46,13 @@
                         <div class="stat-box">
                             <div id="documentPreview" class="manual-preview">
                                 <div id="contentPreview" class="zr-mono"></div>
+                                <!-- Shown while contentPreview is empty (CSS sibling
+                                     rule) so the box is not a bare grey area. -->
+                                <div id="previewEmpty" class="zr-empty">
+                                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-file"/></svg>
+                                    <div class="zr-empty__title">No document selected</div>
+                                    <p class="zr-sm zr-faint">Search above and pick a document to preview its content here.</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -87,8 +94,10 @@
                             <div>
                                 <div class="zr-row zr-row--between">
                                     <h3 class="zr-muted">Current Tags</h3>
-                                    <button id="saveTagsBtn" 
-                                            class="zr-btn zr-btn--primary">
+                                    <!-- Enabled once a document is selected; there is
+                                         nothing to save before that. -->
+                                    <button id="saveTagsBtn"
+                                            class="zr-btn zr-btn--primary" disabled>
                                         Save Tags
                                     </button>
                                 </div>
@@ -99,10 +108,11 @@
                             <div>
                                 <h3 class="zr-field__name">Add New Tag</h3>
                                 <div class="zr-row">
-                                    <select id="newTagSelect" class="zr-grow">
+                                    <select id="newTagSelect" class="zr-select zr-grow" disabled>
                                         <option value="">Select a tag...</option>
                                     </select>
-                                    <button id="addTagBtn" class="zr-btn zr-btn--primary">
+                                    <!-- Quiet: Save Tags is the one primary action here. -->
+                                    <button id="addTagBtn" class="zr-btn" disabled aria-label="Add tag">
                                         <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
                                     </button>
                                     <input type="hidden" id="hiddenId" value="">

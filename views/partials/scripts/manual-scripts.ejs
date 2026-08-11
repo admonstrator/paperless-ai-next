@@ -231,10 +231,19 @@ function updateHiddenTagsInput() {
     }
 }
 
+// The tag controls only make sense with a document loaded; keep them in
+// step with the analyze button.
+function setDocumentActionsEnabled(enabled) {
+    ['analyzeBtn', 'saveTagsBtn', 'addTagBtn', 'newTagSelect'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.disabled = !enabled;
+    });
+}
+
 // Document Handling Functions
 async function handleDocumentSelection(documentId) {
     if (!documentId) {
-        document.getElementById('analyzeBtn').disabled = true;
+        setDocumentActionsEnabled(false);
         document.getElementById('contentPreview').textContent = '';
         document.getElementById('currentTags').innerHTML = '';
         document.getElementById('suggestedTags').innerHTML = '';
@@ -243,7 +252,7 @@ async function handleDocumentSelection(documentId) {
     }
 
     currentDocument = documentId;
-    document.getElementById('analyzeBtn').disabled = false;
+    setDocumentActionsEnabled(true);
     
     try {
         const response = await fetch(`/manual/preview/${documentId}`);

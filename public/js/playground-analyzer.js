@@ -353,6 +353,11 @@ class PromptRatingSystem {
     const container = document.getElementById('savedPromptsList');
     if (!container) return;
 
+    // No delete-all button over an empty list.
+    document
+      .getElementById('clearPrompts')
+      ?.classList.toggle('hidden', this.savedPrompts.length === 0);
+
     container.innerHTML =
       this.savedPrompts
         .map(
@@ -389,9 +394,8 @@ class PromptRatingSystem {
       const textarea = document.getElementById('analysisPrompt');
       if (textarea) {
         textarea.value = prompt.prompt;
-        // Scroll zum Textarea
+        // Bring the textarea into view and focus it.
         textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        // Optional: Fokussiere das Textarea
         textarea.focus();
       }
     }

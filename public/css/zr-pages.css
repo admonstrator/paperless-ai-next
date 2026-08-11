@@ -899,14 +899,20 @@ img {
 
 /* The manual preview claims its height up front, so picking a document does
    not make the rest of the page jump. Frame and padding come from .stat-box. */
+/* Tall enough to balance the analysis column once content loads; while empty
+   the #previewEmpty hint fills it instead of a bare grey area. */
 .manual-preview {
-  min-height: 600px;
+  min-height: 360px;
 }
-/* 600px is most of a phone screen, and it is empty until a document is picked —
-   the analysis and tag cards below it were a long scroll away. */
+/* The empty hint shows only while the preview has no content. */
+.manual-preview #contentPreview:not(:empty) + #previewEmpty {
+  display: none;
+}
+/* Most of a phone screen of blank grey pushed the analysis and tag cards a
+   long scroll away. */
 @media (max-width: 860px) {
   .manual-preview {
-    min-height: 300px;
+    min-height: 160px;
   }
 }
 

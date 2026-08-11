@@ -143,6 +143,10 @@ h4 {
 
   --zr-line: #dfe7eb;
   --zr-line-strong: #c6d3da;
+  /* Off-state switch track. Not --zr-line-strong: against the white thumb
+     that read 1.53:1 and the off state all but disappeared. This grey holds
+     3.46:1 to the thumb and 3.40:1 to the surface (WCAG 1.4.11). */
+  --zr-toggle-off: #7d8c96;
 
   --zr-brand: #12776d;
   --zr-brand-hover: #0e625a;
@@ -194,6 +198,8 @@ h4 {
 
   --zr-line: #22343f;
   --zr-line-strong: #2f4756;
+  /* The dark track already holds 9.7:1 against the white thumb. */
+  --zr-toggle-off: var(--zr-line-strong);
 
   --zr-brand: #3fbfb2;
   --zr-brand-hover: #55d0c3;
@@ -1316,7 +1322,7 @@ a.zr-list__item:hover {
   margin: 0;
   border: 0;
   border-radius: var(--zr-r-full);
-  background: var(--zr-line-strong);
+  background: var(--zr-toggle-off);
   cursor: pointer;
   transition: background var(--zr-dur) var(--zr-ease);
 }
