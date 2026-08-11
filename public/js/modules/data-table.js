@@ -9,7 +9,7 @@
  *
  *   createTable(el, {
  *     url: '/api/history',
- *     columns: [{ key, label, render?, sortable?, width?, mobileLabel? }],
+ *     columns: [{ key, label, render?, sortable?, width?, cellClass?, mobileLabel? }],
  *     order: { column: 1, dir: 'desc' },
  *     extraParams: () => ({ tag: '…' }),
  *   })
@@ -74,8 +74,10 @@ export function createTable(root, options) {
             (col, index) =>
               `<th${col.width ? ` style="width:${col.width}"` : ''}${
                 col.sortable === false
-                  ? ''
-                  : ` class="zr-th-sortable" data-sort="${index}" tabindex="0" role="button"`
+                  ? col.cellClass
+                    ? ` class="${col.cellClass}"`
+                    : ''
+                  : ` class="zr-th-sortable${col.cellClass ? ` ${col.cellClass}` : ''}" data-sort="${index}" tabindex="0" role="button"`
               }>${escapeHtml(col.label)}<span class="zr-th-arrow" aria-hidden="true"></span></th>`
           )
           .join('')}</tr></thead>
@@ -122,7 +124,10 @@ export function createTable(root, options) {
         .map(
           (row) =>
             `<tr data-row-id="${escapeHtml(rowId(row))}">${columns
-              .map((col) => `<td>${cellHtml(col, row)}</td>`)
+              .map(
+                (col) =>
+                  `<td${col.cellClass ? ` class="${col.cellClass}"` : ''}>${cellHtml(col, row)}</td>`
+              )
               .join('')}</tr>`
         )
         .join('');

@@ -191,7 +191,7 @@
 
         const removeBtn =
           item.status !== 'processing'
-            ? `<button class="zr-btn zr-btn--danger remove-btn" data-id="${item.document_id}" title="Remove from queue" aria-label="Remove from queue"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg></button>`
+            ? `<button class="zr-btn zr-btn--danger zr-btn--icon remove-btn" data-id="${item.document_id}" title="Remove from queue" aria-label="Remove from queue"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg></button>`
             : '';
 
         return `<tr>
@@ -200,8 +200,8 @@
                 <td><span class="zr-badge">${reasonLabel}</span></td>
                 <td>${statusHtml}</td>
                 <td class="zr-sm zr-faint">${addedDate}</td>
-                <td>
-                    <div class="zr-row zr-row--wrap">
+                <td class="zr-table__actions">
+                    <div class="zr-row">
                         ${processBtn}
                         ${analyzeBtn}
                         ${infoBtn}

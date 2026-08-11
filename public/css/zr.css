@@ -1547,6 +1547,17 @@ a.zr-list__item:hover {
 .zr-table tr:last-child td {
   border-bottom: 0;
 }
+/* Row actions. The column is sized to its buttons and never wraps them: a
+   wrapping action cell gave every row a different height depending on which
+   buttons its state happened to offer. */
+.zr-table__actions {
+  width: 1%;
+  white-space: nowrap;
+}
+.zr-table__actions > .zr-row {
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+}
 .zr-table tbody tr:hover {
   background: var(--zr-surface-2);
 }

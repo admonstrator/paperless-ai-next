@@ -103,10 +103,12 @@
                 <td class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
                 <td><span class="zr-badge">${escHtml(item.reason || 'manual')}</span></td>
                 <td class="zr-sm zr-faint">${added}</td>
-                <td>
-                    <button class="zr-btn ignored-unignore-btn" data-id="${item.document_id}" title="Remove from ignore list and allow scanning again">
-                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg> Unignore
-                    </button>
+                <td class="zr-table__actions">
+                    <div class="zr-row">
+                        <button class="zr-btn ignored-unignore-btn" data-id="${item.document_id}" title="Remove from ignore list and allow scanning again">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg> Unignore
+                        </button>
+                    </div>
                 </td>
             </tr>`;
       })

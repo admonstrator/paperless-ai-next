@@ -255,12 +255,12 @@ class HistoryManager {
           key: 'document_id',
           label: 'Actions',
           sortable: false,
-          // The three buttons need ~256px side by side; a narrower column
-          // pushed "Chat" onto a second line and doubled the row height.
-          width: '280px',
+          // The column sizes itself to the buttons and keeps them on one line;
+          // wrapping used to push "Chat" down and double the row height.
+          cellClass: 'zr-table__actions',
           mobileLabel: '',
           render: (value, row) =>
-            '<div class="zr-row zr-row--wrap">' +
+            '<div class="zr-row">' +
             `<button type="button" class="history-info-btn zr-btn" data-docid="${escape(value)}" title="Show AI analysis details">` +
             '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg><span>Details</span></button>' +
             `<button type="button" class="history-view-btn zr-btn" data-link="${escape(row.link ?? '')}">` +

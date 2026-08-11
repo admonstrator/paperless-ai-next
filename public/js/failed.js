@@ -93,14 +93,14 @@
                 <td><span class="zr-badge">${reasonLabel}</span></td>
                 <td class="zr-sm">${sourceLabel}</td>
                 <td class="zr-sm zr-faint">${updated}</td>
-                <td class="zr-row zr-row--wrap">
+                <td class="zr-table__actions"><div class="zr-row">
                     <button class="zr-btn failed-reset-btn" data-id="${item.document_id}" title="Reset failed state and allow re-scan">
                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg> Reset
                     </button>
                     <button class="zr-btn failed-ignore-btn" data-id="${item.document_id}" title="Permanently ignore this document (move to ignored list)">
                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg> Ignore
                     </button>
-                </td>
+                </div></td>
             </tr>`;
       })
       .join('');
