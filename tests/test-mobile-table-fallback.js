@@ -68,25 +68,51 @@ test('The table wrapper can scroll sideways on its own', () => {
   );
 });
 
-test('Every view with a table wrapper is accounted for', () => {
+test('Every view with a table wrapper reads on a phone', () => {
   const viewsDir = path.join(process.cwd(), 'views');
-  const withWrap = fs
+  const offenders = fs
     .readdirSync(viewsDir)
     .filter((f) => f.endsWith('.ejs'))
-    .filter((f) =>
-      fs.readFileSync(path.join(viewsDir, f), 'utf8').includes('zr-table-wrap')
-    );
-
-  // These render rows themselves and therefore rely on the scrolling wrapper.
-  const handRolled = ['ocr.ejs', 'failed.ejs', 'ignored.ejs'];
-  const unexpected = withWrap.filter((f) => !handRolled.includes(f));
+    .map((f) => [f, fs.readFileSync(path.join(viewsDir, f), 'utf8')])
+    .filter(([, text]) => text.includes('zr-table-wrap'))
+    // Either data-table.js builds a card list beside the table, or the table
+    // stacks itself. Without one of the two, six columns sit 750px off screen.
+    .filter(([, text]) => !text.includes('zr-table--stack'))
+    .map(([file]) => file);
 
   assert.deepStrictEqual(
-    unexpected,
+    offenders,
     [],
-    `New view(s) using .zr-table-wrap: ${unexpected.join(', ')}. Either render a ` +
-      '.zr-table-cards list for phones or add the file here after checking it at 390px.'
+    `View(s) with a table that neither stacks nor ships cards: ${offenders.join(', ')}`
   );
+});
+
+test('A stacked table labels its cells', () => {
+  const scripts = {
+    'ocr.ejs': 'ocr.js',
+    'failed.ejs': 'failed.js',
+    'ignored.ejs': 'ignored.js',
+  };
+  Object.entries(scripts).forEach(([view, script]) => {
+    const markup = fs.readFileSync(
+      path.join(process.cwd(), 'views', view),
+      'utf8'
+    );
+    if (!markup.includes('zr-table--stack')) return;
+
+    // The stacked layout draws the column name from data-label, so a row built
+    // without it loses the header the table no longer shows.
+    const code = fs.readFileSync(
+      path.join(process.cwd(), 'public', 'js', script),
+      'utf8'
+    );
+    const columns = (markup.match(/<th[ >]/g) || []).length;
+    const labels = (code.match(/<td data-label=/g) || []).length;
+    assert.ok(
+      labels >= columns,
+      `${script} labels ${labels} cells for ${columns} columns in ${view}`
+    );
+  });
 });
 
 console.log(`\n${passed} passed, ${failed} failed`);

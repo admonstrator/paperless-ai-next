@@ -343,6 +343,17 @@
   display: none;
 }
 
+/* --- ignored ------------------------------------------------------------- */
+
+/* A document id is a handful of digits, so the field stays short beside the
+   reason and the button. Only above the phone breakpoint: below it the row
+   stacks and every field takes the full width. */
+@media (min-width: 861px) {
+  .ignore-docid {
+    max-width: 160px;
+  }
+}
+
 /* --- failed ------------------------------------------------------------- */
 /* --- playground ------------------------------------------------------------- */
 .document-card {

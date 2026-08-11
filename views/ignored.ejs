@@ -19,7 +19,7 @@
                         <h2 class="zr-label">Add document to ignore list</h2>
                         <div class="zr-row zr-row--wrap">
                             <input type="number" id="ignoreDocIdInput" placeholder="Document ID" min="1"
-                                class="zr-select" style="max-width: 160px">
+                                class="zr-select ignore-docid">
                             <input type="text" id="ignoreReasonInput" placeholder="Reason (optional)"
                                 class="zr-input zr-grow">
                             <button id="ignoreAddBtn" class="zr-btn zr-btn--primary">
@@ -31,7 +31,7 @@
 
                 <div class="zr-module" data-module="row-menu">
                     <div class="zr-table-wrap">
-                        <table id="ignoredTable"  class="zr-table">
+                        <table id="ignoredTable"  class="zr-table zr-table--stack">
                             <thead>
                                 <tr>
                                     <th >Doc ID</th>

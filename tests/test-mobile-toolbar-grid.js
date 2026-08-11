@@ -57,8 +57,8 @@ test('The button bar becomes a grid', () => {
 });
 
 test('The spacer keeps its meaning inside the bar', () => {
-  const hide = css.indexOf('.zr-row--wrap > .zr-grow:empty');
-  const keep = css.indexOf('.zr-btnbar > .zr-grow:empty');
+  const hide = css.indexOf('.zr-row--wrap > :is(span, div).zr-grow:empty');
+  const keep = css.indexOf('.zr-btnbar > :is(span, div).zr-grow:empty');
   assert.notStrictEqual(hide, -1, 'The general spacer rule is gone');
   assert.notStrictEqual(keep, -1, 'The button bar no longer keeps its spacer');
   assert.ok(
@@ -70,9 +70,11 @@ test('The spacer keeps its meaning inside the bar', () => {
 
 test('The collapsed bar overrides both', () => {
   const grid = css.indexOf('\n  .zr-btnbar {');
-  const keep = css.indexOf('.zr-btnbar > .zr-grow:empty');
+  const keep = css.indexOf('.zr-btnbar > :is(span, div).zr-grow:empty');
   const flex = css.indexOf('.zr-btnbar--collapsed {');
-  const drop = css.indexOf('.zr-btnbar--collapsed > .zr-grow:empty');
+  const drop = css.indexOf(
+    '.zr-btnbar--collapsed > :is(span, div).zr-grow:empty'
+  );
   assert.notStrictEqual(flex, -1, 'The collapsed layout rule is gone');
   assert.notStrictEqual(drop, -1, 'The collapsed spacer rule is gone');
   assert.ok(flex > grid, 'The collapsed bar has to beat the grid');

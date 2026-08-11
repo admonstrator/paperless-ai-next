@@ -2298,6 +2298,12 @@ a.zr-list__item:hover {
   .zr-inputgroup {
     max-width: none;
   }
+  /* A field sharing a wrapping row with other controls gets the row to itself.
+     Three of them side by side on a 390px screen left the free-text one 75px
+     wide, showing "Reason (" and nothing more. */
+  .zr-row--wrap > :is(.zr-input, .zr-select) {
+    flex-basis: 100%;
+  }
   .zr-input,
   .zr-select,
   .zr-btn {
@@ -2380,10 +2386,63 @@ a.zr-list__item:hover {
   /* Tables become card lists rather than scrolling sideways — but only where a
      card list actually exists. Only data-table.js builds one; the OCR, failed
      and ignored pages render their rows by hand, and hiding the table for them
-     left a pager sitting above an empty page on every phone. Those keep the
-     table and scroll it inside its own wrapper. */
+     left a pager sitting above an empty page on every phone. Those stack their
+     own rows instead, see .zr-table--stack below. */
   .zr-table-host:has(> .zr-table-cards) .zr-table-wrap {
     display: none;
+  }
+
+  /* A table whose cells carry their column name stacks into the same cards
+     without a second copy of the rows in the DOM. The page scripts that render
+     rows by hand opt in with .zr-table--stack and a data-label per cell; six
+     columns in a 364px viewport otherwise put the actions 750px off screen. */
+  .zr-table--stack,
+  .zr-table--stack tbody,
+  .zr-table--stack tr,
+  .zr-table--stack td {
+    display: block;
+  }
+  .zr-table--stack thead {
+    display: none;
+  }
+  .zr-table--stack tr {
+    margin-bottom: var(--zr-2);
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-md);
+    padding: var(--zr-2) var(--zr-3);
+    background: var(--zr-surface);
+  }
+  .zr-table--stack td {
+    border: 0;
+  }
+  /* Cells with no label — the empty and loading states — keep the full width. */
+  .zr-table--stack td[data-label] {
+    display: flex;
+    gap: var(--zr-3);
+    padding: 3px 0;
+    align-items: baseline;
+  }
+  .zr-table--stack td[data-label]::before {
+    content: attr(data-label);
+    flex: none;
+    width: 96px;
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-faint);
+  }
+  /* The actions cell shrinks to its buttons on a wide screen; stacked it is a
+     row like any other. */
+  .zr-table--stack td.zr-table__actions {
+    width: auto;
+    white-space: normal;
+  }
+  /* A cell that cuts its text off in a column has room to wrap in a card, and
+     the ellipsis would not appear anyway: the text is an anonymous item of the
+     flex row, and text-overflow does not reach it. */
+  .zr-table--stack td.zr-truncate {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
   .zr-table-cards {
     display: flex;
@@ -2425,9 +2484,13 @@ a.zr-list__item:hover {
   }
   /* An empty flex spacer only does its job while everything is on one line.
      Once the row wraps it eats the rest of whichever line it landed on and
-     strands the buttons around it, so it steps aside here. */
-  .zr-row--wrap > .zr-grow:empty,
-  .app-toolbar > .zr-grow:empty {
+     strands the buttons around it, so it steps aside here.
+
+     Only a span or a div: a void element matches :empty forever, so a bare
+     `.zr-grow:empty` also hid <input class="zr-input zr-grow"> — the reason
+     field on the ignore list was invisible on every phone. */
+  .zr-row--wrap > :is(span, div).zr-grow:empty,
+  .app-toolbar > :is(span, div).zr-grow:empty {
     display: none;
   }
 
@@ -2444,7 +2507,7 @@ a.zr-list__item:hover {
   /* The spacer that pushes the destructive buttons to the far side on a wide
      screen keeps that meaning here, as the break onto their own row. It must
      come after the rule above, which hides it at the same specificity. */
-  .zr-btnbar > .zr-grow:empty {
+  .zr-btnbar > :is(span, div).zr-grow:empty {
     display: block;
     grid-column: 1 / -1;
     height: 0;
@@ -2457,7 +2520,7 @@ a.zr-list__item:hover {
   .zr-btnbar--collapsed {
     display: flex;
   }
-  .zr-btnbar--collapsed > .zr-grow:empty {
+  .zr-btnbar--collapsed > :is(span, div).zr-grow:empty {
     display: none;
   }
   /* Filters stack rather than leaving a different amount of the row unused on

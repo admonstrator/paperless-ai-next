@@ -98,12 +98,14 @@
           ? new Date(item.created_at).toLocaleString()
           : '–';
 
+        // data-label carries the column name into the stacked phone layout,
+        // where the header row is hidden.
         return `<tr>
-                <td>${docLink}</td>
-                <td class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
-                <td><span class="zr-badge">${escHtml(item.reason || 'manual')}</span></td>
-                <td class="zr-sm zr-faint">${added}</td>
-                <td class="zr-table__actions">
+                <td data-label="Doc ID">${docLink}</td>
+                <td data-label="Title" class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
+                <td data-label="Reason"><span class="zr-badge">${escHtml(item.reason || 'manual')}</span></td>
+                <td data-label="Added" class="zr-sm zr-faint">${added}</td>
+                <td data-label="" class="zr-table__actions">
                     <div class="zr-row">
                         <button class="zr-btn ignored-unignore-btn" data-id="${item.document_id}" title="Remove from ignore list and allow scanning again">
                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg> Unignore

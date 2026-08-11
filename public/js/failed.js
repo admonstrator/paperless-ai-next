@@ -87,13 +87,15 @@
           ? new Date(item.updated_at).toLocaleString()
           : '–';
 
+        // data-label carries the column name into the stacked phone layout,
+        // where the header row is hidden.
         return `<tr>
-                <td>${docLink}</td>
-                <td class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
-                <td><span class="zr-badge">${reasonLabel}</span></td>
-                <td class="zr-sm">${sourceLabel}</td>
-                <td class="zr-sm zr-faint">${updated}</td>
-                <td class="zr-table__actions"><div class="zr-row">
+                <td data-label="Doc ID">${docLink}</td>
+                <td data-label="Title" class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
+                <td data-label="Reason"><span class="zr-badge">${reasonLabel}</span></td>
+                <td data-label="Source" class="zr-sm">${sourceLabel}</td>
+                <td data-label="Updated" class="zr-sm zr-faint">${updated}</td>
+                <td data-label="" class="zr-table__actions"><div class="zr-row">
                     <button class="zr-btn zr-btn--primary failed-reset-btn" data-id="${item.document_id}" title="Reset failed state and allow re-scan">
                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg> Reset
                     </button>

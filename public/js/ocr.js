@@ -208,13 +208,15 @@
              <div id="${menuId}" popover class="zr-menu">${menuItems}</div>`
           : '';
 
+        // data-label carries the column name into the stacked phone layout,
+        // where the header row is hidden.
         return `<tr>
-                <td>${docLink}</td>
-                <td class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
-                <td><span class="zr-badge">${reasonLabel}</span></td>
-                <td>${statusHtml}</td>
-                <td class="zr-sm zr-faint">${addedDate}</td>
-                <td class="zr-table__actions">
+                <td data-label="Doc ID">${docLink}</td>
+                <td data-label="Title" class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
+                <td data-label="Reason"><span class="zr-badge">${reasonLabel}</span></td>
+                <td data-label="Status">${statusHtml}</td>
+                <td data-label="Added" class="zr-sm zr-faint">${addedDate}</td>
+                <td data-label="" class="zr-table__actions">
                     <div class="zr-row">
                         ${primaryBtn}
                         ${menu}
