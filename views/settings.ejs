@@ -137,10 +137,7 @@
 
                                 <div class="zr-field zr-field--stacked">
                                     <div class="zr-switchrow">
-                                        <label class="zr-switch">
-                                            <input type="checkbox" id="disableAutomaticProcessing" <%= config.DISABLE_AUTOMATIC_PROCESSING === 'yes' ? 'checked' : '' %>>
-                                            <span class="zr-switch__track"><span class="zr-switch__thumb"></span></span>
-                                        </label>
+                                        <input type="checkbox" class="zr-toggle" id="disableAutomaticProcessing" <%= config.DISABLE_AUTOMATIC_PROCESSING === 'yes' ? 'checked' : '' %>>
                                         <div class="zr-grow">
                                             <label for="disableAutomaticProcessing" class="zr-field__name">Disable automatic processing</label>
                                             <p class="zr-field__hint">If enabled, scans are not processed by AI automatically · ENV: DISABLE_AUTOMATIC_PROCESSING · Restart required</p>
@@ -357,10 +354,7 @@
                                         </div>
                                     </div>
                                     <div class="zr-row">
-                                        <label class="zr-switch">
-                                            <input type="checkbox" id="settingsQuickstartEnableOcr">
-                                            <span class="zr-switch__track"><span class="zr-switch__thumb"></span></span>
-                                        </label>
+                                        <input type="checkbox" class="zr-toggle" id="settingsQuickstartEnableOcr">
                                         <label for="settingsQuickstartEnableOcr" class="zr-field__name">Use this service for OCR</label>
                                     </div>
                                     <div class="zr-row zr-row--wrap">
@@ -616,10 +610,7 @@
                                 </div>
                                 <div class="zr-module__body zr-col zr-col--loose">
                                 <div class="zr-switchrow">
-                                    <label class="zr-switch">
-                                        <input type="checkbox" id="externalApiEnabled" name="externalApiEnabled" <%= config.EXTERNAL_API_ENABLED === 'yes' ? 'checked' : '' %>>
-                                        <span class="zr-switch__track"><span class="zr-switch__thumb"></span></span>
-                                    </label>
+                                    <input type="checkbox" class="zr-toggle" id="externalApiEnabled" name="externalApiEnabled" <%= config.EXTERNAL_API_ENABLED === 'yes' ? 'checked' : '' %>>
                                     <div class="zr-grow">
                                         <label for="externalApiEnabled" class="zr-field__name">Enable External API Integration</label>
                                         <p class="zr-field__hint">ENV: EXTERNAL_API_ENABLED · Restart required</p>

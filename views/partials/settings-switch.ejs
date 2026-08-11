@@ -4,10 +4,7 @@
     public/js/settings.js syncs the hidden input and re-emits 'change' on it.
     Params: id (string), label (string), checked (boolean), hint (string, optional) %>
 <div class="zr-switchrow">
-    <label class="zr-switch">
-        <input type="checkbox" id="<%= id %>Switch" data-switch-target="<%= id %>" <%= checked ? 'checked' : '' %>>
-        <span class="zr-switch__track"><span class="zr-switch__thumb"></span></span>
-    </label>
+    <input type="checkbox" class="zr-toggle" id="<%= id %>Switch" data-switch-target="<%= id %>" <%= checked ? 'checked' : '' %>>
     <div class="zr-grow">
         <label for="<%= id %>Switch" class="zr-field__name"><%= label %></label>
         <% if (typeof hint === 'string' && hint) { %>

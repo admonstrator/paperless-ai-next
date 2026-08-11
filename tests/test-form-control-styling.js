@@ -2,7 +2,7 @@
  * Test: no checkbox falls back to the browser's own widget
  *
  * The framework draws its own controls: a setting that turns something on or off
- * is a switch (.zr-toggle, or .zr-switch around the input), and a checkbox that
+ * is a switch (.zr-toggle) and a checkbox that
  * picks table rows is .zr-check. A checkbox carrying neither renders as whatever
  * the operating system paints, which is how the History selection column stayed a
  * grey OS tick while every other control had moved to the framework.
@@ -74,12 +74,6 @@ test('Every checkbox is a switch or a framework tick', () => {
       const classes = /class=["']([^"']*)["']/.exec(tag)?.[1] || '';
       if (/\bzr-toggle\b|\bzr-check\b/.test(classes)) continue;
 
-      // The other accepted shape puts the input inside a <label class="zr-switch">,
-      // which hides it and draws a track and thumb in its place.
-      const before = text.slice(0, match.index);
-      const label = before.slice(before.lastIndexOf('<label'));
-      if (/class=["'][^"']*\bzr-switch\b/.test(label)) continue;
-
       offenders.push(`${path.relative(root, file)}: ${tag.slice(0, 90)}`);
     }
   });
@@ -88,8 +82,23 @@ test('Every checkbox is a switch or a framework tick', () => {
     offenders,
     [],
     "These checkboxes render as the operating system's own widget. Add " +
-      '.zr-toggle for an on/off setting, .zr-check for row selection, or wrap ' +
-      `the input in <label class="zr-switch">:\n    ${offenders.join('\n    ')}`
+      `.zr-toggle for an on/off setting or .zr-check for row selection:\n    ${offenders.join('\n    ')}`
+  );
+});
+
+test('There is one switch component, not two', () => {
+  // A second switch built from a label, a hidden input and two nested spans drew
+  // its knob as an inline span: width and height never applied, so the knob was
+  // 0x0 and the control showed as a bare grey pill on every page that used it.
+  const stragglers = [
+    ...collect(path.join(root, 'views'), '.ejs'),
+    ...collect(path.join(root, 'public', 'js'), '.js'),
+  ].filter((file) => fs.readFileSync(file, 'utf8').includes('zr-switch__'));
+
+  assert.deepStrictEqual(
+    stragglers.map((f) => path.relative(root, f)),
+    [],
+    'These still build the removed .zr-switch markup; use .zr-toggle'
   );
 });
 
@@ -112,11 +121,7 @@ test('The selection tick is drawn by the framework', () => {
 test('On-state glyphs use --zr-on-brand', () => {
   // The dark theme's brand is a bright teal; a white tick or thumb on it reaches
   // only 2.3:1, so the glyph colour has to follow the theme.
-  const rules = [
-    '.zr-check::after {',
-    '.zr-toggle:checked::after {',
-    '.zr-switch input:checked + .zr-switch__track .zr-switch__thumb {',
-  ];
+  const rules = ['.zr-check::after {', '.zr-toggle:checked::after {'];
   rules.forEach((head) => {
     assert.match(
       ruleBody(head),

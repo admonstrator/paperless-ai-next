@@ -1166,52 +1166,6 @@ a.zr-list__item:hover {
   flex: 1;
 }
 
-.zr-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--zr-2);
-  cursor: pointer;
-}
-.zr-switch input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-.zr-switch__track {
-  width: 34px;
-  height: 19px;
-  border-radius: var(--zr-r-full);
-  background: var(--zr-line-strong);
-  padding: 2px;
-  flex: none;
-  transition: background var(--zr-dur) var(--zr-ease);
-}
-.zr-switch__thumb {
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: var(--zr-shadow-sm);
-  transition: transform var(--zr-dur) var(--zr-ease);
-}
-.zr-switch input:checked + .zr-switch__track {
-  background: var(--zr-brand);
-}
-.zr-switch input:checked + .zr-switch__track .zr-switch__thumb {
-  transform: translateX(15px);
-  /* On the grey off-track white is the readable thumb, but the dark theme's
-     brand is a bright teal that white only reaches 2.3:1 against. */
-  background: var(--zr-on-brand);
-}
-.zr-switch input:focus-visible + .zr-switch__track {
-  outline: 2px solid var(--zr-focus);
-  outline-offset: 2px;
-}
-.zr-switch__text {
-  font-size: var(--zr-fs-base);
-}
-
 /* switch with a label block next to it, as used throughout the settings form */
 .zr-switchrow {
   display: flex;
@@ -1222,7 +1176,7 @@ a.zr-list__item:hover {
   border-radius: var(--zr-r-md);
   background: var(--zr-surface-2);
 }
-.zr-switchrow .zr-switch {
+.zr-switchrow .zr-toggle {
   margin-top: 2px;
 }
 .zr-switchrow .zr-field__name {
@@ -1332,10 +1286,12 @@ a.zr-list__item:hover {
   cursor: not-allowed;
 }
 
-/* Switch rendered from the checkbox itself — same look as .zr-switch, but it
-   needs no track/thumb spans, so a plain checkbox becomes a switch by swapping
-   one class. Used for settings that turn something on or off; checkboxes that
-   select rows keep .zr-check, where a tick is the expected control. */
+/* The switch: a checkbox drawn as a track with a knob, all on the input itself.
+   It replaced a .zr-switch component built from a label, a hidden input and two
+   nested spans — where the knob was an inline span, so width and height never
+   applied to it and it painted nothing at all. Used for settings that turn
+   something on or off; checkboxes that select rows keep .zr-check, where a tick
+   is the expected control. */
 .zr-toggle {
   appearance: none;
   -webkit-appearance: none;
