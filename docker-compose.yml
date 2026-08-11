@@ -42,6 +42,9 @@ services:
       # Reconciliation (optional) – remove stale history entries for deleted documents
       # - RECONCILIATION_ENABLED=yes
       # - RECONCILIATION_INTERVAL=0 * * * *
+      # Update check (optional) – asks GitHub once a day whether a newer release
+      # exists. Set to 'no' for air-gapped installations; nothing else changes.
+      # - UPDATE_CHECK_ENABLED=no
     ports:
       - '3000:${PAPERLESS_AI_PORT:-3000}'
     volumes:

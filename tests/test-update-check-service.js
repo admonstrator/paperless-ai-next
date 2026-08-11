@@ -73,7 +73,7 @@ const { isNewer, parseVersion } = updateCheckService;
 function reset() {
   calls.length = 0;
   updateCheckService.reset();
-  config.updateCheckEnabled = true;
+  config.updateCheckEnabled = 'yes';
   respond = () => ({ status: 200, data: { tag_name: 'v2026.09.01' } });
 }
 
@@ -184,13 +184,13 @@ function reset() {
 
   await test('UPDATE_CHECK_ENABLED=no makes no outbound request', async () => {
     reset();
-    config.updateCheckEnabled = false;
+    config.updateCheckEnabled = 'no';
 
     const result = await updateCheckService.getStatus();
     assert.strictEqual(calls.length, 0);
     assert.strictEqual(result.enabled, false);
     assert.strictEqual(result.updateAvailable, false);
-    config.updateCheckEnabled = true;
+    config.updateCheckEnabled = 'yes';
   });
 
   // ────────────────────────────────────────────────────────────────────────────

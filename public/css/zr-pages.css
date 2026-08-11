@@ -1378,17 +1378,6 @@ img {
   align-items: start;
 }
 
-/* setup wizard tooltips */
-.tooltip-content {
-  padding: var(--zr-2);
-  font-size: var(--zr-fs-sm);
-  line-height: 1.5;
-}
-.tooltip-content ul {
-  padding-left: var(--zr-4);
-  margin-top: var(--zr-1);
-}
-
 /* settings: draggable custom-field row */
 .custom-field-item {
   padding: var(--zr-2) var(--zr-3);

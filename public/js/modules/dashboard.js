@@ -374,11 +374,12 @@ export default function dashboard(root, { toast }) {
     if (!label) return;
 
     const reason = [...failures.values()][0] || '';
+    const at = lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : '';
     if (!reason) {
-      label.textContent = `updated ${lastUpdatedAt.toLocaleTimeString()}`;
+      label.textContent = at ? `updated ${at}` : '';
     } else {
-      label.textContent = lastUpdatedAt
-        ? `${reason} — showing data from ${lastUpdatedAt.toLocaleTimeString()}`
+      label.textContent = at
+        ? `${reason} — showing data from ${at}`
         : `${reason} — retrying`;
     }
     label.classList.toggle('zr-danger-text', Boolean(reason));

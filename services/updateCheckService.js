@@ -73,7 +73,7 @@ class UpdateCheckService {
   }
 
   isEnabled() {
-    return config.updateCheckEnabled !== false;
+    return config.updateCheckEnabled === 'yes';
   }
 
   currentVersion() {
