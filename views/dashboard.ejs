@@ -7,7 +7,11 @@
 <div data-module="dashboard" data-paperless-url="<%= typeof paperlessUrl !== 'undefined' ? paperlessUrl : '' %>"
     data-version="<%= typeof version !== 'undefined' ? version : '' %>">
 
-    <div id="scannerHealthBanner" class="zr-alert zr-alert--danger hidden" role="alert" aria-live="assertive"
+    <!-- A persistent health banner is a status, not an alert. role="alert" plus
+         aria-live="assertive" made the three-second poll interrupt the screen
+         reader with the same banner over and over; "status" announces politely
+         and waits for a pause. -->
+    <div id="scannerHealthBanner" class="zr-alert zr-alert--danger hidden" role="status"
         style="margin-bottom: var(--zr-4)">
         <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
         <div class="zr-alert__body">
@@ -67,7 +71,7 @@
                 <span class="zr-dot zr-dot--ok" id="runnerDot"></span>
                 <h2 class="zr-module__title">Task runner</h2>
                 <div class="zr-module__actions">
-                    <span class="zr-sm zr-faint zr-only-desktop" id="statusLastUpdated"></span>
+                    <span class="zr-sm zr-faint zr-freshness" id="statusLastUpdated"></span>
                     <button class="zr-btn zr-btn--primary" type="button" id="scanButton">
                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg>
                         <span>Scan now</span>
@@ -155,6 +159,7 @@
                     <span class="zr-sm zr-faint">total</span>
                 </div>
                 <svg class="zr-spark" id="tokenTrendSpark" aria-hidden="true"></svg>
+                <p class="zr-sm zr-faint hidden" id="tokenTrendEmpty">No token trend yet.</p>
                 <div class="zr-col zr-col--tight zr-sm">
                     <div class="zr-kv"><span class="zr-kv__k">Prompt, average</span><span class="zr-kv__v" id="avgPromptTokens">&mdash;</span></div>
                     <div class="zr-kv"><span class="zr-kv__k">Completion, average</span><span class="zr-kv__v" id="avgCompletionTokens">&mdash;</span></div>

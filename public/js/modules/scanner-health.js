@@ -110,19 +110,25 @@ export function updateScannerHealthBanner(elements, data) {
   banner.classList.toggle('zr-alert--danger', degraded);
   banner.classList.toggle('zr-alert--warn', !degraded);
 
-  if (title) {
-    title.textContent = degraded
-      ? 'Document scanning is not working'
-      : 'Paperless-ngx connection problem';
+  const nextTitle = degraded
+    ? 'Document scanning is not working'
+    : 'Paperless-ngx connection problem';
+  if (title && title.textContent !== nextTitle) {
+    title.textContent = nextTitle;
   }
 
-  // textContent only — the message carries server-side error strings.
+  // textContent only — the message carries server-side error strings. Written
+  // only on a real change: this is a live region, and the "last checked Ns ago"
+  // part would otherwise re-announce the whole banner on every poll.
   if (message) {
-    message.textContent = buildScannerHealthMessage(
+    const nextMessage = buildScannerHealthMessage(
       scanner,
       paperless,
       paperlessDown
     );
+    if (message.textContent !== nextMessage) {
+      message.textContent = nextMessage;
+    }
   }
 
   banner.classList.remove('hidden');

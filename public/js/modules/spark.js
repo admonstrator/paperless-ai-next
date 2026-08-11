@@ -13,15 +13,23 @@
 export function renderSpark(el, values, labels = []) {
   const points = (values || []).map(Number).filter(Number.isFinite);
 
+  const width = 100;
+  const height = 32;
+
+  // A blank 40px gap reads as a rendering fault, so say it out loud — the same
+  // way the donut labels its own empty state.
   if (points.length < 2) {
-    el.innerHTML = '';
+    el.setAttribute('viewBox', `0 0 ${width} ${height}`);
+    el.setAttribute('preserveAspectRatio', 'none');
+    el.setAttribute('role', 'img');
     el.setAttribute('data-empty', 'true');
+    el.innerHTML =
+      `<title>No trend data yet</title>` +
+      `<path class="zr-spark__baseline" d="M 0 ${height - 2} L ${width} ${height - 2}"/>`;
     return;
   }
   el.removeAttribute('data-empty');
 
-  const width = 100;
-  const height = 32;
   const max = Math.max(...points);
   const min = Math.min(...points);
   const range = max - min || 1;

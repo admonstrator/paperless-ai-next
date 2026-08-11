@@ -14,12 +14,27 @@ import { updateScannerHealthBanner } from './scanner-health.js';
 const STATS_URL = '/api/dashboard/stats';
 const STATUS_URL = '/api/processing-status';
 const STATUS_INTERVAL_MS = 3000;
+// Status polls between two attempts to recover a failing statistics endpoint.
+const STATS_RETRY_POLLS = 10;
 const REQUEST_TIMEOUT_MS = 15000;
 
 const COMPACT_UNITS = [
   { threshold: 1e9, suffix: 'b' },
   { threshold: 1e6, suffix: 'm' },
   { threshold: 1e3, suffix: 'k' },
+];
+
+// Document types are categories, not states — they get the neutral chart palette
+// rather than ok/warn/danger, which mean something else two modules over.
+const CATEGORY_TONES = [
+  'cat-1',
+  'cat-2',
+  'cat-3',
+  'cat-4',
+  'cat-5',
+  'cat-6',
+  'cat-7',
+  'cat-8',
 ];
 
 function formatNumber(value, { compact = false } = {}) {
@@ -36,6 +51,11 @@ function formatNumber(value, { compact = false } = {}) {
     ? String(rounded)
     : rounded.toFixed(1).replace(/\.0$/, '');
   return `${text}${unit.suffix}`;
+}
+
+function formatDocumentCount(value) {
+  const numeric = Number(value || 0);
+  return `${formatNumber(numeric)} ${Math.abs(numeric) === 1 ? 'doc' : 'docs'}`;
 }
 
 function escapeHtml(value) {
@@ -145,13 +165,31 @@ export default function dashboard(root, { toast }) {
   function renderDocumentTypes(items) {
     const chart = byId('documentTypesDonut');
     const legend = byId('documentTypesLegend');
-    const rows = Array.isArray(items) ? items : [];
-    const tones = ['brand', 'info', 'ok', 'warn', 'danger'];
+    const rows = (Array.isArray(items) ? items : [])
+      .map((entry) => ({
+        label: entry.type || 'Unknown',
+        value: Number(entry.count || 0),
+      }))
+      .sort((a, b) => b.value - a.value);
 
-    const series = rows.map((entry, index) => ({
-      label: entry.type || 'Unknown',
-      value: Number(entry.count || 0),
-      tone: tones[index % tones.length],
+    // The palette runs out before the categories do, and a donut with two
+    // identical slices is worse than one that admits it grouped the tail.
+    const limit = CATEGORY_TONES.length - 1;
+    const head = rows.slice(0, limit);
+    const tail = rows.slice(limit);
+    const grouped = tail.length
+      ? [
+          ...head,
+          {
+            label: `Other (${tail.length})`,
+            value: tail.reduce((sum, entry) => sum + entry.value, 0),
+          },
+        ]
+      : head;
+
+    const series = grouped.map((entry, index) => ({
+      ...entry,
+      tone: CATEGORY_TONES[index],
     }));
 
     if (chart) renderDonut(chart, series, 'classified');
@@ -215,14 +253,17 @@ export default function dashboard(root, { toast }) {
     const ai = payload.openai_data || {};
 
     const documentCount = Number(stats.documentCount || 0);
-    const processed = Math.max(0, Number(stats.processedDocumentCount || 0));
+    const rawProcessed = Math.max(0, Number(stats.processedDocumentCount || 0));
     const ocrNeeded = Math.max(0, Number(stats.ocrNeededCount || 0));
     const failed = Math.max(0, Number(stats.failedCount || 0));
-    // Capped only here: an all-time processed total can exceed the current scan
-    // scope, which would otherwise push the unprocessed figure negative.
+    // The processed total is all-time and survives deletions in Paperless-ngx,
+    // so it can exceed the current library. Capping it in one place keeps the
+    // tile, the coverage figure and the donut from stating different numbers
+    // for the same thing on the same screen.
+    const processed = Math.min(rawProcessed, documentCount);
     const unprocessed = Math.max(
       0,
-      documentCount - Math.min(processed, documentCount) - ocrNeeded - failed
+      documentCount - processed - ocrNeeded - failed
     );
 
     setText('kpiDocuments', formatNumber(documentCount));
@@ -232,10 +273,13 @@ export default function dashboard(root, { toast }) {
     setText('kpiUnprocessed', formatNumber(unprocessed));
 
     const coverage =
-      documentCount > 0
-        ? Math.round((Math.min(processed, documentCount) / documentCount) * 100)
-        : 0;
-    setText('kpiProcessedDelta', `${coverage} % coverage`);
+      documentCount > 0 ? Math.round((processed / documentCount) * 100) : 0;
+    setText(
+      'kpiProcessedDelta',
+      rawProcessed > documentCount
+        ? `${coverage} % coverage, ${formatNumber(rawProcessed)} all-time`
+        : `${coverage} % coverage`
+    );
 
     const failedDelta = byId('kpiFailedDelta');
     if (failedDelta) {
@@ -275,6 +319,10 @@ export default function dashboard(root, { toast }) {
         trend.map((point) => Number(point.totalTokens || 0)),
         trend.map((point) => String(point.day || ''))
       );
+      byId('tokenTrendEmpty')?.classList.toggle(
+        'hidden',
+        !spark.hasAttribute('data-empty')
+      );
     }
 
     const distributionList = byId('tokenDistributionList');
@@ -287,7 +335,7 @@ export default function dashboard(root, { toast }) {
         ).map((entry) => ({
           label: entry.range,
           value: Number(entry.count || 0),
-          display: `${formatNumber(entry.count)} docs`,
+          display: formatDocumentCount(entry.count),
         })),
         { emptyText: 'No token data yet.' }
       );
@@ -303,7 +351,7 @@ export default function dashboard(root, { toast }) {
         ).map((entry) => ({
           label: entry.language || 'Unknown',
           value: Number(entry.count || 0),
-          display: `${formatNumber(entry.count)} docs`,
+          display: formatDocumentCount(entry.count),
         })),
         { emptyText: 'No language data yet.' }
       );
@@ -314,10 +362,41 @@ export default function dashboard(root, { toast }) {
     renderRecentActivity(stats.recentActivity);
   }
 
-  function setModulesState(state) {
-    root.querySelectorAll('.zr-module').forEach((module) => {
-      module.dataset.state = state;
-    });
+  /* --- freshness -------------------------------------------------------- */
+
+  // Every figure on this page is polled. When a poll fails the old numbers stay
+  // on screen, so the page has to say so — a toast that fades leaves a dashboard
+  // that looks current and is not.
+  let lastUpdatedAt = null;
+  const failures = new Map();
+
+  function renderFreshness() {
+    const label = byId('statusLastUpdated');
+    if (!label) return;
+
+    const reason = [...failures.values()][0] || '';
+    if (!reason) {
+      label.textContent = `updated ${lastUpdatedAt.toLocaleTimeString()}`;
+    } else {
+      label.textContent = lastUpdatedAt
+        ? `${reason} — showing data from ${lastUpdatedAt.toLocaleTimeString()}`
+        : `${reason} — retrying`;
+    }
+    label.classList.toggle('zr-danger-text', Boolean(reason));
+    label.classList.toggle('zr-faint', !reason);
+  }
+
+  // Tracked per source: the status poll succeeding every three seconds must not
+  // paper over a statistics endpoint that is still failing.
+  function markFresh(source) {
+    failures.delete(source);
+    if (!failures.size) lastUpdatedAt = new Date();
+    renderFreshness();
+  }
+
+  function markStale(source, reason) {
+    failures.set(source, reason);
+    renderFreshness();
   }
 
   let statsInFlight = false;
@@ -325,18 +404,17 @@ export default function dashboard(root, { toast }) {
   async function loadStats({ silent = false } = {}) {
     if (statsInFlight) return;
     statsInFlight = true;
-    if (!silent) setModulesState('loading');
 
     try {
       const payload = await fetchJson(STATS_URL);
       if (!payload?.success)
         throw new Error(payload?.error || 'Invalid dashboard stats response');
       applyStats(payload);
-      setModulesState('ready');
+      markFresh('stats');
     } catch (error) {
       console.error('[dashboard] stats failed', error);
+      markStale('stats', 'Statistics could not be loaded');
       if (!silent) {
-        setModulesState('ready');
         toast('Dashboard statistics could not be loaded', { tone: 'danger' });
       }
     } finally {
@@ -349,19 +427,23 @@ export default function dashboard(root, { toast }) {
   let scanActionPending = false;
   let stopActionPending = false;
   let lastSeenProcessedDocId = null;
+  let statsRetryCountdown = STATS_RETRY_POLLS;
 
   function setScanButtons(isScanning, stopRequested) {
     const scanButton = byId('scanButton');
     const stopButton = byId('stopScanButton');
     if (!scanButton || !stopButton) return;
 
-    scanButton.classList.toggle('hidden', isScanning);
+    // While the start request is in flight the scan button stays put and says
+    // so. Swapping straight to "Stop" would claim a scan is running before the
+    // server has agreed, and hide the "Starting…" label on the way out.
+    scanButton.classList.toggle('hidden', isScanning && !scanActionPending);
     scanButton.disabled = isScanning || scanActionPending;
     scanButton.querySelector('span').textContent = scanActionPending
       ? 'Starting…'
       : 'Scan now';
 
-    stopButton.classList.toggle('hidden', !isScanning);
+    stopButton.classList.toggle('hidden', !isScanning || scanActionPending);
     stopButton.disabled = !isScanning || stopRequested || stopActionPending;
     stopButton.querySelector('span').textContent =
       stopRequested || stopActionPending ? 'Stopping…' : 'Stop';
@@ -374,11 +456,16 @@ export default function dashboard(root, { toast }) {
       const currentDocId = data.lastProcessed
         ? data.lastProcessed.documentId
         : null;
-      if (
+      const documentChanged =
         lastSeenProcessedDocId !== null &&
         currentDocId !== null &&
-        currentDocId !== lastSeenProcessedDocId
-      ) {
+        currentDocId !== lastSeenProcessedDocId;
+      // The statistics are otherwise fetched exactly once, so a hiccup at page
+      // load used to freeze them until a manual reload. Retry on a slower beat
+      // than the status poll while they are known to be stale.
+      const retryStats = failures.has('stats') && statsRetryCountdown-- <= 0;
+      if (retryStats) statsRetryCountdown = STATS_RETRY_POLLS;
+      if (documentChanged || retryStats) {
         loadStats({ silent: true });
       }
       lastSeenProcessedDocId = currentDocId;
@@ -429,12 +516,10 @@ export default function dashboard(root, { toast }) {
         data
       );
       setText('processedToday', formatNumber(data.processedToday));
-      setText(
-        'statusLastUpdated',
-        `updated ${new Date().toLocaleTimeString()}`
-      );
+      markFresh('status');
     } catch (error) {
       console.error('[dashboard] processing status failed', error);
+      markStale('status', 'Live status lost');
     }
   }
 
@@ -505,7 +590,7 @@ export default function dashboard(root, { toast }) {
               (item) => `
                 <div class="zr-list__item">
                   <span class="zr-list__main"><span class="zr-list__title">${escapeHtml(item.name)}</span></span>
-                  <span class="zr-list__time">${formatNumber(item.document_count || 0)} docs</span>
+                  <span class="zr-list__time">${formatDocumentCount(item.document_count)}</span>
                 </div>`
             )
             .join('')}</div>`

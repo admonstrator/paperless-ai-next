@@ -120,6 +120,53 @@ function renderBanner(payload) {
   };
 }
 
+/**
+ * Same shipped code, but the elements survive across calls and count how often
+ * their text is assigned — the banner lives in a live region, so a write is an
+ * announcement whether or not the string changed.
+ *
+ * @returns {{update: (payload: object) => void, writes: object, elements: object}}
+ */
+function createBannerHarness() {
+  const writes = { title: 0, message: 0 };
+  const counting = (key) => {
+    const el = createElement();
+    let text = '';
+    Object.defineProperty(el, 'textContent', {
+      get: () => text,
+      set: (value) => {
+        writes[key] += 1;
+        text = value;
+      },
+    });
+    return el;
+  };
+
+  const elements = {
+    banner: createElement(),
+    title: counting('title'),
+    message: counting('message'),
+  };
+  elements.banner.classList.add('hidden');
+
+  const sandbox = {
+    console: { log() {}, error() {}, debug() {}, warn() {} },
+    document: { getElementById: () => createElement(), addEventListener() {} },
+    window: {},
+    setInterval: () => 0,
+    setTimeout: () => 0,
+    fetch: () => new Promise(() => {}),
+  };
+  vm.createContext(sandbox);
+  vm.runInContext(bannerSource, sandbox);
+
+  return {
+    elements,
+    writes,
+    update: (payload) => sandbox.updateScannerHealthBanner(elements, payload),
+  };
+}
+
 const HEALTHY_SCANNER = {
   automaticProcessingEnabled: true,
   armed: true,
@@ -292,6 +339,77 @@ test('An unprobed connection is not treated as an outage', () => {
 test('A payload without health fields hides the banner instead of throwing', () => {
   const { banner } = renderBanner({});
   assert.strictEqual(banner.classList.contains('hidden'), true);
+});
+
+test('An unchanged banner is not rewritten on every poll', () => {
+  // The banner sits in a live region and the status endpoint is polled every
+  // three seconds. Reassigning the same text still mutates the DOM, which made
+  // screen readers announce the same outage over and over.
+  const payload = {
+    scanner: HEALTHY_SCANNER,
+    paperless: {
+      reachable: true,
+      authorized: false,
+      usable: false,
+      status: 401,
+      lastCheckedAt: '2026-08-09T10:00:00.000Z',
+      error: 'Request failed with status code 401',
+    },
+  };
+
+  const { update, writes } = createBannerHarness();
+  update(payload);
+  const afterFirst = { ...writes };
+  update(payload);
+  update(payload);
+
+  assert.ok(afterFirst.title > 0 && afterFirst.message > 0);
+  assert.strictEqual(
+    writes.title,
+    afterFirst.title,
+    'The title was reassigned although nothing about the problem changed'
+  );
+  assert.strictEqual(
+    writes.message,
+    afterFirst.message,
+    'The message was reassigned although nothing about the problem changed'
+  );
+});
+
+test('A changed banner message is still written', () => {
+  const { update, writes, elements } = createBannerHarness();
+  update({
+    scanner: HEALTHY_SCANNER,
+    paperless: { reachable: false, usable: false, error: 'ECONNREFUSED' },
+  });
+  const afterFirst = writes.message;
+
+  update({
+    scanner: HEALTHY_SCANNER,
+    paperless: { reachable: true, authorized: false, usable: false },
+  });
+
+  assert.strictEqual(writes.message, afterFirst + 1);
+  assert.match(elements.message.textContent, /rejected the API credentials/i);
+});
+
+test('The dashboard banner is a status region, not an assertive alert', () => {
+  const view = fs.readFileSync(
+    path.join(process.cwd(), 'views', 'dashboard.ejs'),
+    'utf8'
+  );
+  const tagStart = view.indexOf('id="scannerHealthBanner"');
+  const tag = view.slice(
+    view.lastIndexOf('<', tagStart),
+    view.indexOf('>', tagStart)
+  );
+
+  assert.match(tag, /role="status"/);
+  assert.doesNotMatch(
+    tag,
+    /aria-live="assertive"/,
+    'An assertive region interrupts the reader on every three-second poll'
+  );
 });
 
 // ──────────────────────────────────────────────────────────────────────────────

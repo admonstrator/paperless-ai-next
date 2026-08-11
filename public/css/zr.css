@@ -151,6 +151,18 @@ h4 {
   --zr-info: #2160a8;
   --zr-info-soft: #e2edfb;
 
+  /* Categorical chart colours. Kept apart from ok/warn/danger on purpose: those
+     carry a meaning, and reusing them would paint a plain document type in the
+     same red the dashboard uses for failures. */
+  --zr-cat-1: #12776d;
+  --zr-cat-2: #2160a8;
+  --zr-cat-3: #9a6414;
+  --zr-cat-4: #7a4b9c;
+  --zr-cat-5: #1c7f96;
+  --zr-cat-6: #a04a6b;
+  --zr-cat-7: #4a7a2b;
+  --zr-cat-8: #6b7280;
+
   --zr-focus: #12776d;
   --zr-shadow-sm: 0 1px 2px rgba(13, 27, 38, 0.06);
   --zr-shadow-md: 0 4px 12px -4px rgba(13, 27, 38, 0.14);
@@ -188,6 +200,15 @@ h4 {
   --zr-danger-soft: #351817;
   --zr-info: #6aa9f0;
   --zr-info-soft: #10243b;
+
+  --zr-cat-1: #3fbfb2;
+  --zr-cat-2: #6aa9f0;
+  --zr-cat-3: #e0a33a;
+  --zr-cat-4: #b18cd9;
+  --zr-cat-5: #4fc0d8;
+  --zr-cat-6: #e58bab;
+  --zr-cat-7: #8fc45c;
+  --zr-cat-8: #9aa7b2;
 
   --zr-focus: #3fbfb2;
   --zr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
@@ -574,6 +595,13 @@ body {
 .zr-alert + .zr-module {
   margin-top: var(--zr-3);
 }
+/* …which is why the grid has to opt out again: the margin lands on every card
+   but the first, so the cards sharing a row no longer start at the same height
+   and every row gap ends up doubled. */
+.zr-grid > .zr-module,
+.zr-grid > .zr-alert {
+  margin-top: 0;
+}
 
 /* state machine: one attribute swaps skeleton / empty / error / content */
 .zr-module [data-slot='skeleton'],
@@ -835,9 +863,12 @@ a.zr-stat:hover {
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
+/* Muted rather than faint: these three carry information (a date, a
+   correspondent, a coverage figure), and --zr-text-faint only reaches 3.1:1 on
+   white — below AA for text this size. Faint stays for decorative labels. */
 .zr-stat__delta {
   font-size: var(--zr-fs-sm);
-  color: var(--zr-text-faint);
+  color: var(--zr-text-muted);
 }
 .zr-stat__delta--up {
   color: var(--zr-ok);
@@ -933,14 +964,14 @@ a.zr-list__item:hover {
 }
 .zr-list__sub {
   font-size: var(--zr-fs-sm);
-  color: var(--zr-text-faint);
+  color: var(--zr-text-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 .zr-list__time {
   font-size: var(--zr-fs-sm);
-  color: var(--zr-text-faint);
+  color: var(--zr-text-muted);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
@@ -1834,6 +1865,10 @@ a.zr-list__item:hover {
   fill: color-mix(in srgb, var(--zr-brand) 14%, transparent);
   stroke: none;
 }
+.zr-spark .zr-spark__baseline {
+  stroke: var(--zr-line-strong);
+  stroke-dasharray: 3 3;
+}
 
 /* donut */
 .zr-donut {
@@ -2224,6 +2259,12 @@ a.zr-list__item:hover {
 @media (max-width: 860px) {
   .zr-only-desktop {
     display: none !important;
+  }
+
+  /* An "updated 14:32" note is desktop chrome and stays out of the way here,
+     but "the data stopped refreshing" has to reach the phone as well. */
+  .zr-freshness:not(.zr-danger-text) {
+    display: none;
   }
 
   /* The setup rail used to be desktop-only, leaving phones with just a line of
