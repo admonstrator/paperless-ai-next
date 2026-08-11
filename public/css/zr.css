@@ -153,7 +153,9 @@ h4 {
 
   --zr-ok: #17794f;
   --zr-ok-soft: #dff3e8;
-  --zr-warn: #9a6414;
+  /* Amber is the one tone that has to carry text on its own soft background
+     (the OCR queue badge); at #9a6414 that pairing reached only 4.4:1. */
+  --zr-warn: #8f5d12;
   --zr-warn-soft: #fdf0d9;
   --zr-danger: #b53a30;
   --zr-danger-soft: #fce6e3;
@@ -2225,8 +2227,12 @@ a.zr-list__item:hover {
   .zr-setup__panel {
     min-height: 0;
   }
-  /* tables become card lists rather than scrolling sideways */
-  .zr-table-wrap {
+  /* Tables become card lists rather than scrolling sideways — but only where a
+     card list actually exists. Only data-table.js builds one; the OCR, failed
+     and ignored pages render their rows by hand, and hiding the table for them
+     left a pager sitting above an empty page on every phone. Those keep the
+     table and scroll it inside its own wrapper. */
+  .zr-table-host:has(> .zr-table-cards) .zr-table-wrap {
     display: none;
   }
   .zr-table-cards {

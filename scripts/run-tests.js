@@ -41,6 +41,7 @@ const TESTS = {
   'log-level-logger': 'test-log-level-logger.js',
   'native-install-log-paths': 'test-native-install-log-paths.js',
   'update-check-service': 'test-update-check-service.js',
+  'mobile-table-fallback': 'test-mobile-table-fallback.js',
   'login-mfa-flow': 'test-login-mfa-flow.js',
   'ocr-fallback-ai-errors': 'test-ocr-fallback-ai-errors.js',
   'ocr-startup-recovery': 'test-ocr-startup-recovery.js',
@@ -125,6 +126,7 @@ const AREAS = {
     'log-level-logger',
     'native-install-log-paths',
     'update-check-service',
+    'mobile-table-fallback',
   ],
   processing: [
     'document-type-restriction',
