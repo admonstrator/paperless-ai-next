@@ -32,6 +32,7 @@ const mistralOcrService = require('../services/mistralOcrService');
 const quickstartService = require('../services/quickstartService');
 const reconciliationService = require('../services/reconciliationService');
 const scanHealthService = require('../services/scanHealthService');
+const updateCheckService = require('../services/updateCheckService');
 const {
   THUMBNAIL_CACHE_DIR,
   getThumbnailCachePath,
@@ -9961,6 +9962,68 @@ router.post(
     }
   }
 );
+
+/**
+ * @swagger
+ * /api/update-check:
+ *   get:
+ *     summary: Report whether a newer release is available
+ *     description: |
+ *       Compares the running version against the latest GitHub release tag.
+ *
+ *       The lookup happens on the server and its result is cached for 24 hours,
+ *       so browsers never contact GitHub themselves and a busy instance makes at
+ *       most one outbound request per day. Set `UPDATE_CHECK_ENABLED=no` to turn
+ *       the outbound call off; the endpoint then reports `enabled: false`.
+ *     tags:
+ *       - System
+ *       - API
+ *     security:
+ *       - BearerAuth: []
+ *       - ApiKeyAuth: []
+ *     responses:
+ *       200:
+ *         description: Update status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     enabled:
+ *                       type: boolean
+ *                     currentVersion:
+ *                       type: string
+ *                     latestVersion:
+ *                       type: string
+ *                       nullable: true
+ *                     updateAvailable:
+ *                       type: boolean
+ *                     checkedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       nullable: true
+ *       401:
+ *         description: Not authenticated
+ */
+router.get('/api/update-check', isAuthenticated, async (req, res) => {
+  try {
+    const status = await updateCheckService.getStatus();
+    // The upstream error message is for the server log, not for the browser.
+    const data = { ...status };
+    delete data.error;
+    return res.json({ success: true, data });
+  } catch (error) {
+    console.error('[ERROR] GET /api/update-check:', error);
+    return res
+      .status(500)
+      .json({ success: false, error: 'Failed to check for updates' });
+  }
+});
 
 /**
  * @swagger

@@ -1,6 +1,6 @@
 //settings.js
 
-/* global tippy, Sortable, zrDialog */
+/* global Sortable, zrDialog */
 
 class FormManager {
   constructor() {
@@ -176,8 +176,6 @@ class FormManager {
         azureApiVersion.required = true;
         break;
     }
-
-    refreshSettingsHints();
   }
 
   // Rest of the class methods remain the same
@@ -211,8 +209,6 @@ class FormManager {
     } else {
       aiTagNameSection.classList.add('hidden');
     }
-
-    refreshSettingsHints();
   }
 
   togglePromptTagsInput() {
@@ -230,8 +226,6 @@ class FormManager {
       promptTagsSection.classList.add('hidden');
       this.enablePromptElements();
     }
-
-    refreshSettingsHints();
   }
 
   disablePromptElements() {
@@ -2529,408 +2523,82 @@ class URLValidator {
   }
 }
 
-const TOOLTIP_CARD_STYLES =
-  'background:#ffffff;color:#111827;border:1px solid #d1d5db;border-radius:8px;';
-const REGISTERED_TOOLTIP_INSTANCES = [];
-let tooltipResizeListenerAttached = false;
+/**
+ * Field help dialogs.
+ *
+ * Two settings carry more explanation than fits under an input. They used to
+ * open a Tippy tooltip built from hardcoded light colours, which was unreadable
+ * in the dark theme, and the same machinery tried to fold all 63 field hints
+ * into `?` buttons — driven by `#setupForm p.text-xs.text-gray-500`, a selector
+ * that stopped matching anything once the markup moved to framework classes.
+ * With the hints readable inline, only these two long ones are left and they
+ * open a plain dialog.
+ */
+const FIELD_HELP = {
+  urlHelp: {
+    title: 'Paperless-ngx API URL',
+    html: `
+      <div class="zr-prose">
+        <p>The URL points at the Paperless-ngx host itself, without a path:
+          <code>http://your-host:8000</code>. The <code>/api</code> endpoint is
+          appended automatically.</p>
+        <p><strong>Requirements</strong></p>
+        <ul>
+          <li>Starts with <code>http://</code> or <code>https://</code></li>
+          <li>Host or IP, optionally a port</li>
+          <li>No additional path or query</li>
+        </ul>
+        <p><strong>Running in Docker</strong></p>
+        <ul>
+          <li><code>localhost</code> and <code>127.0.0.1</code> point at this
+            container, not at Paperless-ngx</li>
+          <li>Use the machine's address on the network, for example
+            <code>http://192.168.1.100:8000</code></li>
+          <li>Or the container name when both services share a network, for
+            example <code>http://paperless-ngx:8000</code></li>
+        </ul>
+      </div>`,
+  },
+  tagCacheTTLHelp: {
+    title: 'Tag cache lifetime',
+    html: `
+      <div class="zr-prose">
+        <p>How long the tag list from Paperless-ngx is reused before it is
+          fetched again. During batch processing this is the difference between
+          one request and one per document.</p>
+        <ul>
+          <li><strong>60–180 s</strong> — new tags show up quickly, more API
+            calls</li>
+          <li><strong>300 s</strong> — the default, balanced</li>
+          <li><strong>600–3600 s</strong> — fewest API calls, new tags take
+            longer to appear</li>
+        </ul>
+      </div>`,
+  },
+};
 
-function getSettingsTooltipPlacement() {
-  return window.innerWidth < 768 ? 'bottom' : 'right';
-}
-
-function createReadableTooltipContent(innerHtml, padding = '10px 12px') {
-  return `<div style="${TOOLTIP_CARD_STYLES}padding:${padding};line-height:1.45;">${innerHtml}</div>`;
-}
-
-function getReadableTooltipOptions(overrides = {}) {
-  return {
-    allowHTML: true,
-    placement: getSettingsTooltipPlacement(),
-    interactive: true,
-    trigger: 'mouseenter focus click',
-    theme: 'light-border',
-    touch: 'hold',
-    appendTo: () => document.body,
-    ...overrides,
-  };
-}
-
-function normalizeTooltipInstances(instances) {
-  if (!instances) {
-    return [];
-  }
-
-  if (Array.isArray(instances)) {
-    return instances.filter(
-      (instance) => instance && typeof instance.setProps === 'function'
-    );
-  }
-
-  return typeof instances.setProps === 'function' ? [instances] : [];
-}
-
-function refreshAllTooltipPlacements() {
-  const placement = getSettingsTooltipPlacement();
-  REGISTERED_TOOLTIP_INSTANCES.forEach((instance) => {
-    instance.setProps({ placement });
-  });
-}
-
-function registerTooltipInstances(instances) {
-  const normalizedInstances = normalizeTooltipInstances(instances);
-  if (normalizedInstances.length === 0) {
-    return;
-  }
-
-  normalizedInstances.forEach((instance) => {
-    if (!REGISTERED_TOOLTIP_INSTANCES.includes(instance)) {
-      REGISTERED_TOOLTIP_INSTANCES.push(instance);
-    }
-  });
-
-  if (!tooltipResizeListenerAttached) {
-    window.addEventListener('resize', refreshAllTooltipPlacements);
-    tooltipResizeListenerAttached = true;
-  }
-}
-
-// Tooltip System
-class TooltipManager {
-  constructor() {
-    this.initialize();
-  }
-
-  initialize() {
-    this.tooltipInstance = tippy(
-      '#urlHelp',
-      getReadableTooltipOptions({
-        content: this.getTooltipContent(),
-        maxWidth: 450,
-        trigger: 'mouseenter click',
-        zIndex: 40,
-      })
-    );
-    registerTooltipInstances(this.tooltipInstance);
-  }
-
-  getTooltipContent() {
-    return createReadableTooltipContent(
-      `
-                <h3 style="font-size:16px;font-weight:700;margin-bottom:8px;">API URL Configuration</h3>
-                
-                <div style="margin-bottom:10px;">
-                    <p>The URL should follow this format:</p>
-                    <code style="display:block;padding:8px;background:#f3f4f6;border-radius:6px;color:#111827;">
-                        http://your-host:8000
-                    </code>
-                </div>
-                
-                <div style="margin-bottom:10px;">
-                    <p style="font-weight:600;">Important Notes:</p>
-                    <ul style="padding-left:18px;margin-top:4px;">
-                        <li>Must start with <u>http://</u> or <u>https://</u></li>
-                        <li>Contains <strong>host/IP</strong> and optionally a <strong>port</strong></li>
-                        <li>No additional paths or parameters</li>
-                    </ul>
-                </div>
-
-                <div style="margin-bottom:10px;">
-                    <p style="font-weight:600;">Docker Network Configuration:</p>
-                    <ul style="padding-left:18px;margin-top:4px;">
-                        <li>Using <strong>localhost</strong> or <strong>127.0.0.1</strong> won't work in Docker bridge mode</li>
-                        <li>Use your machine's local IP (e.g., <code>192.168.1.x</code>) instead</li>
-                        <li>Or use the Docker container name if both services are in the same network</li>
-                    </ul>
-                </div>
-
-                <div style="margin-bottom:10px;">
-                    <p style="font-weight:600;">Examples:</p>
-                    <ul style="list-style:none;padding-left:0;margin-top:4px;">
-                        <li>🔸 Local IP: <code>http://192.168.1.100:8000</code></li>
-                        <li>🔸 Container: <code>http://paperless-ngx:8000</code></li>
-                        <li>🔸 Remote: <code>http://paperless.domain.com</code></li>
-                    </ul>
-                </div>
-
-                <p style="font-size:12px;font-style:italic;margin-top:8px;">The /api endpoint will be added automatically.</p>
-        `,
-      '12px'
-    );
-  }
-}
-
-class SettingsHintManager {
-  getHintTriggerClasses() {
-    return [
-      'inline-flex',
-      'items-center',
-      'justify-center',
-      'ml-2',
-      'text-blue-700',
-      'hover:text-blue-900',
-      'focus:outline-none',
-      'focus:ring-2',
-      'focus:ring-blue-600',
-      'rounded-full',
-      'transition-colors',
-    ];
-  }
-
-  constructor() {
-    this.initializeTagCacheHint();
-    this.refresh();
-  }
-
-  getHintRows() {
-    return Array.from(
-      document.querySelectorAll('#setupForm p.text-xs.text-gray-500')
-    );
-  }
-
-  findAssociatedLabel(hint) {
-    const container = hint.closest('.space-y-2') || hint.parentElement;
-    if (!container) {
-      return null;
+function initializeFieldHelp() {
+  Object.entries(FIELD_HELP).forEach(([id, help]) => {
+    const button = document.getElementById(id);
+    if (!button) {
+      return;
     }
 
-    const directLabels = Array.from(container.querySelectorAll('label'));
-    if (directLabels.length > 0) {
-      return directLabels[0];
-    }
-
-    let sibling = hint.previousElementSibling;
-    while (sibling) {
-      if (sibling.matches && sibling.matches('label')) {
-        return sibling;
-      }
-
-      if (sibling.querySelector) {
-        const nestedLabel = sibling.querySelector('label');
-        if (nestedLabel) {
-          return nestedLabel;
-        }
-      }
-
-      sibling = sibling.previousElementSibling;
-    }
-
-    return null;
-  }
-
-  findFallbackAnchor(hint) {
-    const container = hint.closest('.space-y-2') || hint.parentElement;
-    if (!container) {
-      return null;
-    }
-
-    return (
-      container.querySelector('input, select, textarea, button') || container
-    );
-  }
-
-  ensureHintTriggers() {
-    const hintRows = this.getHintRows();
-    const tooltipTargets = [];
-
-    hintRows.forEach((hint) => {
-      const label = this.findAssociatedLabel(hint);
-
-      const fallbackAnchor = label ? null : this.findFallbackAnchor(hint);
-      if (!label && !fallbackAnchor) {
-        return;
-      }
-
-      if (label && label.querySelector('.setting-hint-trigger')) {
-        hint.classList.add('hidden');
-        return;
-      }
-
-      if (
-        !label &&
-        hint.parentElement?.querySelector(
-          '.setting-hint-trigger[data-hint-fallback="true"]'
-        )
-      ) {
-        hint.classList.add('hidden');
-        return;
-      }
-
-      const trigger = document.createElement('button');
-      trigger.type = 'button';
-      trigger.className = `setting-hint-trigger ${this.getHintTriggerClasses().join(' ')}`;
-      trigger.setAttribute('aria-label', 'Show setting hint');
-      trigger.style.width = '1.125rem';
-      trigger.style.height = '1.125rem';
-      trigger.style.minWidth = '1.125rem';
-      trigger.style.minHeight = '1.125rem';
-      trigger.innerHTML =
-        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-help"/></svg>';
-      trigger.dataset.hintContent = hint.innerHTML;
-      trigger.dataset.hintFallback = label ? 'false' : 'true';
-
-      if (label) {
-        if (!label.classList.contains('flex')) {
-          label.classList.add('flex', 'items-center');
-        }
-
-        label.appendChild(trigger);
-      } else if (
-        fallbackAnchor.matches &&
-        fallbackAnchor.matches('input, select, textarea, button')
-      ) {
-        fallbackAnchor.insertAdjacentElement('afterend', trigger);
-      } else {
-        fallbackAnchor.appendChild(trigger);
-      }
-
-      hint.classList.add('hidden');
-      tooltipTargets.push(trigger);
+    button.setAttribute('aria-label', `Help: ${help.title}`);
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      zrDialog({
+        title: help.title,
+        html: help.html,
+        confirmButtonText: 'Close',
+      });
     });
-
-    return tooltipTargets;
-  }
-
-  bindHintTooltips(tooltipTargets) {
-    if (!Array.isArray(tooltipTargets) || tooltipTargets.length === 0) {
-      return;
-    }
-
-    const hintTooltipInstances = tippy(
-      tooltipTargets,
-      getReadableTooltipOptions({
-        maxWidth: 360,
-        content(reference) {
-          return createReadableTooltipContent(
-            reference.dataset.hintContent || '',
-            '8px 10px'
-          );
-        },
-      })
-    );
-    registerTooltipInstances(hintTooltipInstances);
-  }
-
-  refresh() {
-    const tooltipTargets = this.ensureHintTriggers();
-    this.bindHintTooltips(tooltipTargets);
-
-    const unboundTriggers = Array.from(
-      document.querySelectorAll('.setting-hint-trigger')
-    ).filter((trigger) => !trigger._tippy);
-    this.bindHintTooltips(unboundTriggers);
-  }
-
-  initialize() {
-    this.refresh();
-    this.initializeTagCacheHint();
-  }
-
-  initializeTagCacheHint() {
-    const tagCacheTTLHelp = document.getElementById('tagCacheTTLHelp');
-    if (!tagCacheTTLHelp) {
-      return;
-    }
-
-    const urlHelp = document.getElementById('urlHelp');
-    if (urlHelp) {
-      urlHelp.classList.remove('text-gray-400', 'hover:text-gray-600');
-      urlHelp.classList.add(...this.getHintTriggerClasses());
-      urlHelp.style.width = '1.125rem';
-      urlHelp.style.height = '1.125rem';
-      urlHelp.style.minWidth = '1.125rem';
-      urlHelp.style.minHeight = '1.125rem';
-
-      const urlHelpIcon = urlHelp.querySelector('i');
-      if (urlHelpIcon) {
-        urlHelpIcon.style.fontSize = '0.875rem';
-        urlHelpIcon.style.lineHeight = '1';
-      }
-    }
-
-    tagCacheTTLHelp.classList.remove('text-gray-400', 'hover:text-gray-600');
-    tagCacheTTLHelp.classList.add(...this.getHintTriggerClasses());
-    tagCacheTTLHelp.style.width = '1.125rem';
-    tagCacheTTLHelp.style.height = '1.125rem';
-    tagCacheTTLHelp.style.minWidth = '1.125rem';
-    tagCacheTTLHelp.style.minHeight = '1.125rem';
-
-    const tagCacheIcon = tagCacheTTLHelp.querySelector('i');
-    if (tagCacheIcon) {
-      tagCacheIcon.style.fontSize = '0.875rem';
-      tagCacheIcon.style.lineHeight = '1';
-    }
-
-    const tagCacheTooltipInstance = tippy(
-      tagCacheTTLHelp,
-      getReadableTooltipOptions({
-        maxWidth: 420,
-        content: createReadableTooltipContent(`
-                    <p style="margin-bottom:8px;">Controls how long tags are cached before refreshing from Paperless-ngx.</p>
-                    <ul style="padding-left:18px; margin:0 0 8px 0;">
-                        <li><strong>60-180s:</strong> fresher data, more API calls</li>
-                        <li><strong>300s (recommended):</strong> balanced</li>
-                        <li><strong>600-3600s:</strong> fewer API calls, slower visibility of new tags</li>
-                    </ul>
-                    <p style="font-size:12px;">Good cache settings can reduce Paperless tag API calls significantly during batch processing.</p>
-            `),
-      })
-    );
-    registerTooltipInstances(tagCacheTooltipInstance);
-  }
+  });
 }
 
 function initializeTooltipAndValidation() {
   new URLValidator();
-  new TooltipManager();
-  settingsHintManager = new SettingsHintManager();
-  initializeSettingsHintObserver();
-  scheduleSettingsHintsRefresh();
-}
-
-let settingsHintManager = null;
-let settingsHintObserver = null;
-let settingsHintRefreshScheduled = false;
-
-function refreshSettingsHints() {
-  if (!settingsHintManager) {
-    return;
-  }
-
-  settingsHintManager.refresh();
-}
-
-function scheduleSettingsHintsRefresh() {
-  if (settingsHintRefreshScheduled) {
-    return;
-  }
-
-  settingsHintRefreshScheduled = true;
-  requestAnimationFrame(() => {
-    settingsHintRefreshScheduled = false;
-    refreshSettingsHints();
-  });
-}
-
-function initializeSettingsHintObserver() {
-  if (settingsHintObserver) {
-    return;
-  }
-
-  const setupForm = document.getElementById('setupForm');
-  if (!setupForm) {
-    return;
-  }
-
-  settingsHintObserver = new MutationObserver(() => {
-    scheduleSettingsHintsRefresh();
-  });
-
-  settingsHintObserver.observe(setupForm, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['class', 'style', 'hidden'],
-  });
+  initializeFieldHelp();
 }
 
 function initializeRuntimeOverridePills() {
@@ -3204,21 +2872,13 @@ function initializeRuntimeOverridePills() {
     }
   });
 
-  if (pills.length > 0 && typeof tippy === 'function') {
-    const instances = tippy(
-      pills,
-      getReadableTooltipOptions({
-        maxWidth: 360,
-        content(reference) {
-          return createReadableTooltipContent(
-            reference.getAttribute('data-tooltip') ||
-              'Overwritten by local runtime settings.'
-          );
-        },
-      })
-    );
-    registerTooltipInstances(instances);
-  }
+  // One line of explanation per pill. A native title needs no library, works on
+  // keyboard focus and reads correctly in both themes.
+  pills.forEach((pill) => {
+    pill.title =
+      pill.getAttribute('data-tooltip') ||
+      'Overwritten by local runtime settings.';
+  });
 }
 
 // Custom Fields Management
@@ -3344,6 +3004,15 @@ class MfaSettingsManager {
     }
   }
 
+  // The field only ever carries a colour, so the hint below it does the talking.
+  setTokenFieldState(state) {
+    if (!this.tokenInput) {
+      return;
+    }
+    this.tokenInput.classList.toggle('zr-input--invalid', state === 'error');
+    this.tokenInput.classList.toggle('zr-input--valid', state === 'success');
+  }
+
   setTokenHint(type, text) {
     if (!this.tokenHint) {
       return;
@@ -3351,52 +3020,13 @@ class MfaSettingsManager {
 
     this.tokenHint.className = 'zr-xs';
     if (type === 'error') {
-      this.tokenHint.classList.add('text-red-600');
-      this.tokenInput?.classList.add(
-        'border-red-500',
-        'focus:border-red-500',
-        'focus:ring-red-500'
-      );
-      this.tokenInput?.classList.remove(
-        'border-gray-300',
-        'focus:border-blue-500',
-        'focus:ring-blue-500'
-      );
+      this.tokenHint.classList.add('zr-danger-text');
     } else if (type === 'success') {
-      this.tokenHint.classList.add('text-green-600');
-      this.tokenInput?.classList.remove(
-        'border-red-500',
-        'focus:border-red-500',
-        'focus:ring-red-500'
-      );
-      this.tokenInput?.classList.add(
-        'border-green-500',
-        'focus:border-green-500',
-        'focus:ring-green-500'
-      );
-      this.tokenInput?.classList.remove(
-        'border-gray-300',
-        'focus:border-blue-500',
-        'focus:ring-blue-500'
-      );
+      this.tokenHint.classList.add('zr-ok-text');
     } else {
-      this.tokenHint.classList.add('text-gray-500');
-      this.tokenInput?.classList.remove(
-        'border-red-500',
-        'focus:border-red-500',
-        'focus:ring-red-500'
-      );
-      this.tokenInput?.classList.remove(
-        'border-green-500',
-        'focus:border-green-500',
-        'focus:ring-green-500'
-      );
-      this.tokenInput?.classList.add(
-        'border-gray-300',
-        'focus:border-blue-500',
-        'focus:ring-blue-500'
-      );
+      this.tokenHint.classList.add('zr-muted');
     }
+    this.setTokenFieldState(type);
 
     this.tokenHint.textContent = text;
     this.tokenHint.classList.remove('hidden');
@@ -3406,21 +3036,7 @@ class MfaSettingsManager {
     if (this.tokenHint) {
       this.tokenHint.classList.add('hidden');
     }
-    this.tokenInput?.classList.remove(
-      'border-red-500',
-      'focus:border-red-500',
-      'focus:ring-red-500'
-    );
-    this.tokenInput?.classList.remove(
-      'border-green-500',
-      'focus:border-green-500',
-      'focus:ring-green-500'
-    );
-    this.tokenInput?.classList.add(
-      'border-gray-300',
-      'focus:border-blue-500',
-      'focus:ring-blue-500'
-    );
+    this.setTokenFieldState(null);
   }
 
   isInvalidTotpError(error) {

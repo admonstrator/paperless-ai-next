@@ -905,16 +905,29 @@ module.exports = {
     }
   },
 
+  /**
+   * Document type distribution for the dashboard chart.
+   *
+   * This used to read `substr(title, 1, instr(title || ' ', ' ') - 1)` from
+   * processed_documents — the first word of the title. That happens to look
+   * plausible for "Invoice 2026-0041 …" and turns into noise for everything
+   * else, and it was never the document type. history_documents carries the
+   * type the AI actually assigned, written on every processed document.
+   *
+   * Not limited: the caller groups the tail itself and needs the full set to
+   * report how much it grouped.
+   */
   async getDocumentTypeStats() {
     try {
       return db
         .prepare(
           `
-        SELECT 
-          substr(title, 1, instr(title || ' ', ' ') - 1) as type,
+        SELECT
+          COALESCE(NULLIF(TRIM(document_type_name), ''), 'Unclassified') as type,
           COUNT(*) as count
-        FROM processed_documents
-        GROUP BY type
+        FROM history_documents
+        GROUP BY COALESCE(NULLIF(TRIM(document_type_name), ''), 'Unclassified')
+        ORDER BY count DESC, type ASC
       `
         )
         .all();

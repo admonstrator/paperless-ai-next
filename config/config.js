@@ -375,6 +375,10 @@ module.exports = {
   logLevel,
   disableAutomaticProcessing: process.env.DISABLE_AUTOMATIC_PROCESSING || 'no',
   exposeApiDocs: parseEnvBoolean(process.env.EXPOSE_API_DOCS, 'no'),
+  // Contacts api.github.com once a day to compare release tags. Set to `no` in
+  // air-gapped installations or wherever the outbound call is unwanted.
+  updateCheckEnabled:
+    parseEnvBoolean(process.env.UPDATE_CHECK_ENABLED, 'yes') === 'yes',
   globalRateLimitWindowMs: parseInt(
     process.env.GLOBAL_RATE_LIMIT_WINDOW_MS || '900000',
     10

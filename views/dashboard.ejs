@@ -4,8 +4,7 @@
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', { pageTitle: 'Dashboard', version: typeof version !== 'undefined' ? version : '' }) %>
 
-<div data-module="dashboard" data-paperless-url="<%= typeof paperlessUrl !== 'undefined' ? paperlessUrl : '' %>"
-    data-version="<%= typeof version !== 'undefined' ? version : '' %>">
+<div data-module="dashboard" data-paperless-url="<%= typeof paperlessUrl !== 'undefined' ? paperlessUrl : '' %>">
 
     <!-- A persistent health banner is a status, not an alert. role="alert" plus
          aria-live="assertive" made the three-second poll interrupt the screen

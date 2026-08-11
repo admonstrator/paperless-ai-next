@@ -603,7 +603,13 @@
   function openOverlay(title) {
     if (progressTitle) progressTitle.textContent = title;
     if (progressLog) progressLog.innerHTML = '';
-    if (progressBar) progressBar.style.width = '5%';
+    if (progressBar) {
+      progressBar.style.width = '5%';
+      progressBar.classList.remove(
+        'zr-meter__fill--ok',
+        'zr-meter__fill--danger'
+      );
+    }
     if (closeBtn) closeBtn.style.display = 'none';
     if (doneBtn) doneBtn.style.display = 'none';
     if (overlay) overlay.style.display = 'flex';
@@ -614,11 +620,13 @@
   }
 
   function finalizeOverlay(isError) {
-    if (progressBar) progressBar.style.width = isError ? '100%' : '100%';
-    if (progressBar)
-      progressBar.className = isError
-        ? 'bg-red-500 h-2 rounded-full transition-all duration-500'
-        : 'bg-green-500 h-2 rounded-full transition-all duration-500';
+    if (progressBar) {
+      progressBar.style.width = '100%';
+      // Assigning the whole className used to drop zr-meter__fill along with
+      // the Tailwind classes it replaced, so the bar vanished at 100%.
+      progressBar.classList.toggle('zr-meter__fill--danger', isError);
+      progressBar.classList.toggle('zr-meter__fill--ok', !isError);
+    }
     if (closeBtn) closeBtn.style.display = 'block';
     if (doneBtn) doneBtn.style.display = 'block';
   }

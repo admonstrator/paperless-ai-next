@@ -1,4 +1,8 @@
 // public/js/sidebar-badges.js
+//
+// Badges in the app shell: the queue counters in the sidebar and the update
+// notification in the top bar. Both are shell chrome and live on every page,
+// which is why they are here rather than in a page module.
 
 (function () {
   'use strict';
@@ -78,8 +82,32 @@
     }
   }
 
+  // The release lookup itself runs on the server and is cached there for a day,
+  // so this only reads a local endpoint. The browser never talks to GitHub.
+  async function loadUpdateNotification() {
+    const badge = document.getElementById('updateNotification');
+    const label = document.getElementById('latestVersion');
+    if (!badge || !label) return;
+
+    try {
+      const response = await fetch('/api/update-check');
+      if (!response.ok) return;
+
+      const payload = await response.json();
+      const data = payload && payload.data;
+      if (!data || !data.updateAvailable || !data.latestVersion) return;
+
+      label.textContent = data.latestVersion;
+      badge.title = `Version ${data.latestVersion} is available — you are running ${data.currentVersion}`;
+      badge.classList.remove('hidden');
+    } catch {
+      // Not knowing about an update is not worth bothering the user with.
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     wireBadgeNavigation();
     loadSidebarBadges();
+    loadUpdateNotification();
   });
 })();

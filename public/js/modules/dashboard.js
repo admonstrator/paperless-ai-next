@@ -113,7 +113,6 @@ async function fetchJson(url) {
 
 export default function dashboard(root, { toast }) {
   const paperlessUrl = (root.dataset.paperlessUrl || '').replace(/\/$/, '');
-  const version = (root.dataset.version || '').trim();
 
   const byId = (id) => document.getElementById(id);
   const setText = (id, value) => {
@@ -610,38 +609,10 @@ export default function dashboard(root, { toast }) {
   );
   byId('detailsModalClose')?.addEventListener('click', () => modal?.close());
 
-  /* --- update check ------------------------------------------------------ */
-
-  async function checkForUpdates() {
-    if (!version) return;
-    try {
-      const data = await fetchJson(
-        'https://api.github.com/repos/admonstrator/zettelrobbe/releases/latest'
-      );
-      const latestTag = String(data.tag_name || '');
-      if (!latestTag) return;
-
-      const current = version.replace(/^v/, '').split('.').map(Number);
-      const latest = latestTag.replace(/^v/, '').split('.').map(Number);
-
-      for (let i = 0; i < 3; i += 1) {
-        if ((latest[i] || 0) > (current[i] || 0)) {
-          setText('latestVersion', latestTag);
-          byId('updateNotification')?.classList.remove('hidden');
-          return;
-        }
-        if ((latest[i] || 0) < (current[i] || 0)) return;
-      }
-    } catch (error) {
-      console.error('[dashboard] update check failed', error);
-    }
-  }
-
   /* --- start ------------------------------------------------------------- */
 
   loadStats();
   pollStatus();
-  checkForUpdates();
   const statusTimer = setInterval(pollStatus, STATUS_INTERVAL_MS);
 
   return {

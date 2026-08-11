@@ -63,19 +63,24 @@ h4 {
 }
 
 /* --- 2. tokens ----------------------------------------------------------- */
+/* Two static faces, each declared at its own weight. The regular one used to
+   claim `font-weight: 400 700` — the syntax for a variable font — which made it
+   a candidate for bold as well and left the browser picking between two faces
+   for the same weight. Only the weight actually asked for is ever downloaded;
+   today that is 700, the only weight the brand font is used at. */
 @font-face {
   font-family: 'Outfit';
   font-style: normal;
-  font-weight: 400 700;
+  font-weight: 400;
   font-display: swap;
-  src: url('../vendor/fonts/outfit/outfit-400.ttf') format('truetype');
+  src: url('../vendor/fonts/outfit/outfit-400.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Outfit';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('../vendor/fonts/outfit/outfit-700.ttf') format('truetype');
+  src: url('../vendor/fonts/outfit/outfit-700.woff2') format('woff2');
 }
 
 :root {
@@ -128,9 +133,13 @@ h4 {
   --zr-surface-sunken: #eef3f5;
   --zr-rail-bg: #ffffff;
 
+  /* Three tiers, all above 4.5:1 against every surface in this theme. The
+     faintest used to sit at 3.1:1 on white, which is below AA for the 11-12px
+     it is mostly used at; lifting it alone would have made it indistinguishable
+     from muted, so the middle tier moved up with it. */
   --zr-text: #0d1b26;
-  --zr-text-muted: #5a6b77;
-  --zr-text-faint: #8496a2;
+  --zr-text-muted: #485760;
+  --zr-text-faint: #5f6f79;
 
   --zr-line: #dfe7eb;
   --zr-line-strong: #c6d3da;
@@ -167,7 +176,6 @@ h4 {
   --zr-shadow-sm: 0 1px 2px rgba(13, 27, 38, 0.06);
   --zr-shadow-md: 0 4px 12px -4px rgba(13, 27, 38, 0.14);
   --zr-shadow-lg: 0 16px 40px -12px rgba(13, 27, 38, 0.26);
-  --zr-skeleton: linear-gradient(90deg, #e7eef1 25%, #f2f7f9 50%, #e7eef1 75%);
 }
 
 :root[data-theme='dark'] {
@@ -179,8 +187,8 @@ h4 {
   --zr-rail-bg: #101c25;
 
   --zr-text: #e7eef2;
-  --zr-text-muted: #9bacb8;
-  --zr-text-faint: #71838f;
+  --zr-text-muted: #a6b6c1;
+  --zr-text-faint: #80909c;
 
   --zr-line: #22343f;
   --zr-line-strong: #2f4756;
@@ -214,7 +222,6 @@ h4 {
   --zr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --zr-shadow-md: 0 4px 12px -4px rgba(0, 0, 0, 0.5);
   --zr-shadow-lg: 0 16px 40px -12px rgba(0, 0, 0, 0.7);
-  --zr-skeleton: linear-gradient(90deg, #1b2a36 25%, #23343f 50%, #1b2a36 75%);
 }
 
 body {
@@ -603,41 +610,6 @@ body {
   margin-top: 0;
 }
 
-/* state machine: one attribute swaps skeleton / empty / error / content */
-.zr-module [data-slot='skeleton'],
-.zr-module [data-slot='empty'],
-.zr-module [data-slot='error'] {
-  display: none;
-}
-.zr-module[data-state='loading'] [data-slot='content'],
-.zr-module[data-state='empty'] [data-slot='content'],
-.zr-module[data-state='error'] [data-slot='content'] {
-  display: none;
-}
-.zr-module[data-state='loading'] [data-slot='skeleton'],
-.zr-module[data-state='empty'] [data-slot='empty'],
-.zr-module[data-state='error'] [data-slot='error'] {
-  display: block;
-}
-
-.zr-skeleton {
-  background: var(--zr-skeleton);
-  background-size: 200% 100%;
-  border-radius: var(--zr-r-sm);
-  height: 12px;
-  animation: zr-shimmer 1.4s linear infinite;
-}
-@keyframes zr-shimmer {
-  to {
-    background-position: -200% 0;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .zr-skeleton {
-    animation: none;
-  }
-}
-
 .zr-empty {
   text-align: center;
   padding: var(--zr-6) var(--zr-4);
@@ -864,8 +836,7 @@ a.zr-stat:hover {
   font-variant-numeric: tabular-nums;
 }
 /* Muted rather than faint: these three carry information (a date, a
-   correspondent, a coverage figure), and --zr-text-faint only reaches 3.1:1 on
-   white — below AA for text this size. Faint stays for decorative labels. */
+   correspondent, a coverage figure). Faint is for decorative labels. */
 .zr-stat__delta {
   font-size: var(--zr-fs-sm);
   color: var(--zr-text-muted);
@@ -889,6 +860,9 @@ a.zr-stat:hover {
   border-radius: inherit;
   background: var(--zr-brand);
   transition: width 300ms var(--zr-ease);
+}
+.zr-meter__fill--ok {
+  background: var(--zr-ok);
 }
 .zr-meter__fill--warn {
   background: var(--zr-warn);
@@ -1127,6 +1101,32 @@ a.zr-list__item:hover {
 }
 .zr-input::placeholder {
   color: var(--zr-text-faint);
+}
+/* Validation states. The settings form used to toggle border-red-500 and
+   border-green-500 on these, which the framework never defined, so a rejected
+   API token looked exactly like an untouched field. The colour is paired with
+   the hint text below the field — it never carries the meaning on its own. */
+.zr-input--invalid,
+.zr-select--invalid,
+.zr-textarea--invalid {
+  border-color: var(--zr-danger);
+}
+.zr-input--invalid:focus,
+.zr-select--invalid:focus,
+.zr-textarea--invalid:focus {
+  border-color: var(--zr-danger);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--zr-danger) 18%, transparent);
+}
+.zr-input--valid,
+.zr-select--valid,
+.zr-textarea--valid {
+  border-color: var(--zr-ok);
+}
+.zr-input--valid:focus,
+.zr-select--valid:focus,
+.zr-textarea--valid:focus {
+  border-color: var(--zr-ok);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--zr-ok) 18%, transparent);
 }
 /* Fields the operator pinned through an environment variable are disabled by
    the settings form; without this they were indistinguishable from editable
@@ -1671,6 +1671,28 @@ a.zr-list__item:hover {
 .zr-dialog__body {
   padding: var(--zr-3);
   color: var(--zr-text-muted);
+}
+/* Prose inside a dialog — help texts and the like. The reset zeroes every
+   margin, so the spacing has to be handed back here. */
+.zr-prose > * + * {
+  margin-top: var(--zr-2);
+}
+.zr-prose strong {
+  color: var(--zr-text);
+}
+.zr-prose ul {
+  padding-left: var(--zr-4);
+}
+.zr-prose li + li {
+  margin-top: 2px;
+}
+.zr-prose code {
+  font-family: var(--zr-font-mono);
+  font-size: var(--zr-fs-sm);
+  padding: 1px 4px;
+  border-radius: var(--zr-r-sm);
+  background: var(--zr-surface-sunken);
+  color: var(--zr-text);
 }
 .zr-dialog__foot {
   display: flex;
