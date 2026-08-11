@@ -11,10 +11,14 @@ class SetupWizard {
     this.steps = Array.from(document.querySelectorAll('.setup-step'));
     this.stepLabel = document.getElementById('setupStepLabel');
     this.progressFill = document.getElementById('setupProgressFill');
+    this.progressBar = document.getElementById('setupProgressBar');
     this.prevBtn = document.getElementById('prevStepBtn');
     this.nextBtn = document.getElementById('nextStepBtn');
 
     this.currentStep = 0;
+    // Which steps the user actually cleared. Kept separately from currentStep
+    // so paging back never discards a completed step.
+    this.completedSteps = new Set();
     this.includeTags = [];
     this.excludeTags = [];
 
@@ -82,7 +86,6 @@ class SetupWizard {
     this.testPaperlessBtn = document.getElementById('testPaperlessBtn');
     this.paperlessTestStatePill = document.getElementById('paperlessTestState');
 
-    this.fetchMetadataBtn = document.getElementById('fetchMetadataBtn');
     this.metadataLoadStatePill = document.getElementById('metadataLoadState');
     this.documentsCount = document.getElementById('documentsCount');
     this.correspondentsCount = document.getElementById('correspondentsCount');
@@ -90,6 +93,7 @@ class SetupWizard {
     this.scanAllDocuments = document.getElementById('scanAllDocuments');
     this.includeTag = document.getElementById('includeTag');
     this.addIncludeTagBtn = document.getElementById('addIncludeTagBtn');
+    this.includeTagsSection = document.getElementById('includeTagsSection');
     this.includeTagsContainer = document.getElementById('includeTagsContainer');
     this.excludeTagInput = document.getElementById('excludeTagInput');
     this.addExcludeTagBtn = document.getElementById('addExcludeTagBtn');
@@ -198,6 +202,9 @@ class SetupWizard {
       this.config.SCAN_INTERVAL || this.defaults.scanInterval || '*/30 * * * *';
     this.scanAllDocuments.checked =
       this.config.PROCESS_PREDEFINED_DOCUMENTS === 'no';
+    // Re-entering setup with an existing configuration has to apply the switch,
+    // otherwise it reads "scan all" while the include field is still shown.
+    this.toggleIncludeTagField();
     this.includeTags = Array.isArray(this.config.TAGS)
       ? this.config.TAGS.slice()
       : [];
@@ -370,6 +377,15 @@ class SetupWizard {
   bindEvents() {
     this.prevBtn.addEventListener('click', () => this.goToPreviousStep());
     this.nextBtn.addEventListener('click', () => this.goToNextStep());
+
+    // The rail entries are <button>s and have always looked clickable; wire
+    // them up so that affordance is real for the steps already cleared.
+    document
+      .querySelectorAll('[data-step-marker]')
+      .forEach((marker, markerIndex) => {
+        marker.addEventListener('click', () => this.goToStep(markerIndex));
+      });
+
     this.setModelSelectOptions(this.aiModel, [], 'Select model');
 
     this.adminPassword.addEventListener('input', () =>
@@ -427,9 +443,6 @@ class SetupWizard {
 
     this.testPaperlessBtn.addEventListener('click', () =>
       this.testPaperlessConnection()
-    );
-    this.fetchMetadataBtn.addEventListener('click', () =>
-      this.loadPaperlessMetadata()
     );
 
     this.testAiBtn.addEventListener('click', () => this.testAiConnection());
@@ -580,28 +593,52 @@ class SetupWizard {
 
     this.currentStep = index;
 
-    // The side column mirrors the step state; completed steps stay clickable.
     document
       .querySelectorAll('[data-step-marker]')
       .forEach((marker, markerIndex) => {
+        // Completion is remembered, not derived from the position, so paging
+        // back does not turn finished steps back into pending ones.
         const status =
           markerIndex === index
             ? 'active'
-            : markerIndex < index
+            : this.completedSteps.has(markerIndex)
               ? 'done'
               : 'todo';
         marker.dataset.status = status;
+
         const number = marker.querySelector('[data-marker-text]');
         const check = marker.querySelector('[data-marker-check]');
-        if (number) number.hidden = status === 'done';
-        if (check) check.hidden = status !== 'done';
+        // `hidden` is an HTMLElement property — assigning it on an <svg> does
+        // nothing, which is why the check mark never appeared. Drive the
+        // attribute directly so both elements behave the same.
+        if (number) number.toggleAttribute('hidden', status === 'done');
+        if (check) check.toggleAttribute('hidden', status !== 'done');
+
+        // Finished steps are reachable again; pending ones are not.
+        const reachable = status === 'done' || status === 'active';
+        marker.disabled = !reachable;
+        marker.setAttribute('aria-disabled', String(!reachable));
+        if (status === 'active') {
+          marker.setAttribute('aria-current', 'step');
+        } else {
+          marker.removeAttribute('aria-current');
+        }
       });
 
     this.prevBtn.disabled = index === 0;
     this.nextBtn.classList.toggle('hidden', index === this.steps.length - 1);
 
-    const progressPercent = ((index + 1) / this.steps.length) * 100;
+    // Progress reflects completed work, not the step you happen to be looking
+    // at — reaching the review step is not the same as having finished it.
+    const progressPercent =
+      (this.completedSteps.size / this.steps.length) * 100;
     this.progressFill.style.width = `${progressPercent}%`;
+    if (this.progressBar) {
+      this.progressBar.setAttribute(
+        'aria-valuenow',
+        String(Math.round(progressPercent))
+      );
+    }
 
     const stepTitle =
       this.steps[index].dataset.stepTitle || `Step ${index + 1}`;
@@ -612,12 +649,19 @@ class SetupWizard {
     }
   }
 
+  markStepCompleted(index) {
+    if (index >= 0 && index < this.steps.length) {
+      this.completedSteps.add(index);
+    }
+  }
+
   async goToNextStep() {
     const canContinue = await this.validateStepBeforeContinue(this.currentStep);
     if (!canContinue) {
       return;
     }
 
+    this.markStepCompleted(this.currentStep);
     this.showStep(this.currentStep + 1);
   }
 
@@ -625,30 +669,52 @@ class SetupWizard {
     this.showStep(this.currentStep - 1);
   }
 
+  // Jumping is only allowed to steps already cleared, so validation can never
+  // be skipped by clicking ahead in the rail.
+  goToStep(index) {
+    if (index === this.currentStep) {
+      return;
+    }
+    if (!this.completedSteps.has(index)) {
+      return;
+    }
+    this.showStep(index);
+  }
+
   updatePasswordHint() {
     const password = this.adminPassword.value;
     const confirmPassword = this.confirmPassword.value;
 
     if (!password) {
-      this.passwordHint.textContent = 'Use at least 8 characters.';
-      this.passwordHint.className = 'setup-hint';
+      this.setHintState(this.passwordHint, null, 'Use at least 8 characters.');
       return;
     }
 
     if (password.length < 8) {
-      this.passwordHint.textContent = 'Password is too short.';
-      this.passwordHint.className = 'setup-hint setup-hint-error';
+      this.setHintState(this.passwordHint, 'error', 'Password is too short.');
       return;
     }
 
     if (confirmPassword && password !== confirmPassword) {
-      this.passwordHint.textContent = 'Passwords do not match.';
-      this.passwordHint.className = 'setup-hint setup-hint-error';
+      this.setHintState(this.passwordHint, 'error', 'Passwords do not match.');
       return;
     }
 
-    this.passwordHint.textContent = 'Password looks good.';
-    this.passwordHint.className = 'setup-hint setup-hint-success';
+    this.setHintState(this.passwordHint, 'success', 'Password looks good.');
+  }
+
+  // Keeps the framework's hint styling and only swaps the state colour on top.
+  setHintState(element, type, text) {
+    if (!element) {
+      return;
+    }
+    element.textContent = text;
+    element.className = 'zr-field__hint';
+    if (type === 'success') {
+      element.classList.add('zr-ok-text');
+    } else if (type === 'error') {
+      element.classList.add('zr-danger-text');
+    }
   }
 
   updateMfaPanelVisibility() {
@@ -659,14 +725,26 @@ class SetupWizard {
       this.mfaState.verified = false;
       this.mfaState.setupStarted = false;
       this.mfaStatusHint.textContent = '';
-      this.mfaStatusHint.className = 'setup-hint';
+      this.mfaStatusHint.className = 'zr-field__hint';
       this.mfaProvisioningBox.classList.add('hidden');
     }
   }
 
+  // With "scan all documents" on, an include filter is ignored entirely, so the
+  // whole block goes away instead of leaving a dead field with a live Add
+  // button next to it. Chips already collected are kept, not cleared: toggling
+  // the switch back restores them, and they are not submitted while it is on.
   toggleIncludeTagField() {
     const scanAll = this.scanAllDocuments.checked;
+
+    if (this.includeTagsSection) {
+      this.includeTagsSection.classList.toggle('hidden', scanAll);
+    }
+
     this.includeTag.disabled = scanAll;
+    if (this.addIncludeTagBtn) {
+      this.addIncludeTagBtn.disabled = scanAll;
+    }
     if (scanAll) {
       this.includeTag.value = '';
     }
@@ -711,27 +789,43 @@ class SetupWizard {
 
     if (tags.length === 0) {
       const hint = document.createElement('p');
-      hint.className = 'setup-hint';
+      hint.className = 'zr-field__hint';
       hint.textContent = 'No include tags selected.';
       this.includeTagsContainer.appendChild(hint);
       return;
     }
 
     tags.forEach((tag) => {
-      const chip = document.createElement('div');
-      chip.className = 'zr-chip';
-      chip.innerHTML = `<span>${tag}</span>`;
-
-      const removeBtn = document.createElement('button');
-      removeBtn.type = 'button';
-      removeBtn.className = '';
-      removeBtn.innerHTML =
-        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>';
-      removeBtn.addEventListener('click', () => this.removeIncludeTag(tag));
-
-      chip.appendChild(removeBtn);
-      this.includeTagsContainer.appendChild(chip);
+      this.includeTagsContainer.appendChild(
+        this.createTagChip(tag, () => this.removeIncludeTag(tag))
+      );
     });
+  }
+
+  // One chip shape for both tag lists. Tag names are user input, so the label
+  // goes in as a text node rather than through innerHTML.
+  createTagChip(tag, onRemove) {
+    const chip = document.createElement('div');
+    chip.className = 'zr-chip';
+
+    const label = document.createElement('span');
+    label.textContent = tag;
+    chip.appendChild(label);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.setAttribute('aria-label', `Remove tag ${tag}`);
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute('class', 'zr-icon zr-icon--sm');
+    icon.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', '/icons.svg#i-x');
+    icon.appendChild(use);
+    removeBtn.appendChild(icon);
+    removeBtn.addEventListener('click', onRemove);
+
+    chip.appendChild(removeBtn);
+    return chip;
   }
 
   toggleMistralFields() {
@@ -836,14 +930,19 @@ class SetupWizard {
   }
 
   setPillState(element, type, text) {
+    if (!element) {
+      return;
+    }
     element.textContent = text;
-    element.className = 'setup-pill';
+    // The markup ships these as .zr-badge; rebuild that base every time so the
+    // badge keeps its shape and only the state colour changes.
+    element.className = 'zr-badge';
     if (type === 'success') {
-      element.classList.add('setup-pill-success');
+      element.classList.add('zr-badge--ok');
     } else if (type === 'error') {
-      element.classList.add('setup-pill-error');
+      element.classList.add('zr-badge--danger');
     } else if (type === 'loading') {
-      element.classList.add('setup-pill-loading');
+      element.classList.add('zr-badge--info');
     }
   }
 
@@ -908,7 +1007,7 @@ class SetupWizard {
 
       this.mfaStatusHint.textContent =
         'Scan the QR code and confirm with a current authentication code.';
-      this.mfaStatusHint.className = 'setup-hint';
+      this.mfaStatusHint.className = 'zr-field__hint';
     } catch (error) {
       await this.showPopup({
         icon: 'error',
@@ -951,12 +1050,12 @@ class SetupWizard {
       this.setButtonLoading(this.confirmMfaCodeBtn, false);
       this.mfaState.verified = true;
       this.mfaStatusHint.textContent = 'MFA confirmed. You can continue.';
-      this.mfaStatusHint.className = 'setup-hint setup-hint-success';
+      this.mfaStatusHint.className = 'zr-field__hint zr-ok-text';
       this.setupMfaCode.value = '';
     } catch (error) {
       this.mfaState.verified = false;
       this.mfaStatusHint.textContent = error.message;
-      this.mfaStatusHint.className = 'setup-hint setup-hint-error';
+      this.mfaStatusHint.className = 'zr-field__hint zr-danger-text';
     } finally {
       this.setButtonLoading(this.confirmMfaCodeBtn, false);
     }
@@ -995,6 +1094,10 @@ class SetupWizard {
           'success',
           'Connection valid'
         );
+        // Credentials are known good at this point, so the document scope step
+        // can be filled in the background instead of making the user press a
+        // separate button for data we can already fetch.
+        this.loadPaperlessMetadata({ silent: true });
         await this.showPopup({
           icon: 'success',
           title: 'Paperless test successful',
@@ -1022,32 +1125,34 @@ class SetupWizard {
     }
   }
 
-  async loadPaperlessMetadata() {
+  // Runs automatically once the connection test succeeds. `silent` keeps it out
+  // of the user's way: no dialogs, and a failure only shows up in the pill,
+  // because nothing here is required to finish the wizard.
+  async loadPaperlessMetadata(options = {}) {
+    const silent = Boolean(options.silent);
     const payload = {
       paperlessUrl: this.paperlessUrl.value.trim(),
       paperlessToken: this.paperlessToken.value.trim(),
     };
 
     if (!payload.paperlessUrl || !payload.paperlessToken) {
-      await this.showPopup({
-        icon: 'warning',
-        title: 'Missing values',
-        text: 'Enter and test Paperless credentials first.',
-      });
+      if (!silent) {
+        await this.showPopup({
+          icon: 'warning',
+          title: 'Missing values',
+          text: 'Enter and test Paperless credentials first.',
+        });
+      }
       return;
     }
 
-    this.setButtonLoading(this.fetchMetadataBtn, true, 'Loading...');
-    this.setPillState(this.metadataLoadStatePill, 'loading', 'Loading...');
+    this.setPillState(this.metadataLoadStatePill, 'loading', 'Loading…');
 
     try {
       const result = await this.request(
         '/api/setup/paperless/metadata',
         payload
       );
-      // The result dialog is awaited below; reset the button first so it
-      // does not keep claiming the test is still running.
-      this.setButtonLoading(this.fetchMetadataBtn, false);
       const metadata = result.metadata || {};
 
       this.documentsCount.textContent = String(metadata.documents ?? '-');
@@ -1066,13 +1171,13 @@ class SetupWizard {
     } catch (error) {
       this.metadataState.loaded = false;
       this.setPillState(this.metadataLoadStatePill, 'error', 'Load failed');
-      await this.showPopup({
-        icon: 'error',
-        title: 'Metadata loading failed',
-        text: error.message,
-      });
-    } finally {
-      this.setButtonLoading(this.fetchMetadataBtn, false);
+      if (!silent) {
+        await this.showPopup({
+          icon: 'error',
+          title: 'Metadata loading failed',
+          text: error.message,
+        });
+      }
     }
   }
 
@@ -1124,24 +1229,16 @@ class SetupWizard {
 
     if (this.excludeTags.length === 0) {
       const hint = document.createElement('p');
-      hint.className = 'setup-hint';
+      hint.className = 'zr-field__hint';
       hint.textContent = 'No excluded tags selected.';
       this.excludeTagsContainer.appendChild(hint);
       return;
     }
 
     this.excludeTags.forEach((tag) => {
-      const chip = document.createElement('button');
-      chip.type = 'button';
-      chip.className = 'setup-chip';
-      // Tag names are user input, so they are added as text nodes.
-      const label = document.createElement('span');
-      label.textContent = tag;
-      const icon = document.createElement('i');
-      icon.className = 'zr-icon';
-      chip.append(label, icon);
-      chip.addEventListener('click', () => this.removeExcludeTag(tag));
-      this.excludeTagsContainer.appendChild(chip);
+      this.excludeTagsContainer.appendChild(
+        this.createTagChip(tag, () => this.removeExcludeTag(tag))
+      );
     });
   }
 
@@ -1961,20 +2058,9 @@ class SetupWizard {
     }
 
     if (stepIndex === 3) {
-      if (!this.metadataState.loaded) {
-        const result = await this.showPopup({
-          icon: 'warning',
-          title: 'Metadata not loaded',
-          text: 'You have not loaded metadata yet. Continue anyway?',
-          showCancelButton: true,
-          confirmButtonText: 'Continue anyway',
-          cancelButtonText: 'Go back',
-        });
-
-        if (!result.isConfirmed) {
-          return false;
-        }
-      }
+      // Metadata loads by itself after the connection test and is only there to
+      // offer tag suggestions, so a missing load is not worth blocking on — a
+      // fresh Paperless install legitimately has no tags at all.
 
       if (
         !this.scanAllDocuments.checked &&
@@ -2235,6 +2321,7 @@ class SetupWizard {
   }
 
   buildFinalizePayload() {
+    const scanAll = this.scanAllDocuments.checked;
     return {
       adminUsername: this.adminUsername.value.trim(),
       adminPassword: this.adminPassword.value,
@@ -2244,8 +2331,11 @@ class SetupWizard {
       paperlessUsername: this.paperlessUsername.value.trim(),
       paperlessToken: this.paperlessToken.value.trim(),
       scanAllDocuments: this.scanAllDocuments.checked,
-      includeTag: this.getEffectiveIncludeTags()[0] || '',
-      includeTags: this.getEffectiveIncludeTags(),
+      // Kept in the UI so toggling back restores them, but not submitted while
+      // "scan all" is on — the server would discard them anyway, and sending
+      // them made the payload disagree with the env preview shown next to it.
+      includeTag: scanAll ? '' : this.getEffectiveIncludeTags()[0] || '',
+      includeTags: scanAll ? [] : this.getEffectiveIncludeTags(),
       excludeTags: this.getEffectiveExcludeTags(),
       processedTag: this.processedTag.value.trim(),
       automaticScanEnabled: this.automaticScanEnabled.value === 'yes',
@@ -2278,6 +2368,10 @@ class SetupWizard {
         validations.push(index);
         break;
       }
+      // Every gate that passes here is a step the user genuinely cleared. This
+      // also covers the quickstart flow, which saves straight from the AI step
+      // and would otherwise leave the later steps showing as pending.
+      this.markStepCompleted(index);
     }
 
     if (validations.length > 0) {
@@ -2312,6 +2406,11 @@ class SetupWizard {
       // does not keep claiming the test is still running.
       this.setButtonLoading(this.finalizeSetupBtn, false);
       const postRestartRedirectTarget = result.redirectTo || '/login';
+
+      // Only now is the wizard genuinely finished, so this is the point where
+      // the progress bar is allowed to read 100%.
+      this.markStepCompleted(this.steps.length - 1);
+      this.showStep(this.currentStep);
 
       if (result.envPreview) {
         this.envPreview.value = result.envPreview;

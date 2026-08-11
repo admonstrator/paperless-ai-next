@@ -1410,6 +1410,8 @@ a.zr-list__item:hover {
   background: var(--zr-surface-2);
 }
 .zr-step__marker {
+  /* anchors the connector line drawn for finished steps */
+  position: relative;
   display: grid;
   place-items: center;
   width: 22px;
@@ -1420,6 +1422,7 @@ a.zr-list__item:hover {
   font-weight: 700;
   color: var(--zr-text-faint);
   background: var(--zr-surface);
+  flex: none;
 }
 .zr-step__name {
   font-weight: 500;
@@ -1431,10 +1434,37 @@ a.zr-list__item:hover {
   font-size: var(--zr-fs-xs);
   color: var(--zr-text-faint);
 }
+/* A finished step used to differ from a pending one by the fill of a 22px
+   circle and nothing else. Give the whole row the state: full-strength text,
+   a check mark, and a connector line running down to the next step. */
 .zr-step[data-status='done'] .zr-step__marker {
   background: var(--zr-ok);
   border-color: var(--zr-ok);
   color: #fff;
+}
+.zr-step[data-status='done'] {
+  color: var(--zr-text);
+}
+.zr-step[data-status='done'] .zr-step__name {
+  font-weight: 600;
+}
+.zr-step[data-status='done'] .zr-step__hint {
+  color: var(--zr-ok);
+}
+/* Connector between consecutive markers, drawn only below a finished step so
+   the rail reads as a filled-in trail. */
+.zr-step[data-status='done'] .zr-step__marker::after {
+  content: '';
+  position: absolute;
+  top: 22px;
+  left: 50%;
+  width: 1.5px;
+  height: calc(100% + 1px);
+  transform: translateX(-50%);
+  background: var(--zr-ok);
+}
+.zr-step:last-child .zr-step__marker::after {
+  display: none;
 }
 .zr-step[data-status='active'] {
   background: var(--zr-brand-soft);
@@ -1447,6 +1477,13 @@ a.zr-list__item:hover {
 }
 .zr-step[data-status='active'] .zr-step__name {
   font-weight: 600;
+}
+/* Steps not yet reached are genuinely inert, so stop advertising a click. */
+.zr-step[data-status='todo'] {
+  cursor: default;
+}
+.zr-step[data-status='todo']:hover {
+  background: transparent;
 }
 
 /* table */
@@ -1908,6 +1945,18 @@ a.zr-list__item:hover {
 .zr-warn-text {
   color: var(--zr-warn);
 }
+/* A field hint carries its own colour through `.zr-field--stacked
+   .zr-field__hint`, which outranks the plain state utilities above. Match that
+   specificity so validation feedback on a hint actually shows its state. */
+.zr-field__hint.zr-ok-text {
+  color: var(--zr-ok);
+}
+.zr-field__hint.zr-danger-text {
+  color: var(--zr-danger);
+}
+.zr-field__hint.zr-warn-text {
+  color: var(--zr-warn);
+}
 .zr-faint {
   color: var(--zr-text-faint);
 }
@@ -2175,5 +2224,30 @@ a.zr-list__item:hover {
 @media (max-width: 860px) {
   .zr-only-desktop {
     display: none !important;
+  }
+
+  /* The setup rail used to be desktop-only, leaving phones with just a line of
+     text. Keep it, but collapse it to a row of markers — the step name is
+     already spelled out above in "Step N of 7: …". */
+  .zr-stepper {
+    flex-direction: row;
+    justify-content: space-between;
+    gap: var(--zr-1);
+  }
+  .zr-step {
+    grid-template-columns: auto;
+    justify-items: center;
+    padding: var(--zr-1);
+  }
+  .zr-step > .zr-col {
+    display: none;
+  }
+  /* horizontal connector instead of the vertical one */
+  .zr-step[data-status='done'] .zr-step__marker::after {
+    top: 50%;
+    left: 22px;
+    width: calc(100% + 1px);
+    height: 1.5px;
+    transform: translateY(-50%);
   }
 }
