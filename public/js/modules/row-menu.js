@@ -22,6 +22,16 @@
 const GAP = 4;
 const EDGE = 8;
 
+/** @returns {boolean} true while any part of the button is on screen */
+function isAnchorVisible(anchor) {
+  return (
+    anchor.right > 0 &&
+    anchor.left < window.innerWidth &&
+    anchor.bottom > 0 &&
+    anchor.top < window.innerHeight
+  );
+}
+
 function place(menu, button) {
   const anchor = button.getBoundingClientRect();
   const menuBox = menu.getBoundingClientRect();
@@ -58,8 +68,18 @@ export default function rowMenu(root) {
     const button = scope.querySelector(
       `[popovertarget="${CSS.escape(menu.id)}"]`
     );
-    if (button) place(menu, button);
+    if (!button) return;
 
+    // The queue tables scroll sideways on a narrow screen, so a button can sit
+    // outside the visible area. Clamping the menu into the viewport would then
+    // park it somewhere unrelated with nothing tying it to a row; closing is the
+    // honest outcome.
+    if (!isAnchorVisible(button.getBoundingClientRect())) {
+      menu.hidePopover();
+      return;
+    }
+
+    place(menu, button);
     menu.querySelector('.zr-menu__item')?.focus();
   }
 
