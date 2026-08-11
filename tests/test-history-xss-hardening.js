@@ -13,6 +13,18 @@ function assertNotIncludes(content, snippet, message) {
   }
 }
 
+/**
+ * The class only has to be on the element, not at the start of the attribute —
+ * the buttons carry framework classes alongside it since they moved into the
+ * row menu.
+ */
+function assertHasClass(content, className, message) {
+  const pattern = new RegExp(`class="[^"]*\\b${className}\\b`);
+  if (!pattern.test(content)) {
+    throw new Error(message);
+  }
+}
+
 function run() {
   console.log('\n=== History XSS Hardening Checks ===');
 
@@ -21,24 +33,29 @@ function run() {
 
   assertNotIncludes(
     historyContent,
-    "onclick=\"window.open('${data.link}')\"",
+    'onclick="window.open(\'${data.link}\')"',
     'History view button must not use inline window.open handler'
   );
   assertNotIncludes(
     historyContent,
-    "onclick=\"window.open('/chat?open=${data.document_id}')\"",
+    'onclick="window.open(\'/chat?open=${data.document_id}\')"',
     'History chat button must not use inline window.open handler'
   );
 
-  assertIncludes(
+  assertHasClass(
     historyContent,
-    'class="history-view-btn',
+    'history-view-btn',
     'History view button should use dedicated class for safe event binding'
   );
-  assertIncludes(
+  assertHasClass(
     historyContent,
-    'class="history-chat-btn',
+    'history-chat-btn',
     'History chat button should use dedicated class for safe event binding'
+  );
+  assertHasClass(
+    historyContent,
+    'history-ocr-btn',
+    'History OCR button should use dedicated class for safe event binding'
   );
 
   assertIncludes(
@@ -53,7 +70,7 @@ function run() {
   );
   assertIncludes(
     historyContent,
-    "if (!/^\\d+$/.test(docId))",
+    'if (!/^\\d+$/.test(docId))',
     'History chat action must validate numeric document ids'
   );
   assertIncludes(

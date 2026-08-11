@@ -223,8 +223,16 @@
     const msg = document.getElementById('toastMessage');
     if (!toast) return;
 
-    inner.className = `zr-toast zr-toast--${type === 'error' ? 'danger' : 'ok'}`;
-    icon.className = `fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}`;
+    const isError = type === 'error';
+    inner.className = `zr-toast zr-toast--${isError ? 'danger' : 'ok'}`;
+    // `className` is read-only on an SVG element — assigning it threw before
+    // the toast was ever shown. The tone swap goes through the sprite instead.
+    icon
+      ?.querySelector('use')
+      ?.setAttribute(
+        'href',
+        `/icons.svg#${isError ? 'i-alert' : 'i-check-circle'}`
+      );
     msg.textContent = message;
 
     toast.classList.remove('hidden');

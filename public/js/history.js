@@ -259,18 +259,30 @@ class HistoryManager {
           // wrapping used to push "Chat" down and double the row height.
           cellClass: 'zr-table__actions',
           mobileLabel: '',
-          // Wrapping is the right default for the card layout, where the same
-          // three buttons have to fit a phone's width; inside the table the
-          // actions column overrides it back to a single line.
-          render: (value, row) =>
-            '<div class="zr-row zr-row--wrap">' +
-            `<button type="button" class="history-info-btn zr-btn" data-docid="${escape(value)}" title="Show AI analysis details">` +
-            '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg><span>Details</span></button>' +
-            `<button type="button" class="history-view-btn zr-btn" data-link="${escape(row.link ?? '')}">` +
-            '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg><span>View</span></button>' +
-            `<button type="button" class="history-chat-btn zr-btn" data-docid="${escape(row.document_id ?? '')}">` +
-            '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-comment"/></svg><span>Chat</span></button>' +
-            '</div>',
+          // One labelled action plus the overflow, like the queue pages. Wrapping
+          // stays on for the card layout, where a phone has less room; inside
+          // the table the actions column overrides it back to a single line.
+          render: (value, row) => {
+            const docId = escape(row.document_id ?? value);
+            const menuId = `historyRowMenu${docId}`;
+            return (
+              '<div class="zr-row zr-row--wrap">' +
+              `<button type="button" class="history-info-btn zr-btn zr-btn--primary" data-docid="${escape(value)}" title="Show AI analysis details">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg><span>Details</span></button>' +
+              `<button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" popovertarget="${menuId}" title="More actions" aria-label="More actions">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg></button>' +
+              `<div id="${menuId}" popover class="zr-menu">` +
+              `<button type="button" class="zr-menu__item history-view-btn" data-link="${escape(row.link ?? '')}">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg>Open in Paperless-ngx</button>' +
+              `<button type="button" class="zr-menu__item history-chat-btn" data-docid="${docId}">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-comment"/></svg>Chat about this document</button>' +
+              '<div class="zr-menu__sep"></div>' +
+              `<button type="button" class="zr-menu__item history-ocr-btn" data-docid="${docId}">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>Send to OCR queue</button>' +
+              '</div>' +
+              '</div>'
+            );
+          },
         },
       ],
     });
@@ -477,6 +489,57 @@ class HistoryManager {
 
       button.dataset.boundClick = 'true';
     });
+
+    document.querySelectorAll('.history-ocr-btn').forEach((button) => {
+      if (button.dataset.boundClick === 'true') return;
+      button.addEventListener('click', () => {
+        const docId = button.dataset.docid || '';
+        if (!/^\d+$/.test(docId)) {
+          console.warn('Blocked unsafe document id:', docId);
+          return;
+        }
+        this.sendToOcrQueue(Number(docId));
+      });
+      button.dataset.boundClick = 'true';
+    });
+  }
+
+  /**
+   * Queues an already-processed document for OCR reprocessing. Useful when the
+   * AI result was poor because the scan carried little or garbled text — the
+   * queue page is otherwise the only way in, and it only knows about documents
+   * the scan loop already flagged.
+   */
+  async sendToOcrQueue(documentId) {
+    let message;
+    let tone = 'success';
+
+    // The request is on its own so a rendering fault in the toast cannot be
+    // reported back as if the queueing itself had failed.
+    try {
+      const response = await fetch('/api/ocr/queue/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        message =
+          data.message || `Document ${documentId} added to the OCR queue.`;
+      } else {
+        // Reached for a document Paperless-ngx no longer has, and for one the
+        // OCR worker is busy with. Re-queueing a pending document succeeds and
+        // simply moves it back to the front.
+        message = data.message || data.error || 'Could not add the document.';
+        tone = 'error';
+      }
+    } catch (error) {
+      message = `Could not add the document: ${error.message}`;
+      tone = 'error';
+    }
+
+    this.showToast(message, tone);
   }
 
   isSafeHistoryLink(link) {
@@ -950,12 +1013,22 @@ class HistoryManager {
     const icon = document.getElementById('toastIcon');
     const msgEl = document.getElementById('toastMessage');
 
+    const isError = type !== 'success';
     msgEl.textContent = message;
-    icon.className = type === 'success' ? 'zr-icon' : 'zr-icon';
-    inner.className = `zr-toast zr-toast--${type === 'success' ? 'ok' : 'danger'}`;
+    // `className` is read-only on an SVG element — assigning it threw before
+    // the toast was ever shown. The tone swap goes through the sprite instead.
+    icon
+      ?.querySelector('use')
+      ?.setAttribute(
+        'href',
+        `/icons.svg#${isError ? 'i-alert' : 'i-check-circle'}`
+      );
+    inner.className = `zr-toast zr-toast--${isError ? 'danger' : 'ok'}`;
 
     toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 4000);
+    // Without this a second toast inherits the first one's countdown.
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => toast.classList.add('hidden'), 4000);
   }
 
   // ────────────────────────────────────────────────────────────────────────────
