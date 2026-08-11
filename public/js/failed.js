@@ -90,7 +90,7 @@
         return `<tr>
                 <td>${docLink}</td>
                 <td class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
-                <td><span class="reason-badge">${reasonLabel}</span></td>
+                <td><span class="zr-badge">${reasonLabel}</span></td>
                 <td class="zr-sm">${sourceLabel}</td>
                 <td class="zr-sm zr-faint">${updated}</td>
                 <td class="zr-row zr-row--wrap">

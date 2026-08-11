@@ -19,9 +19,9 @@
                     <% if (ocrEnabled) { %>
                     <div class="zr-viewhead__actions">
                         <!-- Stats badges -->
-                        <span id="statPending" class="status-badge status-pending"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-clock"/></svg> <span id="statPendingCount">…</span> pending</span>
-                        <span id="statDone" class="status-badge status-done"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check"/></svg> <span id="statDoneCount">…</span> done</span>
-                        <span id="statFailed" class="status-badge status-failed"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg> <span id="statFailedCount">…</span> failed</span>
+                        <span id="statPending" class="zr-badge zr-badge--warn"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-clock"/></svg> <span id="statPendingCount">…</span> pending</span>
+                        <span id="statDone" class="zr-badge zr-badge--ok"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check"/></svg> <span id="statDoneCount">…</span> done</span>
+                        <span id="statFailed" class="zr-badge zr-badge--danger"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg> <span id="statFailedCount">…</span> failed</span>
                     </div>
                     <% } %>
                 </div>
@@ -81,7 +81,7 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                         </label>
 
                         <!-- Status filter -->
-                        <select id="statusFilter" class="app-toolbar-filter toolbar-input ocr-toolbar-filter">
+                        <select id="statusFilter" class="zr-select">
                             <option value="">All statuses</option>
                             <option value="pending">Pending</option>
                             <option value="processing">Processing</option>

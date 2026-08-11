@@ -168,7 +168,7 @@
 
         const reasonLabel = formatReasonLabel(item.reason);
 
-        const statusHtml = `<span class="status-badge status-${escHtml(item.status)}">${statusIcon(item.status)} ${escHtml(item.status)}</span>`;
+        const statusHtml = `<span class="zr-badge ${statusTone(item.status)}">${statusIcon(item.status)} ${escHtml(item.status)}</span>`;
 
         const addedDate = item.added_at
           ? new Date(item.added_at).toLocaleString()
@@ -197,7 +197,7 @@
         return `<tr>
                 <td>${docLink}</td>
                 <td class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
-                <td><span class="reason-badge">${reasonLabel}</span></td>
+                <td><span class="zr-badge">${reasonLabel}</span></td>
                 <td>${statusHtml}</td>
                 <td class="zr-sm zr-faint">${addedDate}</td>
                 <td>
@@ -233,6 +233,19 @@
         removeItem(parseInt(this.dataset.id, 10));
       });
     });
+  }
+
+  // Queue states map onto the framework badge tones rather than a second set of
+  // status colours that would not follow the theme.
+  function statusTone(status) {
+    return (
+      {
+        pending: 'zr-badge--warn',
+        processing: 'zr-badge--info',
+        done: 'zr-badge--ok',
+        failed: 'zr-badge--danger',
+      }[status] || ''
+    );
   }
 
   function statusIcon(status) {

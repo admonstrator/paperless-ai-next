@@ -101,7 +101,7 @@
         return `<tr>
                 <td>${docLink}</td>
                 <td class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
-                <td><span class="reason-badge">${escHtml(item.reason || 'manual')}</span></td>
+                <td><span class="zr-badge">${escHtml(item.reason || 'manual')}</span></td>
                 <td class="zr-sm zr-faint">${added}</td>
                 <td>
                     <button class="zr-btn ignored-unignore-btn" data-id="${item.document_id}" title="Remove from ignore list and allow scanning again">

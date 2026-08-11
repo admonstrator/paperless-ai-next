@@ -1072,6 +1072,10 @@ a.zr-list__item:hover {
   width: 100%;
   max-width: 460px;
   height: 30px;
+  /* The reset hands these `font: inherit`, so a control inside a .zr-sm row
+     used to come out a size smaller than the same control elsewhere. The
+     family still comes from the page; the size belongs to the component. */
+  font-size: var(--zr-fs-base);
   padding: 0 var(--zr-2);
   border: 1px solid var(--zr-line-strong);
   border-radius: var(--zr-r-md);
