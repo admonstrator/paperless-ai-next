@@ -471,6 +471,12 @@ body {
   gap: var(--zr-5);
   align-items: start;
 }
+/* The nav inside is sticky, and a sticky element can only travel inside its own
+   containing block. With `align-items: start` the column was as tall as the nav
+   itself, so it scrolled away after 190px instead of following the page. */
+.zr-settings > aside {
+  align-self: stretch;
+}
 
 /* --- 4. grid + modules --------------------------------------------------- */
 .zr-grid {
@@ -1406,6 +1412,11 @@ a.zr-list__item:hover {
   gap: 1px;
   position: sticky;
   top: calc(var(--zr-topbar-h) + var(--zr-4));
+  /* A longer list on a short window scrolls inside the nav rather than reaching
+     past the bottom of the screen where it could not be clicked. */
+  max-height: calc(100dvh - var(--zr-topbar-h) - var(--zr-6));
+  overflow-y: auto;
+  scrollbar-width: thin;
 }
 .zr-sectionnav a {
   display: flex;
@@ -2328,6 +2339,8 @@ a.zr-list__item:hover {
   .zr-sectionnav {
     position: static;
     flex-direction: row;
+    /* The desktop cap would squash the single row this becomes. */
+    max-height: none;
     overflow-x: auto;
     gap: var(--zr-1);
     padding-bottom: var(--zr-1);
