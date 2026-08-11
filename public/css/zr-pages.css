@@ -313,6 +313,17 @@
 
 /* --- history ------------------------------------------------------------- */
 
+/* The two filters sit beside each other and the Reload button on a wide screen,
+   so they are capped well below the 460px a select is otherwise allowed. Only
+   above the phone breakpoint: below it they take the full width like every
+   other control, and a cap declared for both widths would win against zr.css
+   on equal specificity by being in the later file. */
+@media (min-width: 861px) {
+  .history-filter {
+    max-width: 220px;
+  }
+}
+
 .highlight-row {
   background-color: rgba(59, 130, 246, 0.1);
 }

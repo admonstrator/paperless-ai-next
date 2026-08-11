@@ -16,13 +16,13 @@
                         for the next scan again.
                     </p>
                     <div class="zr-viewhead__actions">
-                        <select id="tagFilter" class="zr-select" aria-label="Filter by tag" style="max-width: 200px">
+                        <select id="tagFilter" class="zr-select history-filter" aria-label="Filter by tag">
                             <option value="">All tags</option>
                             <% filters.allTags.forEach(function(tag) { %>
                                 <option value="<%= tag.id %>"><%= tag.name %></option>
                             <% }); %>
                         </select>
-                        <select id="correspondentFilter" class="zr-select" aria-label="Filter by correspondent" style="max-width: 220px">
+                        <select id="correspondentFilter" class="zr-select history-filter" aria-label="Filter by correspondent">
                             <option value="">All correspondents</option>
                             <% filters.allCorrespondents.forEach(function(corr) { %>
                                 <option value="<%= corr %>"><%= corr %></option>
@@ -35,7 +35,7 @@
                     </div>
                 </div>
 
-                <div class="zr-row zr-row--wrap" style="margin-bottom: var(--zr-3)">
+                <div class="zr-row zr-row--wrap zr-btnbar" style="margin-bottom: var(--zr-3)">
                     <button id="selectAllDocsBtn" class="zr-btn" title="Select all visible documents">
                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check"/></svg>
                         Select all

@@ -2430,6 +2430,31 @@ a.zr-list__item:hover {
   .app-toolbar > .zr-grow:empty {
     display: none;
   }
+
+  /* A bar of page-level buttons wraps into ragged rows on a phone: five labels
+     of five different lengths, no two lines ending in the same place. A grid
+     lines them up instead — two columns at 390px, more on a tablet, and never
+     narrower than the longest label the bar carries today. */
+  .zr-btnbar {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+  /* The spacer that pushes the destructive buttons to the far side on a wide
+     screen keeps that meaning here, as the break onto their own row. It must
+     come after the rule above, which hides it at the same specificity. */
+  .zr-btnbar > .zr-grow:empty {
+    display: block;
+    grid-column: 1 / -1;
+    height: 0;
+  }
+  /* Filters stack rather than leaving a different amount of the row unused on
+     every line — but only where the group holds a control. The OCR head uses
+     the same box for three status badges, and those belong side by side. */
+  .zr-viewhead__actions:has(.zr-select, .zr-input) {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
   .zr-sectionnav a {
     white-space: nowrap;
   }
