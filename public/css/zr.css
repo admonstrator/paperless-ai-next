@@ -1194,6 +1194,9 @@ a.zr-list__item:hover {
 }
 .zr-switch input:checked + .zr-switch__track .zr-switch__thumb {
   transform: translateX(15px);
+  /* On the grey off-track white is the readable thumb, but the dark theme's
+     brand is a bright teal that white only reaches 2.3:1 against. */
+  background: var(--zr-on-brand);
 }
 .zr-switch input:focus-visible + .zr-switch__track {
   outline: 2px solid var(--zr-focus);
@@ -1248,12 +1251,75 @@ a.zr-list__item:hover {
 .zr-checktile > .zr-toggle {
   order: 2;
 }
+/* Selection tick. Rows are picked, not switched on, so this stays a checkbox
+   rather than becoming a .zr-toggle — but it is drawn here instead of by the
+   operating system, which was the last place a native widget showed through. */
 .zr-check {
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
   width: 16px;
   height: 16px;
-  accent-color: var(--zr-brand);
   flex: none;
+  margin: 0;
+  vertical-align: middle;
+  /* An empty box is nothing but its outline, so the border carries the whole
+     control and needs the 3:1 of WCAG 1.4.11 on its own. --zr-line-strong, which
+     borders the text inputs, only reaches 1.5:1 against the surface. */
+  border: 1px solid var(--zr-text-faint);
+  /* Not --zr-r-sm: 6px on a 16px box rounds it into a circle, and a round box
+     reads as a radio button, i.e. as one choice out of several. */
+  border-radius: 4px;
+  background: var(--zr-surface);
   cursor: pointer;
+  transition:
+    background var(--zr-dur) var(--zr-ease),
+    border-color var(--zr-dur) var(--zr-ease);
+}
+.zr-check:hover {
+  border-color: var(--zr-brand);
+}
+.zr-check:checked,
+.zr-check:indeterminate {
+  background: var(--zr-brand);
+  border-color: var(--zr-brand);
+}
+/* Tick and dash are two borders on one pseudo-element, so the control stays a
+   single element with no icon to load. --zr-on-brand rather than white: the dark
+   theme's brand is a bright teal that a white tick only reaches 2.3:1 against. */
+.zr-check::after {
+  content: '';
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 4px;
+  height: 8px;
+  border: solid var(--zr-on-brand);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+  opacity: 0;
+  transition: opacity var(--zr-dur) var(--zr-ease);
+}
+.zr-check:checked::after {
+  opacity: 1;
+}
+/* Some rows selected: a dash, the same shape the native control uses. */
+.zr-check:indeterminate::after {
+  left: 2px;
+  top: 5px;
+  width: 10px;
+  height: 0;
+  border-width: 0 0 2px 0;
+  transform: none;
+  opacity: 1;
+}
+.zr-check:focus-visible {
+  outline: 2px solid var(--zr-focus);
+  outline-offset: 2px;
+}
+.zr-check:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 /* Switch rendered from the checkbox itself — same look as .zr-switch, but it
@@ -1291,6 +1357,7 @@ a.zr-list__item:hover {
 }
 .zr-toggle:checked::after {
   transform: translateX(15px);
+  background: var(--zr-on-brand);
 }
 .zr-toggle:focus-visible {
   outline: 2px solid var(--zr-focus);

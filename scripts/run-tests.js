@@ -42,6 +42,7 @@ const TESTS = {
   'native-install-log-paths': 'test-native-install-log-paths.js',
   'update-check-service': 'test-update-check-service.js',
   'mobile-table-fallback': 'test-mobile-table-fallback.js',
+  'form-control-styling': 'test-form-control-styling.js',
   'login-mfa-flow': 'test-login-mfa-flow.js',
   'ocr-fallback-ai-errors': 'test-ocr-fallback-ai-errors.js',
   'ocr-startup-recovery': 'test-ocr-startup-recovery.js',
@@ -127,6 +128,7 @@ const AREAS = {
     'native-install-log-paths',
     'update-check-service',
     'mobile-table-fallback',
+    'form-control-styling',
   ],
   processing: [
     'document-type-restriction',
