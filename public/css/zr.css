@@ -2346,6 +2346,13 @@ a.zr-list__item:hover {
     padding-bottom: var(--zr-1);
     scrollbar-width: none;
   }
+  /* An empty flex spacer only does its job while everything is on one line.
+     Once the row wraps it eats the rest of whichever line it landed on and
+     strands the buttons around it, so it steps aside here. */
+  .zr-row--wrap > .zr-grow:empty,
+  .app-toolbar > .zr-grow:empty {
+    display: none;
+  }
   .zr-sectionnav a {
     white-space: nowrap;
   }

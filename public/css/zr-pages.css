@@ -852,6 +852,13 @@ img {
 .manual-preview {
   min-height: 600px;
 }
+/* 600px is most of a phone screen, and it is empty until a document is picked —
+   the analysis and tag cards below it were a long scroll away. */
+@media (max-width: 860px) {
+  .manual-preview {
+    min-height: 300px;
+  }
+}
 
 .stat-box:hover {
   transform: translateY(-2px);

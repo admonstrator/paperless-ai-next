@@ -259,8 +259,11 @@ class HistoryManager {
           // wrapping used to push "Chat" down and double the row height.
           cellClass: 'zr-table__actions',
           mobileLabel: '',
+          // Wrapping is the right default for the card layout, where the same
+          // three buttons have to fit a phone's width; inside the table the
+          // actions column overrides it back to a single line.
           render: (value, row) =>
-            '<div class="zr-row">' +
+            '<div class="zr-row zr-row--wrap">' +
             `<button type="button" class="history-info-btn zr-btn" data-docid="${escape(value)}" title="Show AI analysis details">` +
             '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg><span>Details</span></button>' +
             `<button type="button" class="history-view-btn zr-btn" data-link="${escape(row.link ?? '')}">` +

@@ -174,13 +174,16 @@ class PromptRatingSystem {
 
     const promptsSection = document.createElement('div');
     promptsSection.className = 'zr-module saved-prompts-section';
+    // A module head rather than utility classes on the heading: .zr-module__title
+    // is display:block, so the space-between never applied and the button ended
+    // up jammed against the text with 160px of slack beside it.
     promptsSection.innerHTML = `
-            <h2 class="zr-module__title zr-row zr-row--between">
-                Saved Prompts
-                <button id="clearPrompts" class="zr-btn zr-btn--danger">
-                    Clear All
-                </button>
-            </h2>
+            <div class="zr-module__head">
+                <h2 class="zr-module__title">Saved Prompts</h2>
+                <div class="zr-module__actions">
+                    <button id="clearPrompts" class="zr-btn zr-btn--danger">Clear All</button>
+                </div>
+            </div>
             <div id="savedPromptsList"></div>
         `;
 
