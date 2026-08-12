@@ -169,9 +169,13 @@ class SetupWizard {
     this.updateMfaPanelVisibility();
     this.toggleIncludeTagField();
     this.toggleMistralFields();
-    // Fresh installs start in quickstart mode; existing configs open in
-    // manual mode so their loaded values stay visible.
-    this.setAiConfigMode(this.config.AI_PROVIDER ? 'manual' : 'quickstart');
+    // Auto-detection is the default path; manual configuration is a choice the
+    // user makes. This used to read `this.config.AI_PROVIDER ? 'manual' : …`,
+    // which never once picked quickstart: the setup route fills AI_PROVIDER
+    // with 'openai' when the environment has none, so the flag was always set.
+    // Values loaded from an existing config are not lost — they sit in the
+    // manual panel, one click away.
+    this.setAiConfigMode('quickstart');
     this.showStep(0);
   }
 

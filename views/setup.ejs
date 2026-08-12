@@ -298,10 +298,12 @@
 
                 <section class="zr-steppane" data-step-index="4" data-step-title="AI provider">
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg> AI access credentials</h3>
-                    <p class="zr-sm zr-muted">Point Quickstart at a local AI server for automatic configuration, or configure a provider manually.</p>
+                    <p class="zr-sm zr-muted">Quickstart points at a local AI server and configures itself from the
+                        models it finds. Switch to manual configuration for a hosted provider, or to enter the values
+                        yourself.</p>
 
                     <div class="zr-row" role="group" aria-label="AI configuration mode">
-                        <button type="button" id="aiModeQuickstartBtn" class="zr-btn setup-mode-btn" aria-pressed="false">
+                        <button type="button" id="aiModeQuickstartBtn" class="zr-btn setup-mode-btn" aria-pressed="true">
                             <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-zap"/></svg>
                             <span>Quickstart (auto-detect)</span>
                         </button>
@@ -311,7 +313,10 @@
                         </button>
                     </div>
 
-                    <div id="aiQuickstartPanel" class="hidden zr-col zr-col--loose">
+                    <!-- Open by default, matching the mode the wizard starts in,
+                         so the panel does not flash into place after the script
+                         runs. setAiConfigMode() owns both panels from then on. -->
+                    <div id="aiQuickstartPanel" class="zr-col zr-col--loose">
                         <div class="zr-field zr-field--stacked">
                             <label for="quickstartBaseUrl" class="zr-field__name">AI server URL</label>
                             <input id="quickstartBaseUrl" type="text" class="zr-input" placeholder="http://192.168.1.5:1234">
