@@ -5,7 +5,7 @@
     <title><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Zettelrobbe' %></title>
     <link rel="icon" type="image/webp" href="/favicon.webp">
     <%- include('theme-init-head') %>
-    <!-- Listed in layer order for readability. The @layer statement in tokens.css is what decides the cascade, so most of this order carries nothing. Three positions still do: tokens.css first, zr-pages.css (still unlayered, so it beats every layer) last, and buttons.css before forms.css — the phone touch-target rule sits in forms.css and sizes .zr-btn as well, and inside one layer document order is still the tie-breaker. -->
+    <!-- Listed in layer order for readability. The @layer statement in tokens.css is what decides the cascade, so most of this order carries nothing. Two positions still do: tokens.css first (it declares the layer order), and buttons.css before forms.css — the phone touch-target rule sits in forms.css and sizes .zr-btn as well, and inside one layer document order is still the tie-breaker. Every pages/* file is in layer pages, so where the block sits carries nothing either; within it the links keep the order the sections had in the one page stylesheet they were split out of. -->
     <link rel="stylesheet" href="/css/tokens.css">
     <link rel="stylesheet" href="/css/base.css">
     <link rel="stylesheet" href="/css/shell.css">
@@ -16,6 +16,14 @@
     <link rel="stylesheet" href="/css/dialogs.css">
     <link rel="stylesheet" href="/css/modules.css">
     <link rel="stylesheet" href="/css/tables.css">
+    <link rel="stylesheet" href="/css/pages/auth.css">
+    <link rel="stylesheet" href="/css/pages/setup.css">
+    <link rel="stylesheet" href="/css/pages/dashboard.css">
+    <link rel="stylesheet" href="/css/pages/settings.css">
+    <link rel="stylesheet" href="/css/pages/queues.css">
+    <link rel="stylesheet" href="/css/pages/history.css">
+    <link rel="stylesheet" href="/css/pages/playground.css">
+    <link rel="stylesheet" href="/css/pages/settings-changelog.css">
+    <link rel="stylesheet" href="/css/pages/shared.css">
     <link rel="stylesheet" href="/css/utilities.css">
-    <link rel="stylesheet" href="/css/zr-pages.css">
     <script src="/js/csrf.js"></script>

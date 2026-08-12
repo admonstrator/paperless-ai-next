@@ -4,10 +4,10 @@
    The layer order below is the cascade contract for the whole framework: a
    later layer beats an earlier one no matter how specific the earlier selector
    is, so a component can override a base primitive without doubling its
-   selector, and a state utility wins over any component. 'pages' is reserved
-   for the coming zr-pages.css split; nothing in these files uses it yet.
-   zr-pages.css itself is still unlayered on purpose — un-layered CSS beats
-   every layer, which is exactly the override role its load order gave it.
+   selector, and a state utility wins over any component. 'pages' carries the
+   page-scoped stylesheets in css/pages/*: they still beat every framework
+   layer — the role their load order used to give them — but a state utility
+   now wins over them too.
 
    Everything the rest of the framework draws with is a custom property in this
    file, so both themes and the whole spacing/typography scale live in one

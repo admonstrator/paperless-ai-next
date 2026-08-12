@@ -1,0 +1,178 @@
+/* ==========================================================================
+   Setup wizard: the page frame, the fields inside the wizard panel, and
+   the setup-error page shown when the instance cannot be reached.
+   @layer pages: above the framework layers, below utilities.
+   ========================================================================== */
+
+@layer pages {
+  /* --- setup wizard ------------------------------------------------------- */
+  .zr-setup {
+    min-height: 100vh;
+    min-height: 100dvh;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: var(--zr-4);
+    display: flex;
+    flex-direction: column;
+    gap: var(--zr-4);
+    background:
+      radial-gradient(
+        900px 400px at 15% -10%,
+        color-mix(in srgb, var(--zr-brand) 10%, transparent),
+        transparent
+      ),
+      radial-gradient(
+        700px 400px at 100% 0%,
+        color-mix(in srgb, var(--zr-info) 8%, transparent),
+        transparent
+      );
+  }
+  .zr-setup__head {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+    padding-bottom: var(--zr-2);
+  }
+  .zr-setup__body {
+    display: grid;
+    grid-template-columns: 232px minmax(0, 1fr);
+    gap: var(--zr-4);
+    align-items: start;
+  }
+  .zr-setup__aside {
+    position: sticky;
+    top: var(--zr-4);
+  }
+  .zr-setup__panel {
+    display: flex;
+    flex-direction: column;
+    min-height: 440px;
+  }
+  .zr-setup__panel > [data-panel] {
+    flex: 1;
+  }
+  .zr-setup__panel > .zr-module__foot {
+    margin-top: auto;
+  }
+  @media (max-width: 860px) {
+    .zr-setup {
+      padding: var(--zr-3);
+      gap: var(--zr-3);
+    }
+    .zr-setup__body {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--zr-3);
+    }
+    .zr-setup__aside {
+      position: static;
+    }
+    .zr-setup__panel {
+      min-height: 0;
+    }
+  }
+
+  /* --- setup-error -------------------------------------------------------- */
+  /* Scoped to the page: this used to be a bare `body` rule in its own file, which
+     would now leak onto every page. */
+  .zr-errorpage {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    min-height: 100dvh;
+    padding: var(--zr-4);
+  }
+  .zr-errorpage .error-container {
+    background: var(--zr-surface);
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-lg);
+    box-shadow: var(--zr-shadow-lg);
+    padding: var(--zr-8);
+    max-width: 620px;
+    width: 100%;
+    text-align: center;
+  }
+  .zr-errorpage .error-icon {
+    font-size: 40px;
+    margin-bottom: var(--zr-3);
+  }
+  .zr-errorpage h1 {
+    font-family: var(--zr-font-brand);
+    font-size: var(--zr-fs-2xl);
+    font-weight: 700;
+    margin-bottom: var(--zr-3);
+  }
+  .zr-errorpage p {
+    color: var(--zr-text-muted);
+    margin: var(--zr-2) 0;
+  }
+  .zr-errorpage .error-message,
+  .zr-errorpage .support-text,
+  .zr-errorpage .admin-notice {
+    text-align: left;
+    padding: var(--zr-3);
+    margin: var(--zr-3) 0;
+    border-radius: var(--zr-r-md);
+    border-left: 3px solid;
+    font-size: var(--zr-fs-base);
+  }
+  .zr-errorpage .error-message {
+    background: var(--zr-danger-soft);
+    border-left-color: var(--zr-danger);
+    color: var(--zr-danger);
+  }
+  .zr-errorpage .support-text {
+    background: var(--zr-info-soft);
+    border-left-color: var(--zr-info);
+    color: var(--zr-info);
+  }
+  .zr-errorpage .admin-notice {
+    background: var(--zr-warn-soft);
+    border-left-color: var(--zr-warn);
+    color: var(--zr-warn);
+  }
+  .zr-errorpage .action-buttons {
+    margin-top: var(--zr-6);
+    display: flex;
+    gap: var(--zr-2);
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* --- setup wizard steps ------------------------------------------------- */
+  /* Inside the wizard panel every control spans the same width, so the fields
+     line up on one edge instead of stepping between 460 and 560 px. */
+  .zr-setup__panel .zr-field--stacked .zr-input,
+  .zr-setup__panel .zr-field--stacked .zr-select,
+  .zr-setup__panel .zr-field--stacked .zr-textarea,
+  .zr-setup__panel .zr-field--stacked .zr-inputgroup,
+  .zr-setup__panel .zr-formgrid .zr-input,
+  .zr-setup__panel .zr-formgrid .zr-select,
+  .zr-setup__panel .zr-formgrid .zr-inputgroup {
+    max-width: none;
+    width: 100%;
+  }
+  /* Fields sit on a single rhythm; the section title carries the separation.
+     Scoped to the panel because .zr-steppane (defined in pages/auth.css) is
+     shared with the login card, which must not inherit this extra spacing on
+     top of the pane's own gap. */
+  .zr-setup__panel .zr-steppane > .zr-field--stacked + .zr-field--stacked {
+    margin-top: var(--zr-3);
+  }
+  .zr-setup__panel .zr-steppane .zr-formgrid {
+    margin-top: var(--zr-3);
+  }
+  .zr-setup__panel .zr-steppane .zr-module__title {
+    gap: var(--zr-2);
+    font-size: var(--zr-fs-lg);
+  }
+  .setup-provisioning {
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-md);
+    padding: var(--zr-3);
+    background: var(--zr-surface-2);
+  }
+  .setup-qr-box {
+    flex: none;
+  }
+}

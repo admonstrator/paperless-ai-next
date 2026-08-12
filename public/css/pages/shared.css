@@ -1,0 +1,345 @@
+/* ==========================================================================
+   Cross-page legacy pieces: the pre-framework modal system, .stat-box,
+   the manual document search, the queue toolbar and the odds and ends
+   the page scripts of history, playground, settings and manual generate
+   at runtime. Not one page — several, which is why they are not in any
+   of the page files.
+   @layer pages: above the framework layers, below utilities.
+   ========================================================================== */
+
+@layer pages {
+  /* --- shared page components -------------------------------------------
+     Carried over from the retired dashboard.css: the modal, toolbars, search
+     dropdown and status badges these pages still use, rebased on the
+     framework tokens. */
+
+  .manual-search-wrapper {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .manual-search-results {
+    max-height: 260px;
+    overflow-y: auto;
+    border: 1px solid var(--zr-line);
+    border-radius: 0.375rem;
+    background: var(--zr-surface);
+  }
+
+  .manual-search-meta {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .manual-search-pill {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.125rem 0.5rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.4;
+    white-space: nowrap;
+  }
+
+  .manual-search-pill.correspondent {
+    background: var(--zr-info-soft);
+    color: var(--zr-info);
+  }
+
+  .manual-search-pill.date {
+    background: var(--zr-ok-soft);
+    color: var(--zr-ok);
+  }
+
+  .manual-search-pill.id {
+    background: var(--zr-surface-sunken);
+    color: var(--zr-text);
+  }
+
+  .manual-search-pill.tag {
+    background: var(--zr-warn-soft);
+    color: var(--zr-warn);
+  }
+
+  .manual-search-status {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--zr-text-muted);
+    min-height: 1.25rem;
+  }
+
+  .manual-search-status.error {
+    color: var(--zr-danger);
+  }
+
+  /* Add image inversion for dark mode */
+  [data-theme='dark'] img:not(.no-invert) {
+    filter: invert(var(--zr-text));
+    transition: filter 0.3s ease;
+  }
+
+  /* Stats Box */
+  .stat-box {
+    background: var(--zr-surface-2);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--zr-line);
+    transition: all 0.2s ease;
+    color: var(--zr-text);
+  }
+
+  /* The manual preview claims its height up front, so picking a document does
+     not make the rest of the page jump. Frame and padding come from .stat-box. */
+  /* Tall enough to balance the analysis column once content loads; while empty
+     the #previewEmpty hint fills it instead of a bare grey area. */
+  .manual-preview {
+    min-height: 360px;
+  }
+  /* The empty hint shows only while the preview has no content. */
+  .manual-preview #contentPreview:not(:empty) + #previewEmpty {
+    display: none;
+  }
+  /* Most of a phone screen of blank grey pushed the analysis and tag cards a
+     long scroll away. */
+  @media (max-width: 860px) {
+    .manual-preview {
+      min-height: 160px;
+    }
+  }
+
+  .stat-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    background: var(--zr-surface-2);
+  }
+
+  /* Modal Styles */
+  .modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transition: all 0.3s ease;
+  }
+
+  .modal.show {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
+
+  .modal-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: var(--zr-scrim);
+    backdrop-filter: blur(4px);
+  }
+
+  .modal-container {
+    position: relative;
+    background: var(--zr-surface);
+    border-radius: 12px;
+    width: 95%;
+    max-width: 600px;
+    max-height: 80vh;
+    margin: 1rem;
+    box-shadow:
+      0 20px 25px -5px rgba(0, 0, 0, 0.1),
+      0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+    overflow: hidden;
+    border: 1px solid var(--zr-line);
+    z-index: 51;
+  }
+
+  .modal.show .modal-container {
+    transform: translateY(0);
+  }
+
+  .modal-header {
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--zr-line);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--zr-surface);
+  }
+
+  .modal-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--zr-text);
+  }
+
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--zr-text-muted);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .modal-close:hover {
+    background: var(--zr-surface-2);
+    color: var(--zr-text);
+  }
+
+  .modal-content {
+    padding: 1.25rem;
+    overflow-y: auto;
+    max-height: calc(80vh - 70px);
+    background: var(--zr-surface);
+  }
+
+  /* The queue toolbar: one line, one control height. It used to be three
+     top-aligned columns of 99, 57 and 30px with the search scope wrapping below
+     the field, so the block ended ragged on every side. */
+  .app-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--zr-2);
+  }
+  /* The scope selects stay narrow so the search field keeps the room. */
+  .app-toolbar-scope {
+    width: auto;
+    min-width: 132px;
+    flex: none;
+  }
+  /* The wrapper is a column elsewhere (manual page); in the toolbar the scope
+     select sits in front of the field on one line. */
+  .app-toolbar .manual-search-wrapper {
+    position: relative;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--zr-2);
+    flex: 1 1 320px;
+    min-width: 220px;
+  }
+  .app-toolbar .manual-search-wrapper .zr-input {
+    flex: 1;
+    min-width: 0;
+    max-width: none;
+  }
+
+  /* --- pieces used by markup the page scripts generate -------------------- */
+  /* history detail rows */
+  .zr-detail-label {
+    min-width: 140px;
+    flex: none;
+    color: var(--zr-text-muted);
+  }
+
+  /* The detail modal stacks labelled sections. Spacing goes on the container
+     rather than the sections themselves, because JS toggles their `display`. */
+  .zr-modal-sections > * + * {
+    margin-top: var(--zr-4);
+  }
+
+  /* the playground rating dialog is built in JS, not as a <dialog>, so it needs
+     an explicit backdrop element — this matches what `.zr-dialog::backdrop`
+     gives the native ones, and sits one layer below `.zr-modal-center`. */
+  .zr-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 59;
+    background: var(--zr-scrim);
+    backdrop-filter: blur(2px);
+  }
+  .zr-modal-center {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--zr-4);
+    z-index: 60;
+  }
+  .zr-modal-card {
+    width: 100%;
+    max-width: 440px;
+    position: relative;
+  }
+
+  /* the AI-mode toggle in the wizard behaves like a segmented control */
+  .setup-mode-btn[aria-pressed='true'] {
+    background: var(--zr-brand-soft);
+    border-color: var(--zr-brand);
+    color: var(--zr-brand-text);
+    font-weight: 600;
+  }
+  /* the MFA pairing QR keeps a fixed footprint */
+  #setupMfaQrImage {
+    width: 176px;
+    height: 176px;
+    padding: var(--zr-2);
+    /* Deliberately white in both themes: a QR code needs its light quiet zone
+       to stay scannable. */
+    background: #fff;
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-md);
+  }
+
+  /* --- remaining page-specific pieces ------------------------------------- */
+  /* manual: the document/preview column pair */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--zr-3);
+    align-items: start;
+  }
+
+  /* settings: draggable custom-field row */
+  .custom-field-item {
+    padding: var(--zr-2) var(--zr-3);
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-md);
+    background: var(--zr-surface);
+    transition: border-color var(--zr-dur) var(--zr-ease);
+  }
+  .custom-field-item:hover {
+    border-color: var(--zr-brand);
+  }
+
+  /* setup-error: collapsed technical details */
+  .zr-errorpage .tech-details {
+    margin-top: var(--zr-4);
+    text-align: left;
+    font-family: var(--zr-font-mono);
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-muted);
+  }
+
+  /* playground detail modal body */
+  .modal-loader {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--zr-6);
+  }
+  .modal-data {
+    padding: var(--zr-3);
+  }
+}
