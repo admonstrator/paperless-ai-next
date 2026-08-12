@@ -1,0 +1,1241 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="<%= theme || 'light' %>">
+<%- include('partials/shell/head-start', { pageTitle: 'Styleguide - Zettelrobbe' }) %>
+    <%# window.zrDialog lives in this classic script; the settings and setup pages load it the same way. %>
+    <script src="/js/dialogs.js"></script>
+<%- include('partials/shell/head-end') %>
+<%- include('partials/shell/body-open', {
+    pageTitle: 'Styleguide',
+    version: typeof version !== 'undefined' ? version : ''
+}) %>
+
+<div class="zr-viewhead">
+    <h2 class="zr-viewhead__title">Framework reference</h2>
+    <p class="zr-viewhead__sub">
+        Every zr component the framework ships, rendered once with the markup the app actually uses.
+        Look here before writing a new class. Development build only — this page is not registered in production.
+    </p>
+</div>
+
+<div class="zr-settings">
+    <aside class="zr-only-desktop">
+        <nav class="zr-sectionnav" data-module="section-nav">
+            <a href="#sg-buttons" aria-current="true">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-grip"/></svg>
+                Buttons
+            </a>
+            <a href="#sg-badges">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-tag"/></svg>
+                Badges &amp; chips
+            </a>
+            <a href="#sg-forms">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-list"/></svg>
+                Forms
+            </a>
+            <a href="#sg-alerts">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
+                Alerts
+            </a>
+            <a href="#sg-progress">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-activity"/></svg>
+                Meter &amp; spinner
+            </a>
+            <a href="#sg-toasts">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-comment"/></svg>
+                Toasts
+            </a>
+            <a href="#sg-dialogs">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-layers"/></svg>
+                Dialogs
+            </a>
+            <a href="#sg-modules">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-panel"/></svg>
+                Modules &amp; grid
+            </a>
+            <a href="#sg-charts">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trend-up"/></svg>
+                Charts
+            </a>
+            <a href="#sg-tables">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-database"/></svg>
+                Tables
+            </a>
+            <a href="#sg-auth">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-login"/></svg>
+                Auth &amp; steps
+            </a>
+            <a href="#sg-actionbar">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-save"/></svg>
+                Action bar
+            </a>
+        </nav>
+    </aside>
+
+    <div>
+        <!-- ── buttons ─────────────────────────────────────────────────── -->
+        <section class="zr-module" id="sg-buttons">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Buttons</h3>
+                <span class="zr-module__meta">css/buttons.css</span>
+            </div>
+            <div class="zr-module__body zr-col zr-col--loose">
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Variants</span>
+                    <div class="zr-row zr-row--wrap">
+                        <button type="button" class="zr-btn">Default</button>
+                        <button type="button" class="zr-btn zr-btn--primary">Primary</button>
+                        <button type="button" class="zr-btn zr-btn--danger">Danger</button>
+                        <button type="button" class="zr-btn zr-btn--ghost">Ghost</button>
+                        <button type="button" class="zr-btn zr-btn--icon" aria-label="More actions">
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg>
+                        </button>
+                        <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" aria-label="Close">
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">With an icon</span>
+                    <div class="zr-row zr-row--wrap">
+                        <button type="button" class="zr-btn zr-btn--primary">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg>
+                            Start scan
+                        </button>
+                        <button type="button" class="zr-btn">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                            Refresh
+                        </button>
+                        <button type="button" class="zr-btn zr-btn--danger">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Sizes and states</span>
+                    <div class="zr-row zr-row--wrap">
+                        <button type="button" class="zr-btn">Base, 30px</button>
+                        <button type="button" class="zr-btn zr-btn--lg">Large, 36px</button>
+                        <button type="button" class="zr-btn" disabled>Disabled</button>
+                        <button type="button" class="zr-btn zr-btn--primary" disabled>Disabled primary</button>
+                    </div>
+                    <button type="button" class="zr-btn zr-btn--primary zr-btn--lg zr-btn--block">Block</button>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Button bar</span>
+                    <p class="zr-sm zr-muted">
+                        <code class="zr-mono">.zr-btnbar</code> becomes a grid below 860px. With
+                        <code class="zr-mono">data-module="toolbar-menu"</code> the buttons move into one popover
+                        instead; the empty <code class="zr-mono">.zr-grow</code> spacer becomes the separator.
+                    </p>
+                    <div class="zr-row zr-row--wrap zr-btnbar" data-module="toolbar-menu">
+                        <button type="button" class="zr-btn">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                            Rescan selected
+                        </button>
+                        <button type="button" class="zr-btn">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-filter"/></svg>
+                            Refresh filters
+                        </button>
+                        <span class="zr-grow"></span>
+                        <button type="button" class="zr-btn zr-btn--danger">Reset selected</button>
+                        <button type="button" class="zr-btn zr-btn--danger">Reset all</button>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Segmented control</span>
+                    <div class="zr-row">
+                        <div class="zr-segment" id="sgSegment">
+                            <button type="button" aria-selected="true">Day</button>
+                            <button type="button" aria-selected="false">Week</button>
+                            <button type="button" aria-selected="false">Month</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Icons</span>
+                    <div class="zr-row zr-row--wrap">
+                        <span class="zr-row"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-file"/></svg> sm, 14px</span>
+                        <span class="zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-file"/></svg> base, 16px</span>
+                        <span class="zr-row"><svg class="zr-icon zr-icon--lg" aria-hidden="true"><use href="/icons.svg#i-file"/></svg> lg, 20px</span>
+                        <span class="zr-row"><svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> spin</span>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Links</span>
+                    <p class="zr-sm zr-muted">
+                        <a href="#sg-buttons" class="zr-link">.zr-link</a> underlines on hover,
+                        <a href="#sg-buttons" class="zr-link zr-link--underline">.zr-link--underline</a> always —
+                        the second is for links inside a paragraph.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── badges, dots, chips ─────────────────────────────────────── -->
+        <section class="zr-module" id="sg-badges">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Badges, dots and chips</h3>
+                <span class="zr-module__meta">css/badges.css</span>
+            </div>
+            <div class="zr-module__body zr-col zr-col--loose">
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Badges</span>
+                    <div class="zr-row zr-row--wrap">
+                        <span class="zr-badge">Neutral</span>
+                        <span class="zr-badge zr-badge--ok">Processed</span>
+                        <span class="zr-badge zr-badge--warn">Queued</span>
+                        <span class="zr-badge zr-badge--danger">Failed</span>
+                        <span class="zr-badge zr-badge--info">Update</span>
+                        <span class="zr-badge zr-badge--brand">Brand</span>
+                        <span class="zr-badge zr-badge--ok">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg>
+                            With icon
+                        </span>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Status dots</span>
+                    <p class="zr-sm zr-muted">
+                        Semantic tones plus the eight categorical chart colours — the donut and bar list hand out a
+                        tone name and the dot class follows it mechanically.
+                    </p>
+                    <div class="zr-row zr-row--wrap">
+                        <span class="zr-row"><span class="zr-dot"></span> default</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--ok"></span> ok</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--warn"></span> warn</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--danger"></span> danger</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--info"></span> info</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--brand"></span> brand</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--text-faint"></span> text-faint</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--live"></span> live</span>
+                    </div>
+                    <div class="zr-row zr-row--wrap">
+                        <span class="zr-row"><span class="zr-dot zr-dot--cat-1"></span> cat-1</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--cat-2"></span> cat-2</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--cat-3"></span> cat-3</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--cat-4"></span> cat-4</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--cat-5"></span> cat-5</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--cat-6"></span> cat-6</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--cat-7"></span> cat-7</span>
+                        <span class="zr-row"><span class="zr-dot zr-dot--cat-8"></span> cat-8</span>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Chips</span>
+                    <div class="zr-chips">
+                        <div class="zr-chip">
+                            <span>invoice</span>
+                            <button type="button" class="zr-link" aria-label="Remove invoice">
+                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
+                            </button>
+                        </div>
+                        <div class="zr-chip">
+                            <span>household</span>
+                            <button type="button" class="zr-link" aria-label="Remove household">
+                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
+                            </button>
+                        </div>
+                        <div class="zr-chip">
+                            <span>tax-2026</span>
+                            <button type="button" class="zr-link" aria-label="Remove tax-2026">
+                                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Text utilities</span>
+                    <div class="zr-row zr-row--wrap">
+                        <span>base</span>
+                        <span class="zr-sm">.zr-sm</span>
+                        <span class="zr-xs">.zr-xs</span>
+                        <span class="zr-strong">.zr-strong</span>
+                        <span class="zr-muted">.zr-muted</span>
+                        <span class="zr-faint">.zr-faint</span>
+                        <span class="zr-ok-text">.zr-ok-text</span>
+                        <span class="zr-warn-text">.zr-warn-text</span>
+                        <span class="zr-danger-text">.zr-danger-text</span>
+                        <span class="zr-mono">.zr-mono</span>
+                        <span class="zr-num">1 234 567</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── forms ───────────────────────────────────────────────────── -->
+        <section class="zr-module" id="sg-forms">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Form fields</h3>
+                <span class="zr-module__meta">css/forms.css</span>
+            </div>
+            <div class="zr-module__body zr-col zr-col--loose">
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Label column — .zr-field</span>
+                    <div>
+                        <div class="zr-field">
+                            <div class="zr-field__label">
+                                <span class="zr-field__name">Scan interval</span>
+                                <span class="zr-field__hint">Cron syntax. Applies on the next tick.</span>
+                                <span class="zr-field__env">SCAN_INTERVAL</span>
+                            </div>
+                            <div class="zr-field__control">
+                                <input type="text" class="zr-input zr-input--mono" value="*/30 * * * *">
+                            </div>
+                        </div>
+                        <div class="zr-field" data-dirty>
+                            <div class="zr-field__label">
+                                <span class="zr-field__name">Token limit</span>
+                                <span class="zr-field__hint">An edited field is marked until it is saved.</span>
+                            </div>
+                            <div class="zr-field__control">
+                                <input type="number" class="zr-input" value="128000">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Stacked — .zr-field--stacked</span>
+                    <div class="zr-field zr-field--stacked">
+                        <label for="sgInput" class="zr-field__name">Paperless API URL</label>
+                        <input id="sgInput" type="text" class="zr-input" placeholder="https://paperless.example.com/api">
+                        <p class="zr-field__hint">The base URL including <code class="zr-mono">/api</code>.</p>
+                    </div>
+                    <div class="zr-field zr-field--stacked">
+                        <label for="sgSelect" class="zr-field__name">AI provider</label>
+                        <select id="sgSelect" class="zr-select">
+                            <option>openai</option>
+                            <option>ollama</option>
+                            <option>custom</option>
+                            <option>azure</option>
+                        </select>
+                    </div>
+                    <div class="zr-field zr-field--stacked">
+                        <label for="sgTextarea" class="zr-field__name">System prompt</label>
+                        <textarea id="sgTextarea" class="zr-textarea">You are a document analyst. Return JSON only.</textarea>
+                    </div>
+                    <div class="zr-field zr-field--stacked">
+                        <label for="sgGroupInput" class="zr-field__name">Tag</label>
+                        <div class="zr-inputgroup">
+                            <input id="sgGroupInput" type="text" class="zr-input" placeholder="Enter a tag and press Enter">
+                            <button type="button" class="zr-btn zr-btn--primary">
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
+                                Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Validation and disabled states</span>
+                    <div class="zr-field zr-field--stacked">
+                        <label for="sgValid" class="zr-field__name">API token</label>
+                        <input id="sgValid" type="text" class="zr-input zr-input--valid zr-input--mono" value="tok_live_9f3a…">
+                        <p class="zr-field__hint zr-ok-text">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg>
+                            Connected as admin.
+                        </p>
+                    </div>
+                    <div class="zr-field zr-field--stacked">
+                        <label for="sgInvalid" class="zr-field__name">Custom base URL</label>
+                        <input id="sgInvalid" type="text" class="zr-input zr-input--invalid" value="htp://localhost:1234/v1">
+                        <p class="zr-field__hint zr-danger-text">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert-circle"/></svg>
+                            Not a valid URL. The colour never carries the meaning on its own.
+                        </p>
+                    </div>
+                    <div class="zr-field zr-field--stacked">
+                        <label for="sgDisabled" class="zr-field__name">Pinned by the operator</label>
+                        <input id="sgDisabled" type="text" class="zr-input" value="ollama" disabled>
+                        <p class="zr-field__hint">Set through the environment, so the form cannot change it.</p>
+                    </div>
+                    <div class="zr-field zr-field--stacked">
+                        <span class="zr-field__name">Masked key — .zr-apikey</span>
+                        <div class="zr-input zr-mono zr-apikey" tabindex="0">zr_4f1c9b0e7a2d5843bc61</div>
+                        <p class="zr-field__hint">Blurred until hovered or focused.</p>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Two-column grid — .zr-formgrid</span>
+                    <div class="zr-formgrid">
+                        <div class="zr-field zr-field--stacked">
+                            <label for="sgGridA" class="zr-field__name">Host</label>
+                            <input id="sgGridA" type="text" class="zr-input" value="localhost">
+                        </div>
+                        <div class="zr-field zr-field--stacked">
+                            <label for="sgGridB" class="zr-field__name">Port</label>
+                            <input id="sgGridB" type="number" class="zr-input" value="11434">
+                        </div>
+                        <div class="zr-field zr-field--stacked zr-formgrid__wide">
+                            <label for="sgGridC" class="zr-field__name">Full row — .zr-formgrid__wide</label>
+                            <input id="sgGridC" type="text" class="zr-input zr-input--wide" value="http://localhost:11434">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Tick — .zr-check</span>
+                    <p class="zr-sm zr-muted">Selecting rows. The third box is set to indeterminate by the page script.</p>
+                    <div class="zr-row zr-row--wrap">
+                        <label class="zr-row"><input type="checkbox" class="zr-check"> unchecked</label>
+                        <label class="zr-row"><input type="checkbox" class="zr-check" checked> checked</label>
+                        <label class="zr-row"><input type="checkbox" class="zr-check" id="sgIndeterminate"> indeterminate</label>
+                        <label class="zr-row"><input type="checkbox" class="zr-check" disabled> disabled</label>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Switch — .zr-toggle</span>
+                    <p class="zr-sm zr-muted">Turning something on or off. Rows that get selected keep <code class="zr-mono">.zr-check</code>.</p>
+                    <div class="zr-row zr-row--wrap">
+                        <input type="checkbox" class="zr-toggle" aria-label="Off">
+                        <input type="checkbox" class="zr-toggle" checked aria-label="On">
+                        <input type="checkbox" class="zr-toggle" disabled aria-label="Disabled off">
+                        <input type="checkbox" class="zr-toggle" checked disabled aria-label="Disabled on">
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Switch row — .zr-switchrow</span>
+                    <div class="zr-switchrow">
+                        <div class="zr-grow">
+                            <label for="sgSwitchRow" class="zr-field__name">Disable automatic processing</label>
+                            <p class="zr-field__hint">Scans are not processed by AI automatically · ENV: DISABLE_AUTOMATIC_PROCESSING</p>
+                        </div>
+                        <input type="checkbox" class="zr-toggle" id="sgSwitchRow" checked>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Check tiles — .zr-checktile</span>
+                    <div class="zr-formgrid">
+                        <label for="sgTileA" class="zr-checktile">
+                            <input type="checkbox" id="sgTileA" class="zr-check" checked>
+                            <span>Restrict to existing tags</span>
+                        </label>
+                        <label for="sgTileB" class="zr-checktile">
+                            <input type="checkbox" id="sgTileB" class="zr-check">
+                            <span>Restrict to existing correspondents</span>
+                        </label>
+                        <label for="sgTileC" class="zr-checktile">
+                            <span>Tag assignment</span>
+                            <input type="checkbox" id="sgTileC" class="zr-toggle" checked>
+                        </label>
+                        <label for="sgTileD" class="zr-checktile">
+                            <span>Title generation</span>
+                            <input type="checkbox" id="sgTileD" class="zr-toggle">
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── alerts ──────────────────────────────────────────────────── -->
+        <section class="zr-module" id="sg-alerts">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Alerts</h3>
+                <span class="zr-module__meta">css/feedback.css</span>
+            </div>
+            <div class="zr-module__body zr-col">
+                <div class="zr-alert zr-alert--info">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-info"/></svg>
+                    <div class="zr-alert__body">
+                        <p class="zr-sm">History is reconciled automatically. To run it by hand, go to
+                            <a href="/settings#troubleshooting-tab" class="zr-link">Settings &rarr; Maintenance</a>.</p>
+                    </div>
+                </div>
+                <div class="zr-alert zr-alert--ok">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg>
+                    <div class="zr-alert__body">
+                        <div class="zr-alert__title">Connection verified</div>
+                        <p class="zr-sm">Paperless-ngx answered in 84 ms.</p>
+                    </div>
+                </div>
+                <div class="zr-alert zr-alert--warn" role="alert">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
+                    <div class="zr-alert__body">
+                        <div class="zr-alert__title">Connection warning</div>
+                        <p class="zr-sm">The login cookie cannot be marked Secure over plain HTTP.</p>
+                    </div>
+                </div>
+                <div class="zr-alert zr-alert--danger" role="status">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert-circle"/></svg>
+                    <div class="zr-alert__body">
+                        <div class="zr-alert__title">Document scanning is not working</div>
+                        <p class="zr-sm">The last four scans failed to reach Paperless-ngx.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── meter, spinner, overlay ─────────────────────────────────── -->
+        <section class="zr-module" id="sg-progress">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Meter, spinner and overlay</h3>
+                <span class="zr-module__meta">css/feedback.css</span>
+            </div>
+            <div class="zr-module__body zr-col zr-col--loose">
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Meter</span>
+                    <div class="zr-meter" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="68">
+                        <div class="zr-meter__fill" style="width: 68%"></div>
+                    </div>
+                    <div class="zr-meter"><div class="zr-meter__fill zr-meter__fill--ok" style="width: 92%"></div></div>
+                    <div class="zr-meter"><div class="zr-meter__fill zr-meter__fill--warn" style="width: 45%"></div></div>
+                    <div class="zr-meter"><div class="zr-meter__fill zr-meter__fill--danger" style="width: 12%"></div></div>
+                    <span class="zr-label">Stacked meter</span>
+                    <div class="zr-meter zr-meter--stacked">
+                        <span style="width: 58%; background: var(--zr-ok)"></span>
+                        <span style="width: 27%; background: var(--zr-warn)"></span>
+                        <span style="width: 15%; background: var(--zr-danger)"></span>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Spinner</span>
+                    <div class="zr-row zr-row--wrap">
+                        <span class="zr-row"><span class="zr-spinner"></span> .zr-spinner</span>
+                        <span class="zr-row"><span class="zr-spinner zr-spinner--lg"></span> .zr-spinner--lg</span>
+                        <span class="zr-row"><svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> .zr-icon--spin</span>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Overlay</span>
+                    <p class="zr-sm zr-muted">
+                        <code class="zr-mono">.zr-overlay</code> is absolute, so the block it covers has to establish
+                        a positioning context — the page stylesheets do that, here it is inline.
+                    </p>
+                    <div class="zr-panel" style="position: relative; min-height: 120px">
+                        <p class="zr-sm zr-muted">Content being refreshed.</p>
+                        <div class="zr-overlay" role="status" aria-live="polite" aria-busy="true">
+                            <div class="zr-module">
+                                <div class="zr-row">
+                                    <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                                    <div>
+                                        <div class="zr-strong">Analyzing documents…</div>
+                                        <div class="zr-sm zr-muted">This can take a moment for larger batches.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Empty state — .zr-empty</span>
+                    <div class="zr-panel">
+                        <div class="zr-empty">
+                            <svg class="zr-icon zr-icon--lg" aria-hidden="true"><use href="/icons.svg#i-inbox"/></svg>
+                            <div class="zr-empty__title">No document selected</div>
+                            <p class="zr-sm zr-faint">Search above and pick a document to preview its content here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── toasts ──────────────────────────────────────────────────── -->
+        <section class="zr-module" id="sg-toasts">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Toasts</h3>
+                <span class="zr-module__meta">css/feedback.css · js/zr.js</span>
+            </div>
+            <div class="zr-module__body zr-col zr-col--loose">
+                <p class="zr-sm zr-muted">
+                    The live host <code class="zr-mono">.zr-toasts</code> is fixed to the bottom right and is created
+                    by the kernel on demand. The four below are the same <code class="zr-mono">.zr-toast</code>
+                    elements rendered inline so all tones are visible at once.
+                </p>
+                <div class="zr-col" style="max-width: 320px">
+                    <div class="zr-toast zr-toast--ok" role="status">
+                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg>
+                        <div class="zr-grow">Settings saved.</div>
+                    </div>
+                    <div class="zr-toast zr-toast--info" role="status">
+                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-info"/></svg>
+                        <div class="zr-grow">Scan queued for 23 documents.</div>
+                    </div>
+                    <div class="zr-toast zr-toast--warn" role="status">
+                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
+                        <div class="zr-grow">A scan is already in progress.</div>
+                    </div>
+                    <div class="zr-toast zr-toast--danger" role="alert">
+                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert-circle"/></svg>
+                        <div class="zr-grow">Could not reach Paperless-ngx.</div>
+                    </div>
+                </div>
+                <div class="zr-row zr-row--wrap">
+                    <button type="button" class="zr-btn" data-sg-toast="ok">Fire ok</button>
+                    <button type="button" class="zr-btn" data-sg-toast="info">Fire info</button>
+                    <button type="button" class="zr-btn" data-sg-toast="warn">Fire warn</button>
+                    <button type="button" class="zr-btn zr-btn--danger" data-sg-toast="danger">Fire danger</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── dialogs ─────────────────────────────────────────────────── -->
+        <section class="zr-module" id="sg-dialogs">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Dialogs</h3>
+                <span class="zr-module__meta">css/dialogs.css · js/dialogs.js</span>
+            </div>
+            <div class="zr-module__body zr-col zr-col--loose">
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Built by the page — native &lt;dialog&gt;</span>
+                    <p class="zr-sm zr-muted">
+                        The dashboard's detail modal: markup in the view, opened with
+                        <code class="zr-mono">showModal()</code>.
+                    </p>
+                    <button type="button" class="zr-btn" id="sgOpenStaticDialog">Open the static dialog</button>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Built by the script — window.zrDialog</span>
+                    <p class="zr-sm zr-muted">
+                        Resolves to <code class="zr-mono">{ isConfirmed, isDismissed, value }</code>. The confirm
+                        button turns destructive for the <code class="zr-mono">error</code> and
+                        <code class="zr-mono">warning</code> icons.
+                    </p>
+                    <div class="zr-row zr-row--wrap">
+                        <button type="button" class="zr-btn" data-sg-dialog="question">Confirm</button>
+                        <button type="button" class="zr-btn zr-btn--danger" data-sg-dialog="warning">Destructive confirm</button>
+                        <button type="button" class="zr-btn" data-sg-dialog="input">With an input</button>
+                    </div>
+                    <p class="zr-sm zr-faint" id="sgDialogResult"></p>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Prose inside a dialog — .zr-prose</span>
+                    <div class="zr-panel zr-prose">
+                        <p>The reset zeroes every margin, so <strong>prose spacing</strong> is handed back by this class.</p>
+                        <ul>
+                            <li>Lists get their indent back</li>
+                            <li>And <code>inline code</code> its own box</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── modules, grid, layout ───────────────────────────────────── -->
+        <section class="zr-module" id="sg-modules">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Modules, grid and layout</h3>
+                <span class="zr-module__meta">css/modules.css</span>
+            </div>
+            <div class="zr-module__body zr-col zr-col--loose">
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">The docking unit</span>
+                    <div class="zr-grid">
+                        <article class="zr-module" data-span="6">
+                            <div class="zr-module__head">
+                                <h4 class="zr-module__title">Head, body, foot</h4>
+                                <span class="zr-module__meta">last 7 days</span>
+                            </div>
+                            <div class="zr-module__body">
+                                <p class="zr-sm zr-muted">
+                                    <code class="zr-mono">data-span</code> on a child of
+                                    <code class="zr-mono">.zr-grid</code> picks the column count out of twelve.
+                                </p>
+                            </div>
+                            <div class="zr-module__foot">A footer note.</div>
+                        </article>
+                        <article class="zr-module" data-span="6">
+                            <div class="zr-module__head">
+                                <h4 class="zr-module__title">Head with actions</h4>
+                                <div class="zr-module__actions">
+                                    <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" aria-label="Refresh">
+                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                                    </button>
+                                    <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" aria-label="More">
+                                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="zr-module__body">
+                                <p class="zr-sm zr-muted">A module with no <code class="zr-mono">__body</code> wrapper still gets padding.</p>
+                            </div>
+                        </article>
+                        <article class="zr-module zr-module--flat" data-span="12">
+                            <h4 class="zr-module__title">.zr-module--flat</h4>
+                            <p class="zr-sm zr-muted">No surface, no border, no shadow — a group heading with content under it.</p>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Stats — .zr-stats / .zr-stat</span>
+                    <section class="zr-stats">
+                        <div class="zr-stat">
+                            <span class="zr-stat__label">
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-layers"/></svg>
+                                Documents
+                            </span>
+                            <span class="zr-stat__value">1 284</span>
+                            <span class="zr-stat__delta">in Paperless-ngx</span>
+                        </div>
+                        <div class="zr-stat">
+                            <span class="zr-stat__label">
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg>
+                                Processed
+                            </span>
+                            <span class="zr-stat__value">1 130</span>
+                            <span class="zr-stat__delta zr-stat__delta--up">+42 this week</span>
+                        </div>
+                        <a class="zr-stat" href="#sg-modules">
+                            <span class="zr-stat__label">
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
+                                Failed
+                            </span>
+                            <span class="zr-stat__value">7</span>
+                            <span class="zr-stat__delta zr-stat__delta--down">+3 since yesterday</span>
+                        </a>
+                        <div class="zr-stat">
+                            <span class="zr-stat__label">
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>
+                                Waiting for OCR
+                            </span>
+                            <span class="zr-stat__value">23</span>
+                            <span class="zr-stat__delta">queued</span>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="zr-grid">
+                    <article class="zr-module" data-span="4">
+                        <div class="zr-module__head">
+                            <h4 class="zr-module__title">Key-value — .zr-kv</h4>
+                        </div>
+                        <div class="zr-module__body">
+                            <div class="zr-col zr-col--tight zr-sm">
+                                <div class="zr-kv"><span class="zr-kv__k">Efficiency</span><span class="zr-kv__v">88 %</span></div>
+                                <div class="zr-kv"><span class="zr-kv__k">Queue backlog</span><span class="zr-kv__v">30</span></div>
+                                <div class="zr-kv"><span class="zr-kv__k">Failed share</span><span class="zr-kv__v">1 %</span></div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="zr-module" data-span="4">
+                        <div class="zr-module__head">
+                            <h4 class="zr-module__title">Entity buttons</h4>
+                        </div>
+                        <div class="zr-module__body zr-col">
+                            <button class="zr-row zr-entitybtn" type="button">
+                                <span class="zr-badge zr-badge--brand">
+                                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-tag"/></svg>
+                                </span>
+                                <span class="zr-grow"><strong>86</strong> tags</span>
+                                <svg class="zr-icon zr-faint" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
+                            </button>
+                            <button class="zr-row zr-entitybtn" type="button">
+                                <span class="zr-badge zr-badge--brand">
+                                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-building"/></svg>
+                                </span>
+                                <span class="zr-grow"><strong>42</strong> correspondents</span>
+                                <svg class="zr-icon zr-faint" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
+                            </button>
+                        </div>
+                    </article>
+
+                    <article class="zr-module" data-span="4">
+                        <div class="zr-module__head">
+                            <h4 class="zr-module__title">Recessed panel</h4>
+                        </div>
+                        <div class="zr-module__body">
+                            <div class="zr-panel">
+                                <strong>App Version:</strong> <span class="zr-mono">3.0.0</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="zr-module" data-span="6">
+                        <div class="zr-module__head">
+                            <h4 class="zr-module__title">List — .zr-list</h4>
+                            <a class="zr-row zr-module__meta" href="/history" style="gap: 4px">
+                                History
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
+                            </a>
+                        </div>
+                        <div class="zr-list">
+                            <a class="zr-list__item" href="#sg-modules">
+                                <span class="zr-badge zr-badge--ok">1281</span>
+                                <span class="zr-list__main">
+                                    <span class="zr-list__title">Utility statement August 2026</span>
+                                    <span class="zr-list__sub">City Works</span>
+                                </span>
+                                <span class="zr-list__time">06:41</span>
+                            </a>
+                            <a class="zr-list__item" href="#sg-modules">
+                                <span class="zr-badge zr-badge--ok">1280</span>
+                                <span class="zr-list__main">
+                                    <span class="zr-list__title">Insurance policy renewal — household</span>
+                                    <span class="zr-list__sub">Allsafe Insurance</span>
+                                </span>
+                                <span class="zr-list__time">yesterday</span>
+                            </a>
+                            <div class="zr-list__item">
+                                <span class="zr-badge zr-badge--warn">1279</span>
+                                <span class="zr-list__main">
+                                    <span class="zr-list__title">Invoice 2026-0812 hosting</span>
+                                    <span class="zr-list__sub">Hetzner Online</span>
+                                </span>
+                                <span class="zr-list__time">2 days ago</span>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="zr-module" data-span="6">
+                        <div class="zr-module__head">
+                            <h4 class="zr-module__title">Stepper — .zr-stepper</h4>
+                            <span class="zr-module__meta">setup wizard</span>
+                        </div>
+                        <div class="zr-module__body">
+                            <div class="zr-stepper">
+                                <button type="button" class="zr-step" data-status="done">
+                                    <span class="zr-step__marker">
+                                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check"/></svg>
+                                    </span>
+                                    <span class="zr-col zr-col--tight">
+                                        <span class="zr-step__name">Admin account</span>
+                                        <span class="zr-step__hint">Done</span>
+                                    </span>
+                                </button>
+                                <button type="button" class="zr-step" data-status="active">
+                                    <span class="zr-step__marker">2</span>
+                                    <span class="zr-col zr-col--tight">
+                                        <span class="zr-step__name">Paperless connection</span>
+                                        <span class="zr-step__hint">URL and API token</span>
+                                    </span>
+                                </button>
+                                <button type="button" class="zr-step" data-status="todo">
+                                    <span class="zr-step__marker">3</span>
+                                    <span class="zr-col zr-col--tight">
+                                        <span class="zr-step__name">AI provider</span>
+                                        <span class="zr-step__hint">Not reached yet</span>
+                                    </span>
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── charts ──────────────────────────────────────────────────── -->
+        <section class="zr-module" id="sg-charts">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Charts</h3>
+                <span class="zr-module__meta">js/modules/donut.js · spark.js · bar-list.js</span>
+            </div>
+            <div class="zr-module__body zr-col zr-col--loose">
+                <p class="zr-sm zr-muted">
+                    All three mount declaratively and draw plain SVG or plain elements — no canvas, no chart library.
+                    The dashboard calls the same functions imperatively because its data arrives over fetch.
+                </p>
+
+                <div class="zr-grid">
+                    <article class="zr-module" data-span="6">
+                        <div class="zr-module__head">
+                            <h4 class="zr-module__title">Donut</h4>
+                            <span class="zr-module__meta">data-series="label:value:tone"</span>
+                        </div>
+                        <div class="zr-module__body zr-row zr-module__body--chart">
+                            <svg class="zr-donut" data-module="donut" data-caption="documents"
+                                data-series="Invoice:411:cat-1,Contract:187:cat-2,Letter:150:cat-3,Receipt:122:cat-4,Insurance:96:cat-5,Tax:71:cat-6"></svg>
+                            <div class="zr-grow zr-col zr-col--tight zr-sm">
+                                <div class="zr-row"><span class="zr-dot zr-dot--cat-1"></span><span class="zr-grow zr-truncate">Invoice</span><span class="zr-num zr-strong">411</span></div>
+                                <div class="zr-row"><span class="zr-dot zr-dot--cat-2"></span><span class="zr-grow zr-truncate">Contract</span><span class="zr-num zr-strong">187</span></div>
+                                <div class="zr-row"><span class="zr-dot zr-dot--cat-3"></span><span class="zr-grow zr-truncate">Letter</span><span class="zr-num zr-strong">150</span></div>
+                                <div class="zr-row"><span class="zr-dot zr-dot--cat-4"></span><span class="zr-grow zr-truncate">Receipt</span><span class="zr-num zr-strong">122</span></div>
+                                <div class="zr-row"><span class="zr-dot zr-dot--cat-5"></span><span class="zr-grow zr-truncate">Insurance</span><span class="zr-num zr-strong">96</span></div>
+                                <div class="zr-row"><span class="zr-dot zr-dot--cat-6"></span><span class="zr-grow zr-truncate">Tax</span><span class="zr-num zr-strong">71</span></div>
+                            </div>
+                        </div>
+                    </article>
+
+                    <article class="zr-module" data-span="6">
+                        <div class="zr-module__head">
+                            <h4 class="zr-module__title">Donut, empty</h4>
+                            <span class="zr-module__meta">says so rather than painting nothing</span>
+                        </div>
+                        <div class="zr-module__body zr-row zr-module__body--chart">
+                            <svg class="zr-donut" data-module="donut" data-series=""></svg>
+                            <p class="zr-grow zr-sm zr-faint">An empty series draws a labelled ring, not a blank box.</p>
+                        </div>
+                    </article>
+
+                    <article class="zr-module" data-span="6">
+                        <div class="zr-module__head">
+                            <h4 class="zr-module__title">Sparkline</h4>
+                            <span class="zr-module__meta">data-values, optional data-labels</span>
+                        </div>
+                        <div class="zr-module__body zr-col">
+                            <div class="zr-row zr-row--between">
+                                <span class="zr-stat__value">357 920</span>
+                                <span class="zr-sm zr-faint">total</span>
+                            </div>
+                            <svg class="zr-spark" data-module="spark"
+                                data-values="41200,60500,38000,74300,52250,66780,24890"
+                                data-labels="Aug 6,Aug 7,Aug 8,Aug 9,Aug 10,Aug 11,Aug 12"></svg>
+                        </div>
+                    </article>
+
+                    <article class="zr-module" data-span="6">
+                        <div class="zr-module__head">
+                            <h4 class="zr-module__title">Sparkline, empty</h4>
+                        </div>
+                        <div class="zr-module__body zr-col">
+                            <svg class="zr-spark" data-module="spark" data-values=""></svg>
+                            <p class="zr-sm zr-faint">Fewer than two points draws a dashed baseline.</p>
+                        </div>
+                    </article>
+
+                    <article class="zr-module" data-span="6">
+                        <div class="zr-module__head">
+                            <h4 class="zr-module__title">Bar list</h4>
+                            <span class="zr-module__meta">data-items="label:value"</span>
+                        </div>
+                        <div class="zr-module__body">
+                            <div class="zr-barlist" data-module="bar-list"
+                                data-items="0-1k:312,1k-2k:566,2k-4k:201,4k+:51"></div>
+                        </div>
+                    </article>
+
+                    <article class="zr-module" data-span="6">
+                        <div class="zr-module__head">
+                            <h4 class="zr-module__title">Bar list, written by hand</h4>
+                            <span class="zr-module__meta">the markup the module emits</span>
+                        </div>
+                        <div class="zr-module__body">
+                            <div class="zr-barlist">
+                                <div class="zr-barrow">
+                                    <span class="zr-barrow__label">German</span>
+                                    <span class="zr-barrow__value">954</span>
+                                    <div class="zr-meter zr-barrow__track">
+                                        <div class="zr-meter__fill" style="width: 100%"></div>
+                                    </div>
+                                </div>
+                                <div class="zr-barrow">
+                                    <span class="zr-barrow__label">English</span>
+                                    <span class="zr-barrow__value">152</span>
+                                    <div class="zr-meter zr-barrow__track">
+                                        <div class="zr-meter__fill zr-meter__fill--ok" style="width: 16%"></div>
+                                    </div>
+                                </div>
+                                <div class="zr-barrow">
+                                    <span class="zr-barrow__label">French</span>
+                                    <span class="zr-barrow__value">24</span>
+                                    <div class="zr-meter zr-barrow__track">
+                                        <div class="zr-meter__fill zr-meter__fill--warn" style="width: 3%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── tables ──────────────────────────────────────────────────── -->
+        <section class="zr-module" id="sg-tables">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Tables</h3>
+                <span class="zr-module__meta">css/tables.css · js/modules/data-table.js</span>
+            </div>
+            <div class="zr-module__body zr-col zr-col--loose">
+                <p class="zr-sm zr-muted">
+                    Two mechanisms, one look on a phone. <code class="zr-mono">createTable()</code> renders a second
+                    copy of every row as a card; pages that render rows themselves add
+                    <code class="zr-mono">.zr-table--stack</code> plus a <code class="zr-mono">data-label</code> per
+                    cell and the table stacks into the same cards without duplicating the DOM.
+                </p>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Full host — toolbar, table, foot</span>
+                    <div class="zr-module zr-table-host" data-module="row-menu">
+                        <div class="zr-table-toolbar">
+                            <div class="zr-table-search">
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-search"/></svg>
+                                <input class="zr-input" type="search" placeholder="Search…" aria-label="Search">
+                            </div>
+                            <div class="zr-grow"></div>
+                            <label class="zr-row zr-sm zr-faint">
+                                Rows
+                                <select class="zr-select" aria-label="Rows per page">
+                                    <option>10</option>
+                                    <option selected>25</option>
+                                    <option>50</option>
+                                    <option>100</option>
+                                </select>
+                            </label>
+                        </div>
+                        <div class="zr-table-wrap">
+                            <table class="zr-table zr-table--stack">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 1%"><input type="checkbox" class="zr-check" aria-label="Select all"></th>
+                                        <th class="zr-th-sortable" data-dir="desc" tabindex="0" role="button">Doc ID<span class="zr-th-arrow" aria-hidden="true"></span></th>
+                                        <th class="zr-th-sortable" tabindex="0" role="button">Title<span class="zr-th-arrow" aria-hidden="true"></span></th>
+                                        <th>Source</th>
+                                        <th>Updated</th>
+                                        <th class="zr-table__actions">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td data-label=""><input type="checkbox" class="zr-check" aria-label="Select row 1281"></td>
+                                        <td data-label="Doc ID">1281</td>
+                                        <td data-label="Title" class="zr-truncate">Utility statement August 2026 — a title long enough to need the ellipsis</td>
+                                        <td data-label="Source"><span class="zr-warn-text">OCR</span></td>
+                                        <td data-label="Updated">2026-08-12 06:41</td>
+                                        <td data-label="" class="zr-table__actions">
+                                            <div class="zr-row">
+                                                <button type="button" class="zr-btn">
+                                                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg>
+                                                    Reset
+                                                </button>
+                                                <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon"
+                                                    popovertarget="sgRowMenu" aria-label="More actions">
+                                                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg>
+                                                </button>
+                                                <div id="sgRowMenu" popover class="zr-menu">
+                                                    <button type="button" class="zr-menu__item">
+                                                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-external"/></svg>
+                                                        Open in Paperless
+                                                    </button>
+                                                    <button type="button" class="zr-menu__item">
+                                                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg>
+                                                        Show OCR output
+                                                    </button>
+                                                    <div class="zr-menu__sep"></div>
+                                                    <button type="button" class="zr-menu__item zr-menu__item--danger">
+                                                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>
+                                                        Remove from queue
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td data-label=""><input type="checkbox" class="zr-check" aria-label="Select row 1280" checked></td>
+                                        <td data-label="Doc ID">1280</td>
+                                        <td data-label="Title" class="zr-truncate">Insurance policy renewal — household</td>
+                                        <td data-label="Source">AI</td>
+                                        <td data-label="Updated">2026-08-11 18:12</td>
+                                        <td data-label="" class="zr-table__actions">
+                                            <div class="zr-row">
+                                                <button type="button" class="zr-btn">
+                                                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg>
+                                                    Reset
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="zr-table-foot">
+                            <span class="zr-sm zr-faint">1–2 of 1 284</span>
+                            <div class="zr-row">
+                                <button type="button" class="zr-btn zr-btn--icon" aria-label="Previous page" disabled>
+                                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-chevron-left"/></svg>
+                                </button>
+                                <span class="zr-sm zr-num">1 / 52</span>
+                                <button type="button" class="zr-btn zr-btn--icon" aria-label="Next page">
+                                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Card list — what data-table.js writes into .zr-table-cards</span>
+                    <p class="zr-sm zr-muted">
+                        Hidden above 860px by the framework, so it is shown here inside a plain panel to make the
+                        shape visible on a desktop as well.
+                    </p>
+                    <div class="zr-panel zr-col">
+                        <article class="zr-table-card">
+                            <div class="zr-table-card__row">
+                                <span class="zr-table-card__label">Doc ID</span>
+                                <span class="zr-table-card__value">1281</span>
+                            </div>
+                            <div class="zr-table-card__row">
+                                <span class="zr-table-card__label">Title</span>
+                                <span class="zr-table-card__value">Utility statement August 2026</span>
+                            </div>
+                            <div class="zr-table-card__row">
+                                <span class="zr-table-card__label"></span>
+                                <span class="zr-table-card__value">
+                                    <button type="button" class="zr-btn">Reset</button>
+                                </span>
+                            </div>
+                        </article>
+                    </div>
+                </div>
+
+                <div class="zr-col zr-col--tight">
+                    <span class="zr-label">Loading and empty rows</span>
+                    <div class="zr-module">
+                        <div class="zr-table-wrap">
+                            <table class="zr-table zr-table--stack">
+                                <thead>
+                                    <tr><th>Doc ID</th><th>Title</th><th>Reason</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="zr-empty">
+                                            <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                                            Loading permanently failed queue…
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="zr-module">
+                        <div class="zr-table-wrap">
+                            <table class="zr-table zr-table--stack">
+                                <thead>
+                                    <tr><th>Doc ID</th><th>Title</th><th>Reason</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="zr-empty zr-danger-text">
+                                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
+                                            Could not load the queue.
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ── auth card and step panes ────────────────────────────────── -->
+        <section class="zr-module" id="sg-auth">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Auth card and step panes</h3>
+                <span class="zr-module__meta">css/pages/auth.css</span>
+            </div>
+            <div class="zr-module__body zr-col zr-col--loose">
+                <p class="zr-sm zr-muted">
+                    The login page renders <code class="zr-mono">.zr-authcard</code> inside a full-screen
+                    <code class="zr-mono">.zr-authpage</code>; the card is shown here on its own.
+                    <code class="zr-mono">.zr-steppane</code> is shared with the setup wizard — only the pane
+                    carrying <code class="zr-mono">.is-active</code> is displayed.
+                </p>
+
+                <section class="zr-authcard" aria-labelledby="sgLoginTitle">
+                    <header class="zr-authcard__head">
+                        <img src="/mascot-animated.svg" class="zr-authcard__mascot" alt="">
+                        <span class="zr-wordmark">Zettelrobbe</span>
+                        <h4 id="sgLoginTitle" class="zr-authcard__title">Welcome back</h4>
+                        <p class="zr-sm zr-muted">Sign in to continue processing your documents.</p>
+                    </header>
+
+                    <div class="zr-alert zr-alert--danger" role="alert">
+                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
+                        <div class="zr-alert__body">
+                            <p>Invalid username or password.</p>
+                        </div>
+                    </div>
+
+                    <form class="zr-col zr-col--loose" id="sgLoginForm">
+                        <div class="zr-steppane is-active" data-step="credentials">
+                            <div class="zr-field zr-field--stacked">
+                                <label for="sgUsername" class="zr-field__name">Username</label>
+                                <input id="sgUsername" type="text" class="zr-input" placeholder="Enter your username"
+                                    autocomplete="off">
+                            </div>
+                            <div class="zr-field zr-field--stacked">
+                                <label for="sgPassword" class="zr-field__name">Password</label>
+                                <input id="sgPassword" type="password" class="zr-input" placeholder="Enter your password"
+                                    autocomplete="off">
+                            </div>
+                        </div>
+
+                        <div class="zr-steppane" data-step="mfa" id="sgMfaPane">
+                            <div class="zr-field zr-field--stacked">
+                                <label for="sgMfaToken" class="zr-field__name">Authentication code</label>
+                                <input id="sgMfaToken" type="text" inputmode="numeric" class="zr-input"
+                                    placeholder="6-digit code" autocomplete="off">
+                                <p class="zr-field__hint">From the authenticator app you paired with this account.</p>
+                            </div>
+                        </div>
+
+                        <div class="zr-col">
+                            <button type="submit" class="zr-btn zr-btn--primary zr-btn--lg zr-btn--block">Sign in</button>
+                            <button type="button" class="zr-btn zr-btn--ghost login-back-button" id="sgTogglePane">
+                                Toggle the second step pane
+                            </button>
+                        </div>
+                    </form>
+                </section>
+            </div>
+        </section>
+
+        <!-- ── action bar ──────────────────────────────────────────────── -->
+        <section class="zr-module" id="sg-actionbar">
+            <div class="zr-module__head">
+                <h3 class="zr-module__title">Sticky action bar</h3>
+                <span class="zr-module__meta">css/modules.css</span>
+            </div>
+            <div class="zr-module__body zr-col">
+                <p class="zr-sm zr-muted">
+                    The settings save row. It sticks to the bottom of its scroll container and turns brand-coloured
+                    while there are unsaved changes; below 860px it docks onto the tab bar.
+                </p>
+                <div class="zr-actionbar" data-dirty="true">
+                    <span class="zr-actionbar__status">3 unsaved changes</span>
+                    <button type="button" class="zr-btn">Discard</button>
+                    <button type="button" class="zr-btn zr-btn--primary">
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-save"/></svg>
+                        Save
+                    </button>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<dialog class="zr-dialog" id="sgStaticDialog" aria-labelledby="sgStaticDialogTitle">
+    <div class="zr-dialog__head">
+        <span class="zr-badge zr-badge--info">
+            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg>
+        </span>
+        <span class="zr-grow" id="sgStaticDialogTitle">Tag details</span>
+        <button class="zr-btn zr-btn--ghost zr-btn--icon" type="button" data-sg-close-dialog aria-label="Close">
+            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
+        </button>
+    </div>
+    <div class="zr-dialog__body zr-prose">
+        <p>The dashboard fills this body over fetch. Head, body and foot are the three slots.</p>
+        <ul>
+            <li><code>.zr-dialog__head</code> lays out its own contents</li>
+            <li><code>.zr-dialog__foot</code> right-aligns its buttons</li>
+        </ul>
+    </div>
+    <div class="zr-dialog__foot">
+        <button class="zr-btn" type="button" data-sg-close-dialog>Close</button>
+        <button class="zr-btn zr-btn--primary" type="button" data-sg-close-dialog>Got it</button>
+    </div>
+</dialog>
+
+<script src="/js/styleguide.js"></script>
+<%- include('partials/shell/body-close') %>
