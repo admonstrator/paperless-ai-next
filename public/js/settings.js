@@ -39,6 +39,12 @@ class SettingsTabsManager {
       content.classList.toggle('hidden', !isActive);
     });
 
+    // The changelog tab is read-only, so the save row would be misleading.
+    const saveRow = document.getElementById('settingsSaveRow');
+    if (saveRow) {
+      saveRow.classList.toggle('hidden', tabId === 'changelog-tab');
+    }
+
     refreshSettingsHints();
   }
 }
@@ -1121,6 +1127,22 @@ function initializeFormHandlers() {
       ocrPdfRenderOptionsContainer.classList.toggle(
         'hidden',
         ocrPdfRenderValueInput.value !== 'yes'
+      );
+    });
+  }
+
+  // Schedule and batch size only matter while automatic processing is ON.
+  const ocrAutoProcessValueInput = document.getElementById(
+    'ocrAutoProcessEnabled'
+  );
+  const ocrAutoProcessOptionsContainer = document.getElementById(
+    'ocrAutoProcessOptionsContainer'
+  );
+  if (ocrAutoProcessValueInput && ocrAutoProcessOptionsContainer) {
+    ocrAutoProcessValueInput.addEventListener('change', () => {
+      ocrAutoProcessOptionsContainer.classList.toggle(
+        'hidden',
+        ocrAutoProcessValueInput.value !== 'yes'
       );
     });
   }
@@ -3079,6 +3101,19 @@ function initializeRuntimeOverridePills() {
     { selector: '#ocrPdfRenderEnabled', envKey: 'OCR_PDF_RENDER_ENABLED' },
     { selector: '#ocrPdfRenderMaxPages', envKey: 'OCR_PDF_RENDER_MAX_PAGES' },
     { selector: '#ocrPdfRenderDpi', envKey: 'OCR_PDF_RENDER_DPI' },
+    {
+      selector: '#ocrAutoProcessEnabled',
+      envKey: 'OCR_AUTO_PROCESS_ENABLED',
+    },
+    {
+      selector: '#ocrAutoProcessInterval',
+      envKey: 'OCR_AUTO_PROCESS_INTERVAL',
+    },
+    {
+      selector: '#ocrAutoProcessBatchSize',
+      envKey: 'OCR_AUTO_PROCESS_BATCH_SIZE',
+    },
+    { selector: '#ocrAutoAnalyze', envKey: 'OCR_AUTO_ANALYZE' },
     {
       selector: '#ocrValidationTimeout',
       envKey: 'SETUP_OCR_VALIDATION_TIMEOUT_MS',

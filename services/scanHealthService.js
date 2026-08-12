@@ -39,7 +39,13 @@ function createInitialState() {
     consecutiveFailures: 0,
     lastError: null,
     paperless: {
+      // reachable: the host answered at all. authorized: the token was
+      // accepted. usable: both — the only combination the scan loop can work
+      // with. Keeping them apart stops a rejected token from being reported
+      // as "Paperless-ngx is not reachable".
       reachable: null,
+      authorized: null,
+      usable: null,
       lastCheckedAt: null,
       status: null,
       error: null,
@@ -119,11 +125,24 @@ class ScanHealthService {
    */
   recordConnectivity(probe) {
     this.state.paperless = {
-      reachable: Boolean(probe?.reachable && probe?.authorized),
+      reachable: Boolean(probe?.reachable),
+      authorized: Boolean(probe?.authorized),
+      usable: Boolean(probe?.reachable && probe?.authorized),
       lastCheckedAt: new Date().toISOString(),
       status: probe?.status ?? null,
       error: probe?.error || null,
     };
+  }
+
+  /**
+   * Clears the connectivity result back to "never probed".
+   *
+   * Used when probing is not meaningful yet (setup incomplete), so the
+   * dashboard shows nothing instead of warning about a connection the user has
+   * not configured.
+   */
+  clearConnectivity() {
+    this.state.paperless = createInitialState().paperless;
   }
 
   /**

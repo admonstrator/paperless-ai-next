@@ -420,13 +420,35 @@
  *
  *     PaperlessHealth:
  *       type: object
- *       description: Result of the most recent Paperless-ngx connectivity probe
+ *       description: |
+ *         Result of the most recent Paperless-ngx connectivity probe. The probe
+ *         runs on every scan and additionally every
+ *         `PAPERLESS_PROBE_INTERVAL_SECONDS` (default 60s), so the result stays
+ *         current even while no scan is running.
  *       properties:
  *         reachable:
  *           type: boolean
  *           nullable: true
- *           description: Null until the first probe has run
+ *           description: |
+ *             Whether the host answered at all. Null until the first probe has
+ *             run. A rejected API token still counts as reachable — check
+ *             `usable` to decide whether Paperless-ngx can actually be used.
  *           example: true
+ *         authorized:
+ *           type: boolean
+ *           nullable: true
+ *           description: Whether the API token was accepted (not 401/403)
+ *           example: true
+ *         usable:
+ *           type: boolean
+ *           nullable: true
+ *           description: Reachable *and* authorized — what the scan loop needs
+ *           example: true
+ *         status:
+ *           type: integer
+ *           nullable: true
+ *           description: HTTP status of the probe, null when no response arrived
+ *           example: 200
  *         lastCheckedAt:
  *           type: string
  *           format: date-time

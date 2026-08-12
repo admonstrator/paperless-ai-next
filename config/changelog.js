@@ -72,11 +72,47 @@ const RELEASES = [
       'Improvement: The dashboard shows a warning banner while document scanning is not working',
     ],
   },
+  {
+    version: 'v2026.08.02',
+    entries: [
+      'Fix: The dashboard now warns as soon as Paperless-ngx cannot be reached, instead of staying silent until three scan runs in a row have failed',
+      'Fix: A rejected API token is reported as a credentials problem instead of "Paperless-ngx is not reachable"',
+      'Fix: Giving up on the initial scan after a startup outage is counted as a failed run, so the dashboard and /health reflect it',
+      'New: Paperless-ngx connectivity is probed every 60s independently of the scan loop, so outages surface between scans and with DISABLE_AUTOMATIC_PROCESSING=yes (configurable via PAPERLESS_PROBE_INTERVAL_SECONDS, 0 disables it)',
+      'New: The OCR queue can be processed automatically on a schedule, running OCR and AI analysis without pressing "Process All Pending" - configurable under Settings &rarr; OCR',
+      "New: Settings has a Changelog tab showing the full release history, so past release notes are readable after the What's New modal has been dismissed",
+    ],
+  },
 ];
 
 const latestRelease = RELEASES[RELEASES.length - 1];
 
+// Entries are written as "New: ...", "Fix: ...", "Improvement: ..." and are
+// split into a category and the text itself so the settings page can render
+// them as labelled items. Anything without a known prefix becomes a 'note'.
+const KNOWN_CATEGORIES = ['new', 'fix', 'improvement', 'removed', 'security'];
+
+function categorizeEntry(entry) {
+  const text = String(entry);
+  const match = /^([a-z]+)\s*:\s*/i.exec(text);
+  const category = match ? match[1].toLowerCase() : null;
+
+  if (!category || !KNOWN_CATEGORIES.includes(category)) {
+    return { category: 'note', text };
+  }
+
+  return { category, text: text.slice(match[0].length) };
+}
+
+// Newest release first — that is the order the settings page displays.
+const releases = RELEASES.map((release) => ({
+  version: release.version,
+  entries: release.entries.map(categorizeEntry),
+})).reverse();
+
 module.exports = {
   version: latestRelease.version,
   entries: latestRelease.entries,
+  releases,
+  categorizeEntry,
 };

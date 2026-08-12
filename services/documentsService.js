@@ -6,46 +6,67 @@ class DocumentsService {
     // No local cache needed - using centralized cache in paperlessService
   }
 
+  /**
+   * Collect unique, positive integer IDs from a mixed list.
+   * `Number(null)` is 0, so an unfiltered `Number.isInteger` check would turn
+   * documents without a correspondent into a lookup for the non-existent ID 0.
+   */
+  static normalizeIds(ids) {
+    const normalized = new Set();
+    for (const rawId of Array.isArray(ids) ? ids : []) {
+      const id = typeof rawId === 'object' ? Number(rawId?.id) : Number(rawId);
+      if (Number.isInteger(id) && id > 0) {
+        normalized.add(id);
+      }
+    }
+    return [...normalized];
+  }
+
+  /**
+   * Unresolved IDs are omitted instead of being filled with a placeholder:
+   * the consumers (playground grid, omnibox result pills) already substitute
+   * their own label, and a placeholder would otherwise be rendered as a real
+   * tag named "Unknown".
+   */
   async getTagNames(tagIds = []) {
-    const uniqueTagIds = [...new Set((Array.isArray(tagIds) ? tagIds : []).map(id => Number(id)).filter(Number.isInteger))];
+    const uniqueTagIds = DocumentsService.normalizeIds(tagIds);
     if (uniqueTagIds.length === 0) {
       return {};
     }
 
-    const tagEntries = await Promise.all(uniqueTagIds.map(async (tagId) => {
-      const tagName = await paperlessService.getTagNameById(tagId);
-      return [tagId, tagName || 'Unknown'];
-    }));
-
-    return Object.fromEntries(tagEntries);
+    return paperlessService.getTagNamesByIds(uniqueTagIds);
   }
 
   async getCorrespondentNames(correspondentIds = []) {
-    const uniqueCorrespondentIds = [...new Set((Array.isArray(correspondentIds) ? correspondentIds : []).map(id => Number(id)).filter(Number.isInteger))];
+    const uniqueCorrespondentIds =
+      DocumentsService.normalizeIds(correspondentIds);
     if (uniqueCorrespondentIds.length === 0) {
       return {};
     }
 
-    const correspondentEntries = await Promise.all(uniqueCorrespondentIds.map(async (correspondentId) => {
-      const correspondent = await paperlessService.getCorrespondentNameById(correspondentId);
-      return [correspondentId, correspondent?.name || 'Unknown'];
-    }));
-
-    return Object.fromEntries(correspondentEntries);
+    return paperlessService.getCorrespondentNamesByIds(uniqueCorrespondentIds);
   }
 
-  async getDocumentsWithMetadata(limit = 16) {
-    const safeLimit = Number.isInteger(Number(limit)) ? Math.max(1, Math.min(Number(limit), 200)) : 16;
-    const documents = await paperlessService.getRecentDocumentsWithMetadata(safeLimit);
+  async getDocumentsWithMetadata(limit = 16, query = '', mode = 'all') {
+    const safeLimit = Number.isInteger(Number(limit))
+      ? Math.max(1, Math.min(Number(limit), 200))
+      : 16;
+    const normalizedQuery = String(query || '').trim();
 
-    const tagIds = documents.flatMap((document) => Array.isArray(document.tags) ? document.tags : []);
-    const correspondentIds = documents
-      .map((document) => Number(document.correspondent))
-      .filter(Number.isInteger);
+    const documents = normalizedQuery
+      ? await paperlessService.searchDocuments(normalizedQuery, safeLimit, mode)
+      : await paperlessService.getRecentDocumentsWithMetadata(safeLimit);
+
+    const tagIds = documents.flatMap((document) =>
+      Array.isArray(document.tags) ? document.tags : []
+    );
+    const correspondentIds = documents.map(
+      (document) => document.correspondent
+    );
 
     const [tagNames, correspondentNames] = await Promise.all([
       this.getTagNames(tagIds),
-      this.getCorrespondentNames(correspondentIds)
+      this.getCorrespondentNames(correspondentIds),
     ]);
 
     const paperlessUrl = await paperlessService.getPublicBaseUrl();
@@ -54,10 +75,9 @@ class DocumentsService {
       documents,
       tagNames,
       correspondentNames,
-      paperlessUrl
+      paperlessUrl,
     };
   }
-
 }
 
 module.exports = new DocumentsService();

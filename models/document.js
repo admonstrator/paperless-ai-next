@@ -13,7 +13,8 @@ try {
   fs.accessSync(dataDir, fs.constants.W_OK);
 } catch (error) {
   throw new Error(
-    `Data directory is not writable: ${dataDir}. Check container volume permissions. Original error: ${error.message}`
+    `Data directory is not writable: ${dataDir}. Check container volume permissions. Original error: ${error.message}`,
+    { cause: error }
   );
 }
 
@@ -1239,6 +1240,20 @@ module.exports = {
     } catch (error) {
       console.error('[ERROR] removing from OCR queue:', error);
       return false;
+    }
+  },
+
+  async getOcrQueueDocumentIds() {
+    try {
+      const rows = db
+        .prepare(
+          "SELECT document_id FROM ocr_queue WHERE status IN ('pending', 'processing')"
+        )
+        .all();
+      return rows.map((r) => r.document_id);
+    } catch (error) {
+      console.error('[ERROR] getting OCR queue document IDs:', error);
+      return [];
     }
   },
 

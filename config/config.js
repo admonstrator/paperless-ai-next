@@ -352,7 +352,7 @@ startupLog(logLevel, 'info', 'Configuration loaded:', {
 });
 
 module.exports = {
-  PAPERLESS_AI_VERSION: 'v2026.08.01',
+  PAPERLESS_AI_VERSION: 'v2026.08.02',
   CONFIGURED: false,
   configSourceMode: CONFIG_SOURCE_MODE,
   getApiKey,
@@ -462,6 +462,22 @@ module.exports = {
       10
     ),
     pdfRenderDpi: parseInt(process.env.OCR_PDF_RENDER_DPI || '150', 10),
+    // Automatic draining of the OCR queue. Without it the queue is only
+    // emptied by hand via "Process All Pending" on the /ocr page.
+    autoProcessEnabled: parseEnvBoolean(
+      process.env.OCR_AUTO_PROCESS_ENABLED,
+      'no'
+    ),
+    autoProcessInterval:
+      process.env.OCR_AUTO_PROCESS_INTERVAL || '*/15 * * * *',
+    autoProcessBatchSize: parseInt(
+      process.env.OCR_AUTO_PROCESS_BATCH_SIZE || '10',
+      10
+    ),
+    // Run AI analysis right after OCR. Defaults to yes because a failed
+    // content write-back leaves the OCR text local-only, where a regular
+    // scan would never pick it up.
+    autoAnalyze: parseEnvBoolean(process.env.OCR_AUTO_ANALYZE, 'yes'),
   },
   customFields: process.env.CUSTOM_FIELDS || '',
   aiProvider: process.env.AI_PROVIDER || 'openai',
@@ -489,6 +505,14 @@ module.exports = {
     strict: parseEnvBoolean(process.env.HEALTHCHECK_STRICT, 'yes'),
     scanFailureThreshold: parseInt(
       process.env.HEALTH_SCAN_FAILURE_THRESHOLD || '3',
+      10
+    ),
+    // Standalone Paperless-ngx connectivity probe, independent of the scan
+    // loop. Without it the dashboard could only learn about an outage on the
+    // next scan tick — up to a full SCAN_INTERVAL late, or never when
+    // DISABLE_AUTOMATIC_PROCESSING=yes. Set to 0 to switch the probe off.
+    paperlessProbeIntervalSeconds: parseInt(
+      process.env.PAPERLESS_PROBE_INTERVAL_SECONDS || '60',
       10
     ),
   },

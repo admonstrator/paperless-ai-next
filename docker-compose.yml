@@ -34,6 +34,11 @@ services:
       # - OCR_PDF_RENDER_ENABLED=yes
       # - OCR_PDF_RENDER_MAX_PAGES=10
       # - OCR_PDF_RENDER_DPI=150
+      # Work through the OCR queue on a schedule instead of pressing "Process All Pending"
+      # - OCR_AUTO_PROCESS_ENABLED=yes
+      # - OCR_AUTO_PROCESS_INTERVAL=*/15 * * * *
+      # - OCR_AUTO_PROCESS_BATCH_SIZE=10
+      # - OCR_AUTO_ANALYZE=yes
       # Reconciliation (optional) – remove stale history entries for deleted documents
       # - RECONCILIATION_ENABLED=yes
       # - RECONCILIATION_INTERVAL=0 * * * *

@@ -13,6 +13,7 @@ const { runStartupMigrations } = require('./services/startupMigrations');
 const setupRoutes = require('./routes/setup');
 const { isAuthenticated } = require('./routes/auth');
 const mistralOcrService = require('./services/mistralOcrService');
+const ocrAutoProcessService = require('./services/ocrAutoProcessService');
 const reconciliationService = require('./services/reconciliationService');
 const scanHealthService = require('./services/scanHealthService');
 const { RUN_STATUS } = scanHealthService;
@@ -1215,6 +1216,13 @@ async function runInitialScanWhenReachable() {
     const delayMs = initialConnectDelayMs(attempt);
 
     if (Date.now() + delayMs > deadlineMs) {
+      // Count the abandoned initial scan as exactly one failed run. Counting
+      // every retry would trip the degraded threshold within minutes and make
+      // /health answer 503 during a perfectly normal slow start.
+      scanHealthService.recordRunResult({
+        status: RUN_STATUS.PAPERLESS_UNREACHABLE,
+        error: connection.error,
+      });
       console.error(
         `[STARTUP] Paperless-ngx still not usable after ${attempt} attempt(s): ${connection.error}. ` +
           `Skipping the initial scan — the scheduled scan (${config.scanInterval}) stays armed and keeps retrying.`
@@ -1229,6 +1237,79 @@ async function runInitialScanWhenReachable() {
     );
     await new Promise((resolve) => setTimeout(resolve, delayMs));
   }
+}
+
+const DEFAULT_PAPERLESS_PROBE_INTERVAL_SECONDS = 60;
+const MIN_PAPERLESS_PROBE_INTERVAL_SECONDS = 10;
+
+function paperlessProbeIntervalMs() {
+  const configured = Number(config.health?.paperlessProbeIntervalSeconds);
+  if (!Number.isFinite(configured)) {
+    return DEFAULT_PAPERLESS_PROBE_INTERVAL_SECONDS * 1000;
+  }
+  if (configured <= 0) {
+    return 0;
+  }
+  return Math.max(configured, MIN_PAPERLESS_PROBE_INTERVAL_SECONDS) * 1000;
+}
+
+/**
+ * Probes Paperless-ngx on a fixed interval, independently of the scan loop.
+ *
+ * The scan loop only probes when it runs, so between two ticks an outage was
+ * invisible to the dashboard — and entirely invisible with
+ * DISABLE_AUTOMATIC_PROCESSING=yes. This keeps `paperless.lastCheckedAt` fresh
+ * so the UI can warn immediately.
+ *
+ * Only connectivity is recorded here; the consecutive-failure counter belongs
+ * to actual scan runs and must not be moved by a passive probe.
+ */
+function startConnectivityMonitor() {
+  const intervalMs = paperlessProbeIntervalMs();
+  if (intervalMs === 0) {
+    console.info(
+      '[HEALTH] Paperless-ngx connectivity probe is disabled (PAPERLESS_PROBE_INTERVAL_SECONDS=0).'
+    );
+    return;
+  }
+
+  let probeRunning = false;
+
+  const probe = async () => {
+    // A scan probes on its own and would only duplicate the request here.
+    if (probeRunning || scanControl.running) {
+      return;
+    }
+    probeRunning = true;
+
+    try {
+      if (!(await setupService.isConfigured())) {
+        // Nothing configured yet — reporting "not reachable" would warn about
+        // a connection the user has not set up.
+        scanHealthService.clearConnectivity();
+        return;
+      }
+
+      scanHealthService.recordConnectivity(
+        await paperlessService.checkConnection()
+      );
+    } catch (error) {
+      console.debug(
+        `[HEALTH] Connectivity probe failed unexpectedly: ${error.message}`
+      );
+    } finally {
+      probeRunning = false;
+    }
+  };
+
+  const timer = setInterval(probe, intervalMs);
+  // Never keep the event loop alive just for the probe.
+  timer.unref?.();
+  console.info(
+    `[HEALTH] Paperless-ngx connectivity probe armed (every ${intervalMs / 1000}s).`
+  );
+
+  probe();
 }
 
 // Start scanning
@@ -1267,6 +1348,32 @@ async function startScanning() {
         'Automatic document processing is disabled (DISABLE_AUTOMATIC_PROCESSING=yes). No scan is scheduled.'
       );
       return;
+    }
+
+    // OCR auto-processing: drain the pending OCR queue without anyone having
+    // to press "Process All Pending". Armed after the kill-switch above
+    // because OCR + AI writes results back to Paperless-ngx, which is exactly
+    // what DISABLE_AUTOMATIC_PROCESSING is meant to stop.
+    if (ocrAutoProcessService.isEnabled()) {
+      const ocrAutoProcessInterval = ocrAutoProcessService.interval;
+      console.log(
+        'Configured OCR auto-processing interval:',
+        ocrAutoProcessInterval
+      );
+      cron.schedule(ocrAutoProcessInterval, async () => {
+        // Never compete with a running scan for the same AI backend.
+        if (scanControl.running) {
+          console.debug(
+            '[OCR] Auto-processing skipped: a document scan is currently running.'
+          );
+          return;
+        }
+        await ocrAutoProcessService.drainQueue();
+      });
+    } else {
+      console.info(
+        '[OCR] Automatic OCR queue processing is disabled (OCR_AUTO_PROCESS_ENABLED=no).'
+      );
     }
 
     // Arm the scheduler before talking to Paperless-ngx. A connection failure
@@ -1349,6 +1456,9 @@ async function startServer() {
       console.log(`Server running on port ${port}`);
       warnIfRemoteSetupExposed();
       startScanning();
+      // Armed separately from the scan scheduler so the dashboard also warns
+      // when automatic processing is switched off.
+      startConnectivityMonitor();
     });
   } catch (error) {
     console.error(`Failed to start server: ${error.message}`);

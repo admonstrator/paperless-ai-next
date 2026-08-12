@@ -535,13 +535,31 @@
       },
       "PaperlessHealth": {
         "type": "object",
-        "description": "Result of the most recent Paperless-ngx connectivity probe",
+        "description": "Result of the most recent Paperless-ngx connectivity probe. The probe\nruns on every scan and additionally every\n`PAPERLESS_PROBE_INTERVAL_SECONDS` (default 60s), so the result stays\ncurrent even while no scan is running.\n",
         "properties": {
           "reachable": {
             "type": "boolean",
             "nullable": true,
-            "description": "Null until the first probe has run",
+            "description": "Whether the host answered at all. Null until the first probe has\nrun. A rejected API token still counts as reachable — check\n`usable` to decide whether Paperless-ngx can actually be used.\n",
             "example": true
+          },
+          "authorized": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Whether the API token was accepted (not 401/403)",
+            "example": true
+          },
+          "usable": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "Reachable *and* authorized — what the scan loop needs",
+            "example": true
+          },
+          "status": {
+            "type": "integer",
+            "nullable": true,
+            "description": "HTTP status of the probe, null when no response arrived",
+            "example": 200
           },
           "lastCheckedAt": {
             "type": "string",
@@ -978,8 +996,8 @@
     },
     "/api/chat/documents": {
       "get": {
-        "summary": "Search recent documents for omnibox selectors",
-        "description": "Returns recent documents filtered by query for Manual/OCR document selectors.",
+        "summary": "Search documents for omnibox selectors",
+        "description": "Searches Paperless-ngx documents for Manual/OCR document selectors.",
         "tags": [
           "Documents",
           "API"
@@ -999,7 +1017,23 @@
             "schema": {
               "type": "string"
             },
-            "description": "Free-text query matched against document id, title, and correspondent name."
+            "description": "Search query. For mode=id this must be a positive integer document ID."
+          },
+          {
+            "in": "query",
+            "name": "mode",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "all",
+                "title",
+                "tags",
+                "correspondent",
+                "id"
+              ],
+              "default": "all"
+            },
+            "description": "Search mode (id uses exact Paperless document ID lookup)."
           },
           {
             "in": "query",
@@ -1044,6 +1078,13 @@
                               },
                               "correspondent": {
                                 "type": "string"
+                              },
+                              "tags": {
+                                "type": "array",
+                                "description": "Resolved tag names for the document.",
+                                "items": {
+                                  "type": "string"
+                                }
                               }
                             }
                           }
@@ -3668,6 +3709,26 @@
                     "type": "boolean",
                     "description": "Disable automatic document processing",
                     "example": false
+                  },
+                  "ocrAutoProcessEnabled": {
+                    "type": "string",
+                    "description": "Process queued OCR documents automatically (yes/no)",
+                    "example": "no"
+                  },
+                  "ocrAutoProcessInterval": {
+                    "type": "string",
+                    "description": "Cron expression for the automatic OCR queue schedule",
+                    "example": "0,15,30,45 * * * *"
+                  },
+                  "ocrAutoProcessBatchSize": {
+                    "type": "integer",
+                    "description": "Maximum queued documents handled per automatic OCR run (1-100)",
+                    "example": 10
+                  },
+                  "ocrAutoAnalyze": {
+                    "type": "string",
+                    "description": "Run AI analysis directly after automatic OCR (yes/no)",
+                    "example": "yes"
                   }
                 }
               }
@@ -4730,6 +4791,55 @@
         "responses": {
           "200": {
             "description": "OCR queue returned successfully"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/ocr/queue/ids": {
+      "get": {
+        "summary": "Get document IDs currently waiting in the OCR queue",
+        "description": "Returns the Paperless-ngx document IDs with status pending or processing. Used by the OCR view to hide already queued documents from search results.",
+        "tags": [
+          "OCR",
+          "API"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Queued document IDs returned successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
             "description": "Server error"

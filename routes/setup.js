@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const rateLimit = require('express-rate-limit');
+const cron = require('node-cron');
 const setupService = require('../services/setupService.js');
 const paperlessService = require('../services/paperlessService.js');
 const openaiService = require('../services/openaiService.js');
@@ -9,6 +10,7 @@ const azureService = require('../services/azureService.js');
 const documentModel = require('../models/document.js');
 const AIServiceFactory = require('../services/aiServiceFactory');
 const configFile = require('../config/config.js');
+const changelog = require('../config/changelog.js');
 const documentsService = require('../services/documentsService.js');
 const fs = require('fs').promises;
 const path = require('path');
@@ -1138,8 +1140,8 @@ router.get('/api/playground/bootstrap', protectApiRoute, async (req, res) => {
  * @swagger
  * /api/chat/documents:
  *   get:
- *     summary: Search recent documents for omnibox selectors
- *     description: Returns recent documents filtered by query for Manual/OCR document selectors.
+ *     summary: Search documents for omnibox selectors
+ *     description: Searches Paperless-ngx documents for Manual/OCR document selectors.
  *     tags:
  *       - Documents
  *       - API
@@ -1151,7 +1153,14 @@ router.get('/api/playground/bootstrap', protectApiRoute, async (req, res) => {
  *         name: q
  *         schema:
  *           type: string
- *         description: Free-text query matched against document id, title, and correspondent name.
+ *         description: Search query. For mode=id this must be a positive integer document ID.
+ *       - in: query
+ *         name: mode
+ *         schema:
+ *           type: string
+ *           enum: [all, title, tags, correspondent, id]
+ *           default: all
+ *         description: Search mode (id uses exact Paperless document ID lookup).
  *       - in: query
  *         name: limit
  *         schema:
@@ -1187,14 +1196,18 @@ router.get('/api/playground/bootstrap', protectApiRoute, async (req, res) => {
  *                             nullable: true
  *                           correspondent:
  *                             type: string
+ *                           tags:
+ *                             type: array
+ *                             description: Resolved tag names for the document.
+ *                             items:
+ *                               type: string
  *       500:
  *         description: Server error
  */
 router.get('/api/chat/documents', isAuthenticated, async (req, res) => {
   try {
-    const query = String(req.query?.q || '')
-      .trim()
-      .toLowerCase();
+    // Keep original casing for Paperless-ngx search; server-side search via query.
+    const query = String(req.query?.q || '').trim();
     const requestedLimit = Number.parseInt(
       String(req.query?.limit || '100'),
       10
@@ -1202,43 +1215,40 @@ router.get('/api/chat/documents', isAuthenticated, async (req, res) => {
     const limit = Number.isFinite(requestedLimit)
       ? Math.min(Math.max(requestedLimit, 1), 200)
       : 100;
+    const validModes = ['all', 'title', 'tags', 'correspondent', 'id'];
+    const mode = validModes.includes(req.query?.mode) ? req.query.mode : 'all';
 
-    const { documents, correspondentNames } =
-      await documentsService.getDocumentsWithMetadata(limit);
+    const { documents, tagNames, correspondentNames } =
+      await documentsService.getDocumentsWithMetadata(limit, query, mode);
 
     const normalizedDocuments = (Array.isArray(documents) ? documents : []).map(
       (doc) => {
+        // Number(null) is 0, so an id check without the lower bound would treat
+        // documents without a correspondent as a valid lookup.
         const correspondentId = Number(doc?.correspondent);
-        const correspondentName = Number.isInteger(correspondentId)
-          ? correspondentNames?.[correspondentId] || ''
-          : '';
+        const correspondentName =
+          Number.isInteger(correspondentId) && correspondentId > 0
+            ? correspondentNames?.[correspondentId] || ''
+            : '';
+
+        const resolvedTags = (Array.isArray(doc?.tags) ? doc.tags : [])
+          .map((id) => tagNames?.[id])
+          .filter(Boolean);
 
         return {
           id: doc?.id,
           title: doc?.title || '',
           created: doc?.created || doc?.created_date || doc?.added || null,
           correspondent: correspondentName,
+          tags: resolvedTags,
         };
       }
     );
 
-    const filteredDocuments = query
-      ? normalizedDocuments.filter((doc) => {
-          const idMatches = String(doc.id || '').includes(query);
-          const titleMatches = String(doc.title || '')
-            .toLowerCase()
-            .includes(query);
-          const correspondentMatches = String(doc.correspondent || '')
-            .toLowerCase()
-            .includes(query);
-          return idMatches || titleMatches || correspondentMatches;
-        })
-      : normalizedDocuments;
-
     return res.json({
       success: true,
       data: {
-        documents: filteredDocuments.slice(0, limit),
+        documents: normalizedDocuments.slice(0, limit),
       },
     });
   } catch (error) {
@@ -3682,6 +3692,10 @@ function toEnvPreviewLines(config) {
     'OCR_PDF_RENDER_ENABLED',
     'OCR_PDF_RENDER_MAX_PAGES',
     'OCR_PDF_RENDER_DPI',
+    'OCR_AUTO_PROCESS_ENABLED',
+    'OCR_AUTO_PROCESS_INTERVAL',
+    'OCR_AUTO_PROCESS_BATCH_SIZE',
+    'OCR_AUTO_ANALYZE',
   ];
 
   return previewKeys
@@ -6473,6 +6487,12 @@ router.get('/settings', async (req, res) => {
     OCR_PDF_RENDER_ENABLED: process.env.OCR_PDF_RENDER_ENABLED || 'yes',
     OCR_PDF_RENDER_MAX_PAGES: process.env.OCR_PDF_RENDER_MAX_PAGES || '10',
     OCR_PDF_RENDER_DPI: process.env.OCR_PDF_RENDER_DPI || '150',
+    OCR_AUTO_PROCESS_ENABLED: process.env.OCR_AUTO_PROCESS_ENABLED || 'no',
+    OCR_AUTO_PROCESS_INTERVAL:
+      process.env.OCR_AUTO_PROCESS_INTERVAL || '*/15 * * * *',
+    OCR_AUTO_PROCESS_BATCH_SIZE:
+      process.env.OCR_AUTO_PROCESS_BATCH_SIZE || '10',
+    OCR_AUTO_ANALYZE: process.env.OCR_AUTO_ANALYZE || 'yes',
     SETUP_OCR_VALIDATION_TIMEOUT_MS:
       process.env.SETUP_OCR_VALIDATION_TIMEOUT_MS ||
       process.env.SETUP_VALIDATION_TIMEOUT_MS ||
@@ -6568,6 +6588,7 @@ router.get('/settings', async (req, res) => {
     lockedEnvDetails,
     aiProviderPresets,
     mfaSettings,
+    changelogReleases: changelog.releases,
     success: isConfigured
       ? 'The application is already configured. You can update the configuration below.'
       : undefined,
@@ -7648,6 +7669,9 @@ function buildScannerHealthSnapshot() {
     },
     paperless: {
       reachable: scanner.paperless.reachable,
+      authorized: scanner.paperless.authorized,
+      usable: scanner.paperless.usable,
+      status: scanner.paperless.status,
       lastCheckedAt: scanner.paperless.lastCheckedAt,
       error: scanner.paperless.error,
     },
@@ -7907,6 +7931,22 @@ router.get('/health', async (req, res) => {
  *                 type: boolean
  *                 description: Disable automatic document processing
  *                 example: false
+ *               ocrAutoProcessEnabled:
+ *                 type: string
+ *                 description: Process queued OCR documents automatically (yes/no)
+ *                 example: "no"
+ *               ocrAutoProcessInterval:
+ *                 type: string
+ *                 description: Cron expression for the automatic OCR queue schedule
+ *                 example: "0,15,30,45 * * * *"
+ *               ocrAutoProcessBatchSize:
+ *                 type: integer
+ *                 description: Maximum queued documents handled per automatic OCR run (1-100)
+ *                 example: 10
+ *               ocrAutoAnalyze:
+ *                 type: string
+ *                 description: Run AI analysis directly after automatic OCR (yes/no)
+ *                 example: "yes"
  *     responses:
  *       200:
  *         description: Settings updated successfully
@@ -8005,6 +8045,10 @@ router.post('/settings', express.json(), async (req, res) => {
       ocrPdfRenderEnabled,
       ocrPdfRenderMaxPages,
       ocrPdfRenderDpi,
+      ocrAutoProcessEnabled,
+      ocrAutoProcessInterval,
+      ocrAutoProcessBatchSize,
+      ocrAutoAnalyze,
       globalRateLimitWindowMs,
       globalRateLimitMax,
       trustProxy,
@@ -8094,6 +8138,12 @@ router.post('/settings', express.json(), async (req, res) => {
       OCR_PDF_RENDER_ENABLED: process.env.OCR_PDF_RENDER_ENABLED || 'yes',
       OCR_PDF_RENDER_MAX_PAGES: process.env.OCR_PDF_RENDER_MAX_PAGES || '10',
       OCR_PDF_RENDER_DPI: process.env.OCR_PDF_RENDER_DPI || '150',
+      OCR_AUTO_PROCESS_ENABLED: process.env.OCR_AUTO_PROCESS_ENABLED || 'no',
+      OCR_AUTO_PROCESS_INTERVAL:
+        process.env.OCR_AUTO_PROCESS_INTERVAL || '*/15 * * * *',
+      OCR_AUTO_PROCESS_BATCH_SIZE:
+        process.env.OCR_AUTO_PROCESS_BATCH_SIZE || '10',
+      OCR_AUTO_ANALYZE: process.env.OCR_AUTO_ANALYZE || 'yes',
       GLOBAL_RATE_LIMIT_WINDOW_MS:
         process.env.GLOBAL_RATE_LIMIT_WINDOW_MS || '900000',
       GLOBAL_RATE_LIMIT_MAX: process.env.GLOBAL_RATE_LIMIT_MAX || '1000',
@@ -8486,6 +8536,51 @@ router.post('/settings', express.json(), async (req, res) => {
           `[WARN] Invalid OCR_PDF_RENDER_DPI value: ${ocrPdfRenderDpi}. Using default: 150`
         );
         updatedConfig.OCR_PDF_RENDER_DPI = '150';
+      }
+    }
+    if (typeof ocrAutoProcessEnabled === 'string') {
+      const normalizedAutoProcessEnabled = ocrAutoProcessEnabled
+        .trim()
+        .toLowerCase();
+      if (['yes', 'no'].includes(normalizedAutoProcessEnabled)) {
+        updatedConfig.OCR_AUTO_PROCESS_ENABLED = normalizedAutoProcessEnabled;
+      }
+    }
+    if (typeof ocrAutoAnalyze === 'string') {
+      const normalizedAutoAnalyze = ocrAutoAnalyze.trim().toLowerCase();
+      if (['yes', 'no'].includes(normalizedAutoAnalyze)) {
+        updatedConfig.OCR_AUTO_ANALYZE = normalizedAutoAnalyze;
+      }
+    }
+    if (
+      typeof ocrAutoProcessInterval === 'string' &&
+      ocrAutoProcessInterval.trim()
+    ) {
+      // An invalid cron pattern makes cron.schedule() throw during startup,
+      // so it is rejected here instead of taking the app down on restart.
+      const normalizedAutoProcessInterval = ocrAutoProcessInterval.trim();
+      if (!cron.validate(normalizedAutoProcessInterval)) {
+        return res.status(400).json({
+          error:
+            'Invalid OCR Processing Interval. Use cron syntax, for example */15 * * * *.',
+        });
+      }
+      updatedConfig.OCR_AUTO_PROCESS_INTERVAL = normalizedAutoProcessInterval;
+    }
+    if (ocrAutoProcessBatchSize !== undefined) {
+      const autoProcessBatchSize = parseInt(ocrAutoProcessBatchSize, 10);
+      if (
+        !isNaN(autoProcessBatchSize) &&
+        autoProcessBatchSize >= 1 &&
+        autoProcessBatchSize <= 100
+      ) {
+        updatedConfig.OCR_AUTO_PROCESS_BATCH_SIZE =
+          autoProcessBatchSize.toString();
+      } else {
+        console.warn(
+          `[WARN] Invalid OCR_AUTO_PROCESS_BATCH_SIZE value: ${ocrAutoProcessBatchSize}. Using default: 10`
+        );
+        updatedConfig.OCR_AUTO_PROCESS_BATCH_SIZE = '10';
       }
     }
     updatedConfig.SETUP_OCR_VALIDATION_TIMEOUT_MS = String(
@@ -9012,6 +9107,52 @@ router.get('/api/ocr/queue', isAuthenticated, async (req, res) => {
  *       500:
  *         description: Server error
  */
+
+/**
+ * @swagger
+ * /api/ocr/queue/ids:
+ *   get:
+ *     summary: Get document IDs currently waiting in the OCR queue
+ *     description: >-
+ *       Returns the Paperless-ngx document IDs with status pending or processing.
+ *       Used by the OCR view to hide already queued documents from search results.
+ *     tags:
+ *       - OCR
+ *       - API
+ *     security:
+ *       - BearerAuth: []
+ *       - ApiKeyAuth: []
+ *     responses:
+ *       200:
+ *         description: Queued document IDs returned successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     ids:
+ *                       type: array
+ *                       items:
+ *                         type: integer
+ *       500:
+ *         description: Server error
+ */
+
+// API: Get all document IDs currently in the OCR queue
+router.get('/api/ocr/queue/ids', isAuthenticated, async (req, res) => {
+  try {
+    const ids = await documentModel.getOcrQueueDocumentIds();
+    return res.json({ success: true, data: { ids } });
+  } catch (error) {
+    console.error('[ERROR] GET /api/ocr/queue/ids:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // API: Add a document manually to OCR queue
 router.post('/api/ocr/queue/add', isAuthenticated, async (req, res) => {
@@ -9843,7 +9984,6 @@ router.get('/api/changelog/status', isAuthenticated, async (req, res) => {
       return res.json({ show: false });
     }
 
-    const changelog = require('../config/changelog');
     const username = req.user && req.user.username;
     if (!username) {
       return res.json({ show: false });

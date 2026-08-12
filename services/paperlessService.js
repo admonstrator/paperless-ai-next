@@ -16,7 +16,10 @@ class PaperlessService {
     this.client = null;
     this.tagCache = new Map();
     this.customFieldCache = new Map();
+    this.correspondentNameCache = new Map();
     this.lastTagRefresh = 0;
+    this.lastCorrespondentRefresh = 0;
+    this._supportsCorrespondentIdIn = null;
     this._refreshPromise = null;
     this._effectiveCountCache = null;
     this._effectiveCountCacheTtlMs = 60 * 1000;
@@ -813,6 +816,7 @@ class PaperlessService {
             fields: 'id,name',
             count: true,
             page: page,
+            page_size: 100,
           },
         });
 
@@ -1297,26 +1301,246 @@ class PaperlessService {
     return documents;
   }
 
+  /**
+   * Normalize a mixed list of IDs into unique, positive integers.
+   * Guards against `Number(null) === 0`, which would otherwise turn documents
+   * without a correspondent into a lookup for the non-existent ID 0.
+   */
+  _normalizeEntityIds(ids) {
+    if (!Array.isArray(ids)) {
+      return [];
+    }
+
+    const normalized = new Set();
+    for (const rawId of ids) {
+      const id = typeof rawId === 'object' ? Number(rawId?.id) : Number(rawId);
+      if (Number.isInteger(id) && id > 0) {
+        normalized.add(id);
+      }
+    }
+
+    return [...normalized];
+  }
+
+  /**
+   * Resolve tag IDs to names using the shared tag cache.
+   *
+   * The cache is keyed by tag name, so the reverse lookup is built on the fly.
+   * This costs at most one paginated refresh per CACHE_LIFETIME instead of one
+   * detail request per tag.
+   *
+   * @param   tagIds  Tag IDs to resolve.
+   * @returns         A plain object mapping tag ID to tag name.
+   */
+  async getTagNamesByIds(tagIds = []) {
+    this.initialize();
+    const uniqueTagIds = this._normalizeEntityIds(tagIds);
+    if (uniqueTagIds.length === 0 || !this.client) {
+      return {};
+    }
+
+    try {
+      await this.ensureTagCache();
+    } catch (error) {
+      console.error('[ERROR] resolving tag names from cache:', error.message);
+      return {};
+    }
+
+    const namesById = new Map();
+    for (const tag of this.tagCache.values()) {
+      const id = Number(tag?.id);
+      if (Number.isInteger(id) && typeof tag?.name === 'string') {
+        namesById.set(id, tag.name);
+      }
+    }
+
+    const resolved = {};
+    for (const tagId of uniqueTagIds) {
+      const name = namesById.get(tagId);
+      if (name) {
+        resolved[tagId] = name;
+      }
+    }
+
+    return resolved;
+  }
+
+  /**
+   * Resolve correspondent IDs to names, batching every cache miss into a single
+   * filtered list request instead of one detail request per correspondent.
+   *
+   * @param   correspondentIds  Correspondent IDs to resolve.
+   * @returns                   A plain object mapping correspondent ID to name.
+   */
+  async getCorrespondentNamesByIds(correspondentIds = []) {
+    this.initialize();
+    const uniqueIds = this._normalizeEntityIds(correspondentIds);
+    if (uniqueIds.length === 0 || !this.client) {
+      return {};
+    }
+
+    // The cache holds a whole generation of names; drop it once it is stale
+    // rather than tracking a timestamp per entry.
+    if (Date.now() - this.lastCorrespondentRefresh > this.CACHE_LIFETIME) {
+      this.correspondentNameCache.clear();
+      this.lastCorrespondentRefresh = Date.now();
+    }
+
+    const missingIds = uniqueIds.filter(
+      (id) => !this.correspondentNameCache.has(id)
+    );
+
+    if (missingIds.length > 0) {
+      await this._loadCorrespondentNames(missingIds);
+    }
+
+    const resolved = {};
+    for (const id of uniqueIds) {
+      const name = this.correspondentNameCache.get(id);
+      if (name) {
+        resolved[id] = name;
+      }
+    }
+
+    return resolved;
+  }
+
+  /**
+   * Populate the correspondent name cache for the given IDs.
+   * Prefers the `id__in` filter and falls back to a full listing when the
+   * Paperless-ngx instance does not support it.
+   */
+  async _loadCorrespondentNames(missingIds) {
+    let loaded;
+
+    if (this._supportsCorrespondentIdIn === false) {
+      loaded = await this._primeCorrespondentNameCache();
+    } else {
+      loaded = true;
+      for (let index = 0; index < missingIds.length; index += 100) {
+        const chunk = missingIds.slice(index, index + 100);
+        const applied = await this._fetchCorrespondentNameChunk(chunk);
+        if (!applied) {
+          // `id__in` is unsupported or failed - load everything once instead.
+          loaded = await this._primeCorrespondentNameCache();
+          break;
+        }
+      }
+
+      if (loaded && this._supportsCorrespondentIdIn !== false) {
+        this._supportsCorrespondentIdIn = true;
+      }
+    }
+
+    // Only remember misses when the lookup itself worked. A transient network
+    // error must not poison the cache for a whole TTL generation.
+    if (!loaded) {
+      return;
+    }
+
+    // Cache the misses too, otherwise an ID Paperless-ngx cannot resolve is
+    // looked up again on every single search - which in the fallback path
+    // means listing all correspondents over and over.
+    for (const id of missingIds) {
+      if (!this.correspondentNameCache.has(id)) {
+        this.correspondentNameCache.set(id, null);
+      }
+    }
+  }
+
+  /**
+   * Fetch one batch of correspondent names via `id__in`.
+   * @returns true when the filter was honoured, false when the caller must fall back.
+   */
+  async _fetchCorrespondentNameChunk(chunk) {
+    const requestedIds = new Set(chunk);
+
+    try {
+      const response = await this.client.get('/correspondents/', {
+        params: {
+          id__in: chunk.join(','),
+          page_size: chunk.length,
+          fields: 'id,name',
+        },
+      });
+
+      const results = response?.data?.results;
+      if (!Array.isArray(results)) {
+        return false;
+      }
+
+      // Unknown query params are silently ignored by Paperless-ngx, which would
+      // return an arbitrary page of correspondents instead of the requested
+      // ones. Any unexpected ID means the filter was not applied.
+      const filterHonoured = results.every((correspondent) =>
+        requestedIds.has(Number(correspondent?.id))
+      );
+      if (!filterHonoured) {
+        console.warn(
+          '[DEBUG] Paperless-ngx ignored the correspondent id__in filter, falling back to a full listing'
+        );
+        this._supportsCorrespondentIdIn = false;
+        return false;
+      }
+
+      for (const correspondent of results) {
+        const id = Number(correspondent?.id);
+        if (Number.isInteger(id) && typeof correspondent?.name === 'string') {
+          this.correspondentNameCache.set(id, correspondent.name);
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error(
+        '[ERROR] fetching correspondent names by id:',
+        error.message
+      );
+      return false;
+    }
+  }
+
+  /**
+   * Load every correspondent name into the cache in one paginated sweep.
+   * Used as the fallback path so a single search never fans out into one
+   * request per correspondent.
+   *
+   * @returns true when the listing produced entries. `listCorrespondentsNames()`
+   *          swallows its own errors and returns an empty array, so an empty
+   *          result is treated as inconclusive rather than as a success.
+   */
+  async _primeCorrespondentNameCache() {
+    try {
+      const correspondents = await this.listCorrespondentsNames();
+      let cached = 0;
+      for (const correspondent of correspondents) {
+        const id = Number(correspondent?.id);
+        if (Number.isInteger(id) && typeof correspondent?.name === 'string') {
+          this.correspondentNameCache.set(id, correspondent.name);
+          cached += 1;
+        }
+      }
+      return cached > 0;
+    } catch (error) {
+      console.error('[ERROR] priming correspondent name cache:', error.message);
+      return false;
+    }
+  }
+
   async getCorrespondentNameById(correspondentId) {
     /**
      * Get the Name of a Correspondent by its ID.
      *
      * @param   id  The id of the correspondent.
-     * @returns    The name of the correspondent.
+     * @returns    An object holding the correspondent name, or null.
      */
-    this.initialize();
-    try {
-      const response = await this.client.get(
-        `/correspondents/${correspondentId}/`
-      );
-      return response.data;
-    } catch (error) {
-      console.error(
-        `[ERROR] fetching correspondent ${correspondentId}:`,
-        error.message
-      );
+    const id = Number(correspondentId);
+    if (!Number.isInteger(id) || id < 1) {
       return null;
     }
+
+    const names = await this.getCorrespondentNamesByIds([id]);
+    return names[id] ? { id, name: names[id] } : null;
   }
 
   async getTagNameById(tagId) {
@@ -1326,17 +1550,13 @@ class PaperlessService {
      * @param   id  The id of the tag.
      * @returns    The name of the tag.
      */
-    this.initialize();
-    try {
-      const response = await this.client.get(`/tags/${tagId}/`);
-      return response.data.name;
-    } catch (error) {
-      console.error(
-        `[ERROR] fetching tag name for ID ${tagId}:`,
-        error.message
-      );
+    const id = Number(tagId);
+    if (!Number.isInteger(id) || id < 1) {
       return null;
     }
+
+    const names = await this.getTagNamesByIds([id]);
+    return names[id] || null;
   }
 
   async getDocumentsWithTitleTagsCorrespondentCreated() {
@@ -1389,6 +1609,137 @@ class PaperlessService {
         '[ERROR] fetching recent documents with metadata:',
         error.message
       );
+      return [];
+    }
+  }
+
+  async searchDocuments(query, limit = 100, mode = 'all') {
+    this.initialize();
+    if (!this.client) {
+      console.error('[DEBUG] Client not initialized');
+      return [];
+    }
+
+    const safeLimit = Number.isInteger(Number(limit))
+      ? Math.max(1, Math.min(Number(limit), 200))
+      : 100;
+    const normalizedQuery = String(query || '').trim();
+    const documentFields = 'id,title,tags,correspondent,created';
+
+    try {
+      // Explicit ID mode: exact lookup via GET /documents/{id}/
+      if (mode === 'id') {
+        const id = Number.parseInt(normalizedQuery, 10);
+        if (!Number.isInteger(id) || id < 1 || String(id) !== normalizedQuery) {
+          return [];
+        }
+
+        try {
+          // Request only the selector fields so the document content, which can
+          // be megabytes on scanned files, is not transferred.
+          const response = await this.client.get(`/documents/${id}/`, {
+            params: { fields: documentFields },
+          });
+          const doc = response?.data;
+          if (!doc || doc.id == null) {
+            return [];
+          }
+          return [
+            {
+              id: doc.id,
+              title: doc.title,
+              tags: doc.tags,
+              correspondent: doc.correspondent,
+              created: doc.created || doc.created_date || doc.added || null,
+            },
+          ];
+        } catch (error) {
+          if (error?.response?.status !== 404) {
+            console.error(
+              `[ERROR] searching document by id ${id}:`,
+              error.message
+            );
+          }
+          return [];
+        }
+      }
+
+      const params = {
+        fields: documentFields,
+        page: 1,
+        page_size: safeLimit,
+        ordering: '-created',
+      };
+
+      if (mode === 'title') {
+        params.title__icontains = normalizedQuery;
+      } else if (mode === 'tags') {
+        const tagIds = await this._findTagIdsByPartialName(normalizedQuery);
+        if (!tagIds.length) return [];
+        params.tags__id__in = tagIds.join(',');
+      } else if (mode === 'correspondent') {
+        const corrIds =
+          await this._findCorrespondentIdsByPartialName(normalizedQuery);
+        if (!corrIds.length) return [];
+        params.correspondent__id__in = corrIds.join(',');
+      } else {
+        params.query = normalizedQuery;
+      }
+
+      let response;
+      try {
+        response = await this.client.get('/documents/', { params });
+      } catch (error) {
+        // Full-text search needs the Paperless-ngx search index and rejects
+        // malformed query syntax. Keep the selector usable by retrying with a
+        // plain title filter instead of returning nothing.
+        if (mode !== 'all') {
+          throw error;
+        }
+
+        console.warn(
+          `[DEBUG] Full-text document search failed (${error.message}), retrying with a title filter`
+        );
+
+        const fallbackParams = { ...params };
+        delete fallbackParams.query;
+        fallbackParams.title__icontains = normalizedQuery;
+        response = await this.client.get('/documents/', {
+          params: fallbackParams,
+        });
+      }
+
+      if (!Array.isArray(response?.data?.results)) {
+        return [];
+      }
+
+      return response.data.results;
+    } catch (error) {
+      console.error('[ERROR] searching documents:', error.message);
+      return [];
+    }
+  }
+
+  async _findTagIdsByPartialName(query) {
+    try {
+      const response = await this.client.get('/tags/', {
+        params: { name__icontains: query, page_size: 50 },
+      });
+      return (response.data?.results || []).map((t) => t.id);
+    } catch (error) {
+      console.error('[ERROR] searching tags by name:', error.message);
+      return [];
+    }
+  }
+
+  async _findCorrespondentIdsByPartialName(query) {
+    try {
+      const response = await this.client.get('/correspondents/', {
+        params: { name__icontains: query, page_size: 50 },
+      });
+      return (response.data?.results || []).map((c) => c.id);
+    } catch (error) {
+      console.error('[ERROR] searching correspondents by name:', error.message);
       return [];
     }
   }
