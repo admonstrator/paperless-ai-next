@@ -314,8 +314,8 @@
                     <div id="aiQuickstartPanel" class="hidden zr-col zr-col--loose">
                         <div class="zr-field zr-field--stacked">
                             <label for="quickstartBaseUrl" class="zr-field__name">AI server URL</label>
-                            <input id="quickstartBaseUrl" type="text" class="zr-input" placeholder="http://192.168.1.5:1234 (LM Studio) or http://host:11434 (Ollama)">
-                            <p class="zr-field__hint">Enter the base URL of your LM Studio, Ollama, or OpenAI-compatible server.</p>
+                            <input id="quickstartBaseUrl" type="text" class="zr-input" placeholder="http://192.168.1.5:1234">
+                            <p class="zr-field__hint">Base URL of your LM Studio, Ollama, or OpenAI-compatible server — for example http://192.168.1.5:1234 or http://host:11434.</p>
                         </div>
                         <div class="zr-field zr-field--stacked">
                             <label for="quickstartApiKey" class="zr-field__name">API key (optional)</label>
@@ -434,7 +434,8 @@
                         </div>
                         <div id="ocrApiKeyContainer" class="zr-field zr-field--stacked">
                             <label for="ocrApiKey" class="zr-field__name">OCR API key</label>
-                            <input id="ocrApiKey" type="password" class="zr-input" placeholder="Optional for local/custom OCR, required for Mistral">
+                            <input id="ocrApiKey" type="password" class="zr-input" placeholder="Required for Mistral">
+                            <p class="zr-field__hint">Optional for local and custom OCR providers.</p>
                         </div>
                         <div class="zr-field zr-field--stacked">
                             <label for="mistralOcrModel" class="zr-field__name">OCR model</label>

@@ -11,6 +11,10 @@
      phone rule on layer order alone — @layer pages sits above components. */
   @media (min-width: 861px) {
     .history-filter {
+      /* The floor matters as much as the cap: sharing the toolbar row shrank
+         these to 121px, which cut "All correspondents" off in the closed
+         select — the one text a filter always has to be able to show. */
+      min-width: 168px;
       max-width: 220px;
     }
   }

@@ -111,12 +111,12 @@
                                 <div class="zr-field zr-field--stacked">
                                     <label for="paperlessToken" class="zr-field__name">API Token</label>
                                     <div class="zr-inputgroup">
-                                        <input type="password" id="paperlessToken" name="paperlessToken" value="" class="zr-input" placeholder="<%= configuredSecrets.PAPERLESS_API_TOKEN ? 'Configured (leave empty to keep current value)' : 'Enter API token' %>">
+                                        <input type="password" id="paperlessToken" name="paperlessToken" value="" class="zr-input" placeholder="<%= configuredSecrets.PAPERLESS_API_TOKEN ? 'Configured' : 'Enter API token' %>">
                                         <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="paperlessToken">
                                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg>
                                         </button>
                                     </div>
-                                    <p class="zr-field__hint">ENV: PAPERLESS_API_TOKEN · Restart required</p>
+                                    <p class="zr-field__hint">ENV: PAPERLESS_API_TOKEN · Restart required<%= configuredSecrets.PAPERLESS_API_TOKEN ? ' · Leave empty to keep the stored value' : '' %></p>
                                 </div>
 
                                 <div class="zr-field zr-field--stacked">
@@ -194,7 +194,7 @@
                                 <div class="zr-field zr-field--stacked">
                                     <label for="ignoreTagInput" class="zr-field__name">Ignore Tags</label>
                                     <div class="zr-inputgroup">
-                                        <input type="text" id="ignoreTagInput" class="zr-input" placeholder="Enter a tag to ignore and press Enter">
+                                        <input type="text" id="ignoreTagInput" class="zr-input" placeholder="Tag name, then Enter">
                                         <button type="button" class="zr-btn zr-btn--primary">
                                             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-plus"/></svg>
                                             Add
@@ -332,11 +332,11 @@
                                 <p class="zr-field__hint">Point at a local AI server (LM Studio, Ollama, or any OpenAI-compatible endpoint). Detection lists the running models and classifies them for AI analysis and OCR.</p>
                                 <div class="zr-field zr-field--stacked">
                                     <label for="settingsQuickstartUrl" class="zr-field__name">AI server URL</label>
-                                    <input type="text" id="settingsQuickstartUrl" class="zr-input" placeholder="http://192.168.1.5:1234 (LM Studio) or http://host:11434 (Ollama)">
+                                    <input type="text" id="settingsQuickstartUrl" class="zr-input" placeholder="http://192.168.1.5:1234">
                                 </div>
                                 <div class="zr-field zr-field--stacked">
                                     <label for="settingsQuickstartApiKey" class="zr-field__name">API key (optional)</label>
-                                    <input type="password" id="settingsQuickstartApiKey" class="zr-input" placeholder="Only needed if your endpoint requires a token">
+                                    <input type="password" id="settingsQuickstartApiKey" class="zr-input" placeholder="Optional">
                                 </div>
                                 <div class="zr-row zr-row--wrap">
                                     <button type="button" id="settingsQuickstartDetectBtn" class="zr-btn">
@@ -400,10 +400,10 @@
                                     <div class="zr-field zr-field--stacked">
                                         <label for="openaiKey" class="zr-field__name">OpenAI API Key</label>
                                         <div class="zr-inputgroup">
-                                            <input type="password" id="openaiKey" name="openaiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.OPENAI_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter OpenAI API key' %>">
+                                            <input type="password" id="openaiKey" name="openaiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.OPENAI_API_KEY ? 'Configured' : 'Enter OpenAI API key' %>">
                                             <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="openaiKey"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
-                                        <p class="zr-field__hint">ENV: OPENAI_API_KEY · Restart required</p>
+                                        <p class="zr-field__hint">ENV: OPENAI_API_KEY · Restart required<%= configuredSecrets.OPENAI_API_KEY ? ' · Leave empty to keep the stored value' : '' %></p>
                                     </div>
                                     <div class="zr-field zr-field--stacked">
                                         <label for="openaiModel" class="zr-field__name">OpenAI Model</label>
@@ -426,10 +426,10 @@
                                     <div class="zr-field zr-field--stacked">
                                         <label for="ollamaApiKey" class="zr-field__name">Ollama API Key (optional)</label>
                                         <div class="zr-inputgroup">
-                                            <input type="password" id="ollamaApiKey" name="ollamaApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.OLLAMA_API_KEY ? 'Configured (leave empty to keep current value)' : 'Only needed if your endpoint requires a token' %>">
+                                            <input type="password" id="ollamaApiKey" name="ollamaApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.OLLAMA_API_KEY ? 'Configured' : 'Optional' %>">
                                             <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="ollamaApiKey"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
-                                        <p class="zr-field__hint">ENV: OLLAMA_API_KEY · Restart required</p>
+                                        <p class="zr-field__hint">ENV: OLLAMA_API_KEY · Restart required · Only needed if your endpoint requires a token<%= configuredSecrets.OLLAMA_API_KEY ? ' · Leave empty to keep the stored value' : '' %></p>
                                     </div>
                                     <div class="zr-field zr-field--stacked">
                                         <label for="ollamaModel" class="zr-field__name">Ollama Model</label>
@@ -455,10 +455,10 @@
                                     <div class="zr-field zr-field--stacked">
                                         <label for="customApiKey" class="zr-field__name">Custom API Key</label>
                                         <div class="zr-inputgroup">
-                                            <input type="password" id="customApiKey" name="customApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.CUSTOM_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter Custom API key' %>">
+                                            <input type="password" id="customApiKey" name="customApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.CUSTOM_API_KEY ? 'Configured' : 'Enter Custom API key' %>">
                                             <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="customApiKey"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
-                                        <p class="zr-field__hint">ENV: CUSTOM_API_KEY · Restart required</p>
+                                        <p class="zr-field__hint">ENV: CUSTOM_API_KEY · Restart required<%= configuredSecrets.CUSTOM_API_KEY ? ' · Leave empty to keep the stored value' : '' %></p>
                                     </div>
                                     <div class="zr-field zr-field--stacked">
                                         <label for="customModel" class="zr-field__name">Custom Model</label>
@@ -484,10 +484,10 @@
                                     <div class="zr-field zr-field--stacked">
                                         <label for="azureApiKey" class="zr-field__name">Azure API Key</label>
                                         <div class="zr-inputgroup">
-                                            <input type="password" id="azureApiKey" name="azureApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.AZURE_API_KEY ? 'Configured (leave empty to keep current value)' : 'Enter Azure API key' %>">
+                                            <input type="password" id="azureApiKey" name="azureApiKey" value="" class="zr-input" placeholder="<%= configuredSecrets.AZURE_API_KEY ? 'Configured' : 'Enter Azure API key' %>">
                                             <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="azureApiKey"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                         </div>
-                                        <p class="zr-field__hint">ENV: AZURE_API_KEY · Restart required</p>
+                                        <p class="zr-field__hint">ENV: AZURE_API_KEY · Restart required<%= configuredSecrets.AZURE_API_KEY ? ' · Leave empty to keep the stored value' : '' %></p>
                                     </div>
                                     <div class="zr-field zr-field--stacked">
                                         <label for="azureDeploymentName" class="zr-field__name">Deployment</label>
@@ -756,10 +756,10 @@
                                 <div id="ocrApiKeyContainer" class="zr-field zr-field--stacked">
                                     <label for="ocrApiKey" class="zr-field__name">OCR API Key</label>
                                     <div class="zr-inputgroup">
-                                        <input type="password" id="ocrApiKey" name="ocrApiKey" value="" class="zr-input" placeholder="<%= (configuredSecrets.OCR_API_KEY || configuredSecrets.MISTRAL_API_KEY) ? 'Configured (leave empty to keep current value)' : 'Optional for local/custom, required for Mistral' %>">
+                                        <input type="password" id="ocrApiKey" name="ocrApiKey" value="" class="zr-input" placeholder="<%= (configuredSecrets.OCR_API_KEY || configuredSecrets.MISTRAL_API_KEY) ? 'Configured' : 'Required for Mistral' %>">
                                         <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon zr-input__reveal" data-input="ocrApiKey"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg></button>
                                     </div>
-                                    <p class="zr-field__hint">ENV: OCR_API_KEY (legacy fallback: MISTRAL_API_KEY) · Restart required</p>
+                                    <p class="zr-field__hint">ENV: OCR_API_KEY (legacy fallback: MISTRAL_API_KEY) · Restart required · Optional for local and custom providers<%= (configuredSecrets.OCR_API_KEY || configuredSecrets.MISTRAL_API_KEY) ? ' · Leave empty to keep the stored value' : '' %></p>
                                 </div>
                                 <div class="zr-field zr-field--stacked">
                                     <label for="mistralOcrModel" class="zr-field__name">OCR Model</label>
