@@ -1033,28 +1033,14 @@ class HistoryManager {
     }
   }
 
+  // Adapter only: the toast DOM lives in the module kernel (public/js/zr.js).
+  // This classic script runs before that module, so the lookup is deferred to
+  // call time — toasts only fire on user interaction, never during load.
   showToast(message, type = 'success') {
-    const toast = document.getElementById('toastNotification');
-    const inner = document.getElementById('toastInner');
-    const icon = document.getElementById('toastIcon');
-    const msgEl = document.getElementById('toastMessage');
-
-    const isError = type !== 'success';
-    msgEl.textContent = message;
-    // `className` is read-only on an SVG element — assigning it threw before
-    // the toast was ever shown. The tone swap goes through the sprite instead.
-    icon
-      ?.querySelector('use')
-      ?.setAttribute(
-        'href',
-        `/icons.svg#${isError ? 'i-alert' : 'i-check-circle'}`
-      );
-    inner.className = `zr-toast zr-toast--${isError ? 'danger' : 'ok'}`;
-
-    toast.classList.remove('hidden');
-    // Without this a second toast inherits the first one's countdown.
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => toast.classList.add('hidden'), 4000);
+    if (typeof window.__zrToast !== 'function') return null;
+    return window.__zrToast(message, {
+      tone: type === 'error' ? 'danger' : 'ok',
+    });
   }
 
   // ────────────────────────────────────────────────────────────────────────────
