@@ -1,55 +1,52 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
-<%- include('partials/shell/head-start', { pageTitle: 'Permanently Failed - Zettelrobbe' }) %>
-    <link rel="stylesheet" href="/css/failed.css">
+<html lang="en" data-theme="<%= theme || 'light' %>">
+<%- include('partials/shell/head-start', { pageTitle: 'Failed - Zettelrobbe' }) %>
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', {
+    pageTitle: 'Failed',
     version: typeof version !== 'undefined' ? version : '',
     chatEnabled: typeof chatEnabled !== 'undefined' ? chatEnabled : false
 }) %>
-            <div class="content-wrapper">
-                <div class="content-header">
-                    <div class="content-header-main">
-                        <h1 class="content-title">Permanently Failed Documents</h1>
-                        <p class="content-subtitle">
-                            These documents are skipped by automatic scanning until you reset them.
-                        </p>
-                    </div>
+            <div>
+                <div class="zr-viewhead">
+                    <p class="zr-viewhead__sub">
+                        These documents are skipped by automatic scanning until you reset them.
+                    </p>
                 </div>
 
-                <div class="material-card">
-                    <div class="overflow-x-auto">
-                        <table id="failedTable" class="w-full">
+                <div class="zr-module" data-module="row-menu">
+                    <div class="zr-table-wrap">
+                        <table id="failedTable"  class="zr-table zr-table--stack">
                             <thead>
                                 <tr>
-                                    <th class="text-left py-3 px-4">Doc ID</th>
-                                    <th class="text-left py-3 px-4">Title</th>
-                                    <th class="text-left py-3 px-4">Reason</th>
-                                    <th class="text-left py-3 px-4">Source</th>
-                                    <th class="text-left py-3 px-4">Updated</th>
-                                    <th class="text-left py-3 px-4">Actions</th>
+                                    <th >Doc ID</th>
+                                    <th >Title</th>
+                                    <th >Reason</th>
+                                    <th >Source</th>
+                                    <th >Updated</th>
+                                    <th class="zr-table__actions">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="failedTableBody">
                                 <tr>
-                                    <td colspan="6" class="text-center py-8 text-gray-400">
-                                        <i class="fas fa-spinner fa-spin mr-2"></i> Loading permanently failed queue…
+                                    <td colspan="6" class="zr-empty">
+                                        <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Loading permanently failed queue…
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
-                    <div class="flex justify-between items-center mt-4 px-4 pb-4 flex-wrap gap-2">
-                        <span id="failedTableInfo" class="text-sm text-gray-500"></span>
-                        <div class="flex gap-2">
-                            <button id="failedResetAllBtn" class="toolbar-btn toolbar-btn--danger toolbar-btn--sm" disabled>
-                                <i class="fas fa-rotate-left"></i> Reset All
+                    <div class="zr-table-foot">
+                        <span id="failedTableInfo" class="zr-sm zr-faint"></span>
+                        <div class="zr-inputgroup">
+                            <button id="failedResetAllBtn" class="zr-btn zr-btn--danger" disabled>
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg> Reset All
                             </button>
-                            <button id="failedPrevPageBtn" class="toolbar-btn toolbar-btn--ghost toolbar-btn--sm" disabled>
-                                <i class="fas fa-chevron-left"></i> Prev
+                            <button id="failedPrevPageBtn" class="zr-btn" disabled>
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-left"/></svg> Prev
                             </button>
-                            <button id="failedNextPageBtn" class="toolbar-btn toolbar-btn--ghost toolbar-btn--sm" disabled>
-                                Next <i class="fas fa-chevron-right"></i>
+                            <button id="failedNextPageBtn" class="zr-btn" disabled>
+                                Next <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
                             </button>
                         </div>
                     </div>
@@ -58,14 +55,6 @@
         </main>
     </div>
 
-    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 hidden" style="z-index:9999;">
-        <div id="toastInner" class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
-            <i id="toastIcon" class="fas fa-check-circle"></i>
-            <span id="toastMessage">Done</span>
-        </div>
-    </div>
-
     <%- include('partials/scripts/failed-scripts') %>
     <script src="/js/failed.js"></script>
-    <%- include('partials/shell/footer') %>
     <%- include('partials/shell/body-close') %>

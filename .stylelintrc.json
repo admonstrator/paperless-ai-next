@@ -1,0 +1,65 @@
+{
+  "extends": "stylelint-config-standard",
+  "rules": {
+    "no-duplicate-selectors": true,
+    "declaration-block-no-duplicate-properties": [
+      true,
+      { "ignore": ["consecutive-duplicates-with-different-syntaxes"] }
+    ],
+    "font-family-name-quotes": "always-unless-keyword",
+
+    "selector-class-pattern": [
+      "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*(?:__[a-z0-9]+(?:-[a-z0-9]+)*)*(?:--[a-z0-9]+(?:-[a-z0-9]+)*)*$",
+      {
+        "message": "Expected class selector to be kebab-case with optional BEM __element / --modifier"
+      }
+    ],
+    "selector-id-pattern": [
+      "^[a-z][a-zA-Z0-9]*(?:-[a-z0-9]+)*$",
+      { "message": "Expected id selector to be camelCase or kebab-case" }
+    ],
+    "keyframes-name-pattern": [
+      "^[a-z][a-zA-Z0-9]*(?:-[a-z0-9]+)*$",
+      { "message": "Expected keyframe name to be camelCase or kebab-case" }
+    ],
+
+    "alpha-value-notation": "number",
+    "color-function-notation": "legacy",
+    "color-function-alias-notation": "with-alpha",
+    "media-feature-range-notation": "prefix",
+    "selector-not-notation": null,
+    "color-hex-length": null,
+
+    "value-keyword-case": [
+      "lower",
+      {
+        "ignoreKeywords": ["currentColor"],
+        "ignoreProperties": ["/^--zr-font/"]
+      }
+    ],
+    "property-no-vendor-prefix": [
+      true,
+      {
+        "ignoreProperties": [
+          "-webkit-appearance",
+          "-webkit-background-clip",
+          "-webkit-text-size-adjust"
+        ]
+      }
+    ],
+    "property-no-deprecated": [true, { "ignoreProperties": ["clip"] }],
+    "declaration-block-no-redundant-longhand-properties": [
+      true,
+      { "ignoreShorthands": ["inset"] }
+    ],
+
+    "no-descending-specificity": null,
+    "shorthand-property-no-redundant-values": null,
+
+    "at-rule-empty-line-before": null,
+    "comment-empty-line-before": null,
+    "custom-property-empty-line-before": null,
+    "declaration-empty-line-before": null,
+    "rule-empty-line-before": null
+  }
+}

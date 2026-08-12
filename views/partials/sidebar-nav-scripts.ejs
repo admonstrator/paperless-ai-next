@@ -1,326 +1,42 @@
-<script>
-    // Global CSRF fetch interceptor
-    (function() {
-        const originalFetch = window.fetch;
-        window.fetch = async (...args) => {
-            let [resource, config] = args;
-            
-            // Default config if not provided
-            if (!config) config = {};
-            
-            const method = (config.method || 'GET').toUpperCase();
-            const ignoredMethods = ['GET', 'HEAD', 'OPTIONS'];
-            
-            // Only add CSRF token for state-changing methods
-            if (!ignoredMethods.includes(method)) {
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                if (csrfToken) {
-                    if (!config.headers) config.headers = {};
-                    
-                    // Handle both Headers object and plain object
-                    if (config.headers instanceof Headers) {
-                        if (!config.headers.has('X-CSRF-Token')) {
-                            config.headers.append('X-CSRF-Token', csrfToken);
-                        }
-                    } else {
-                        if (!config.headers['X-CSRF-Token'] && !config.headers['x-csrf-token']) {
-                            config.headers['X-CSRF-Token'] = csrfToken;
-                        }
-                    }
-                }
-            }
-            
-            return originalFetch(resource, config);
-        };
-    })();
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const themeToggle = document.getElementById('themeToggle');
-        const themeIcon = document.getElementById('themeToggleIcon') || themeToggle?.querySelector('i');
-
-        function applyTheme(theme) {
-            const resolvedTheme = typeof window.__paperlessAiApplyTheme === 'function'
-                ? window.__paperlessAiApplyTheme(theme)
-                : theme;
-            if (themeIcon) {
-                themeIcon.className = resolvedTheme === 'light' ? 'fas fa-moon' : 'fas fa-sun';
-            }
-        }
-
-        applyTheme(
-            typeof window.__paperlessAiGetTheme === 'function'
-                ? window.__paperlessAiGetTheme()
-                : 'light'
-        );
-
-        if (themeToggle) {
-            themeToggle.addEventListener('click', function () {
-                const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
-                const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
-                applyTheme(nextTheme);
-            });
-        }
-
-        const currentPath = window.location.pathname;
-        const navLinks = document.querySelectorAll('.sidebar-nav .sidebar-link[href]');
-        const sidebar = document.getElementById('appSidebar');
-        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-        const sidebarOverlay = document.getElementById('sidebarOverlay');
-        const shellFooter = document.querySelector('.shell-footer');
-        const mainContent = document.querySelector('.main-content');
-        const sidebarNav = document.querySelector('.sidebar-nav');
-        const mobileMediaQuery = window.matchMedia('(max-width: 900px)');
-
-        if (sidebarNav) {
-            let scrollVisibilityTimer = null;
-
-            function setSidebarScrollbarVisible() {
-                sidebarNav.classList.add('is-scrolling');
-
-                if (scrollVisibilityTimer) {
-                    window.clearTimeout(scrollVisibilityTimer);
-                }
-
-                scrollVisibilityTimer = window.setTimeout(function () {
-                    sidebarNav.classList.remove('is-scrolling');
-                }, 520);
-            }
-
-            sidebarNav.addEventListener('scroll', setSidebarScrollbarVisible, { passive: true });
-            sidebarNav.addEventListener('wheel', setSidebarScrollbarVisible, { passive: true });
-            sidebarNav.addEventListener('touchmove', setSidebarScrollbarVisible, { passive: true });
-        }
-
-        function setMobileSidebarState(isOpen) {
-            const shouldOpen = Boolean(isOpen) && mobileMediaQuery.matches;
-
-            document.body.classList.toggle('sidebar-mobile-open', shouldOpen);
-
-            if (sidebar) {
-                sidebar.classList.toggle('is-open', shouldOpen);
-                sidebar.setAttribute('aria-hidden', shouldOpen || !mobileMediaQuery.matches ? 'false' : 'true');
-            }
-
-            if (mobileMenuToggle) {
-                mobileMenuToggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
-                mobileMenuToggle.setAttribute('aria-label', shouldOpen ? 'Close navigation' : 'Open navigation');
-                const toggleIcon = mobileMenuToggle.querySelector('i');
-                if (toggleIcon) {
-                    toggleIcon.className = shouldOpen ? 'fas fa-times' : 'fas fa-bars';
-                }
-            }
-        }
-
-        if (mobileMenuToggle) {
-            mobileMenuToggle.addEventListener('click', function () {
-                const isOpen = document.body.classList.contains('sidebar-mobile-open');
-                setMobileSidebarState(!isOpen);
-            });
-        }
-
-        if (sidebarOverlay) {
-            sidebarOverlay.addEventListener('click', function () {
-                setMobileSidebarState(false);
-            });
-        }
-
-        document.addEventListener('keydown', function (event) {
-            if (event.key === 'Escape') {
-                setMobileSidebarState(false);
-            }
-        });
-
-        navLinks.forEach((link) => {
-            link.addEventListener('click', function () {
-                if (mobileMediaQuery.matches) {
-                    setMobileSidebarState(false);
-                }
-            });
-        });
-
-        const mediaQueryHandler = function () {
-            setMobileSidebarState(false);
-        };
-
-        if (typeof mobileMediaQuery.addEventListener === 'function') {
-            mobileMediaQuery.addEventListener('change', mediaQueryHandler);
-        } else if (typeof mobileMediaQuery.addListener === 'function') {
-            mobileMediaQuery.addListener(mediaQueryHandler);
-        }
-
-        if (shellFooter) {
-            let lastScrollTop = 0;
-            let footerTicking = false;
-
-            function getCurrentScrollTop() {
-                const windowScrollTop = window.scrollY || document.documentElement.scrollTop || 0;
-                const mainScrollTop = mainContent ? mainContent.scrollTop : 0;
-                return Math.max(windowScrollTop, mainScrollTop);
-            }
-
-            function updateFooterVisibility() {
-                if (!mobileMediaQuery.matches) {
-                    shellFooter.classList.remove('shell-footer-hidden');
-                    lastScrollTop = getCurrentScrollTop();
-                    footerTicking = false;
-                    return;
-                }
-
-                const currentScrollTop = getCurrentScrollTop();
-                const delta = currentScrollTop - lastScrollTop;
-
-                if (currentScrollTop <= 16 || delta < -6) {
-                    shellFooter.classList.remove('shell-footer-hidden');
-                } else if (delta > 8 && currentScrollTop > 64) {
-                    shellFooter.classList.add('shell-footer-hidden');
-                }
-
-                lastScrollTop = currentScrollTop;
-                footerTicking = false;
-            }
-
-            function requestFooterUpdate() {
-                if (footerTicking) {
-                    return;
-                }
-                footerTicking = true;
-                window.requestAnimationFrame(updateFooterVisibility);
-            }
-
-            window.addEventListener('scroll', requestFooterUpdate, { passive: true });
-            if (mainContent) {
-                mainContent.addEventListener('scroll', requestFooterUpdate, { passive: true });
-            }
-
-            const footerMediaQueryHandler = function () {
-                shellFooter.classList.remove('shell-footer-hidden');
-                lastScrollTop = getCurrentScrollTop();
-            };
-
-            if (typeof mobileMediaQuery.addEventListener === 'function') {
-                mobileMediaQuery.addEventListener('change', footerMediaQueryHandler);
-            } else if (typeof mobileMediaQuery.addListener === 'function') {
-                mobileMediaQuery.addListener(footerMediaQueryHandler);
-            }
-
-            lastScrollTop = getCurrentScrollTop();
-            updateFooterVisibility();
-        }
-
-        setMobileSidebarState(false);
-
-        navLinks.forEach((link) => {
-            const linkPath = link.getAttribute('href');
-            if (linkPath === currentPath) {
-                link.classList.add('active');
-            }
-        });
-
-        async function getStarsCount() {
-            try {
-                const response = await fetch('https://api.github.com/repos/admonstrator/zettelrobbe');
-                if (!response.ok) {
-                    throw new Error('Failed to fetch repo info');
-                }
-
-                const data = await response.json();
-                const starCountElement = document.getElementById('starCount');
-                if (starCountElement) {
-                    starCountElement.textContent = data.stargazers_count.toLocaleString();
-                }
-            } catch (error) {
-                console.error('Failed to fetch stars count:', error);
-            }
-        }
-
-        getStarsCount();
-
-        const sidebarBugReportLink = document.getElementById('sidebarBugReportLink');
-        if (sidebarBugReportLink) {
-            const browserInfo = `${navigator.userAgent || 'unknown'}`;
-            const osGuess = navigator.platform || 'unknown';
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-
-            const redactSecrets = (value) => {
-                if (value == null) {
-                    return 'unknown';
-                }
-
-                let text = String(value);
-                text = text.replace(
-                    /((?:API[_-]?KEY|TOKEN|SECRET|PASSWORD|PASSWD)[A-Z0-9_-]*\s*[:=]\s*)([^\n\r]+)/gi,
-                    '$1[REDACTED]'
-                );
-                text = text.replace(/(https?:\/\/)([^@\s]+)@/gi, '$1[REDACTED]@');
-
-                return text;
-            };
-
-            const keyState = (isSet) => (isSet ? '[REDACTED:SET]' : 'not_set');
-
-            const detectHostOs = () => {
-                const ua = `${navigator.userAgent || ''} ${navigator.platform || ''}`.toLowerCase();
-                if (ua.includes('win')) return 'Windows';
-                if (ua.includes('mac')) return 'macOS';
-                if (ua.includes('linux')) return 'Linux';
-                return 'Other';
-            };
-
-            const issueParams = new URLSearchParams({
-                template: 'bug_report.yml',
-                title: '[Bug]: ',
-                summary: 'Describe the issue in one sentence',
-                steps: '1.\n2.\n3.\n4.',
-                expected: 'Describe expected behavior',
-                actual: 'Describe actual behavior',
-                logs: 'Paste relevant Zettelrobbe logs here.\n\nExample:\n`docker logs zettelrobbe --tail=200`',
-                traceback: 'Paste browser console errors or stack trace here (if applicable).',
-                app_version: '<%= appVersion || "unknown" %>',
-                app_commit: '<%= appCommitSha || "unknown" %>',
-                paperless_ngx_version: '<%= appPaperlessNgxVersion || "unknown" %>',
-                deployment: 'Docker Compose',
-                os: detectHostOs(),
-                os_version: `${osGuess}`,
-                browser: browserInfo,
-                config_notes: redactSecrets([
-                    `AI_PROVIDER=<%= appAiProvider || "unknown" %>`,
-                    `MISTRAL_OCR_ENABLED=<%= appOcrEnabled ? "yes" : "no" %>`,
-                    `PAPERLESS_API_URL=<%= appPaperlessApiUrl || "unknown" %>`,
-                    `OLLAMA_API_URL=<%= appOllamaApiUrl || "unknown" %>`,
-                    `OLLAMA_MODEL=<%= appOllamaModel || "unknown" %>`,
-                    `CUSTOM_BASE_URL=<%= appCustomBaseUrl || "unknown" %>`,
-                    `CUSTOM_MODEL=<%= appCustomModel || "unknown" %>`,
-                    `AZURE_ENDPOINT=<%= appAzureEndpoint || "unknown" %>`,
-                    `AZURE_DEPLOYMENT_NAME=<%= appAzureDeploymentName || "unknown" %>`,
-                    `AZURE_API_VERSION=<%= appAzureApiVersion || "unknown" %>`,
-                    `MISTRAL_OCR_MODEL=<%= appMistralOcrModel || "unknown" %>`,
-                    `TRUST_PROXY=<%= appTrustProxy || "unknown" %>`,
-                    `USE_EXISTING_DATA=<%= appUseExistingData || "no" %>`,
-                    `RESTRICT_TO_EXISTING_TAGS=<%= appRestrictTags || "no" %>`,
-                    `RESTRICT_TO_EXISTING_CORRESPONDENTS=<%= appRestrictCorrespondents || "no" %>`,
-                    `RESTRICT_TO_EXISTING_DOCUMENT_TYPES=<%= appRestrictDocumentTypes || "no" %>`,
-                    `PAPERLESS_API_TOKEN=${keyState(<%= appPaperlessTokenSet ? "true" : "false" %>)}`,
-                    `OPENAI_API_KEY=${keyState(<%= appOpenAiKeySet ? "true" : "false" %>)}`,
-                    `CUSTOM_API_KEY=${keyState(<%= appCustomKeySet ? "true" : "false" %>)}`,
-                    `AZURE_API_KEY=${keyState(<%= appAzureKeySet ? "true" : "false" %>)}`,
-                    `MISTRAL_API_KEY=${keyState(<%= appMistralKeySet ? "true" : "false" %>)}`,
-                    `API_KEY=${keyState(<%= appApiKeySet ? "true" : "false" %>)}`
-                ].join('\n')),
-                extra: redactSecrets([
-                    `Node=<%= appNodeVersion || "unknown" %>`,
-                    `NodeEnv=<%= appNodeEnv || "unknown" %>`,
-                    `Platform=<%= appPlatform || "unknown" %>`,
-                    `Timezone=${timezone}`,
-                    `ServerTimeUTC=<%= appServerTimeUtc || "unknown" %>`,
-                    `ServerTimezone=<%= appServerTimezone || "unknown" %>`,
-                    `ScanInterval=<%= appScanInterval || "unknown" %>`,
-                    `TokenLimit=<%= appTokenLimit || "unknown" %>`,
-                    `ResponseTokens=<%= appResponseTokens || "unknown" %>`
-                ].join('\n'))
-            });
-
-            sidebarBugReportLink.href = `https://github.com/admonstrator/zettelrobbe/issues/new?${issueParams.toString()}`;
-        }
-    });
-</script>
-<script src="/js/sidebar-badges.js"></script>
+<%#
+    Data only: the running configuration the GitHub bug report is prefilled
+    with. The prefill itself lives in public/js/bug-report-link.js, which reads
+    this payload and wires the link named by data-bug-report-target. Keys match
+    the About page's supportInfo shape so both callers share one contract.
+-%>
+<script type="application/json" id="sidebarBugReportPayload" data-bug-report-payload
+    data-bug-report-target="#sidebarBugReportLink"><%- JSON.stringify({
+        appVersion: appVersion || 'unknown',
+        commitSha: appCommitSha || 'unknown',
+        paperlessNgxVersion: appPaperlessNgxVersion || 'unknown',
+        nodeVersion: appNodeVersion || 'unknown',
+        platform: appPlatform || 'unknown',
+        nodeEnv: appNodeEnv || 'unknown',
+        aiProvider: appAiProvider || 'unknown',
+        ocrEnabled: Boolean(appOcrEnabled),
+        serverTimeUtc: appServerTimeUtc || 'unknown',
+        timezone: appServerTimezone || 'unknown',
+        paperlessApiUrl: appPaperlessApiUrl || 'unknown',
+        ollamaApiUrl: appOllamaApiUrl || 'unknown',
+        ollamaModel: appOllamaModel || 'unknown',
+        customBaseUrl: appCustomBaseUrl || 'unknown',
+        customModel: appCustomModel || 'unknown',
+        azureEndpoint: appAzureEndpoint || 'unknown',
+        azureDeploymentName: appAzureDeploymentName || 'unknown',
+        azureApiVersion: appAzureApiVersion || 'unknown',
+        mistralOcrModel: appMistralOcrModel || 'unknown',
+        scanInterval: appScanInterval || 'unknown',
+        tokenLimit: appTokenLimit || 'unknown',
+        responseTokens: appResponseTokens || 'unknown',
+        trustProxy: appTrustProxy || 'unknown',
+        useExistingData: appUseExistingData || 'no',
+        restrictToExistingTags: appRestrictTags || 'no',
+        restrictToExistingCorrespondents: appRestrictCorrespondents || 'no',
+        restrictToExistingDocumentTypes: appRestrictDocumentTypes || 'no',
+        paperlessTokenSet: Boolean(appPaperlessTokenSet),
+        openAiKeySet: Boolean(appOpenAiKeySet),
+        customKeySet: Boolean(appCustomKeySet),
+        azureKeySet: Boolean(appAzureKeySet),
+        mistralKeySet: Boolean(appMistralKeySet),
+        apiKeySet: Boolean(appApiKeySet)
+    }).replace(/</g, '\\u003c') %></script>

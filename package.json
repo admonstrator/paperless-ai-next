@@ -6,6 +6,7 @@
   "scripts": {
     "test": "nodemon server.js",
     "lint": "eslint .",
+    "lint:css": "stylelint \"public/css/**/*.css\"",
     "format:check": "prettier --check .",
     "test:all": "node scripts/run-tests.js --all",
     "test:area:auth": "node scripts/run-tests.js --area auth",
@@ -81,7 +82,9 @@
     "eslint-plugin-jsdoc": "^63.3.2",
     "globals": "^17.8.0",
     "nodemon": "^3.1.9",
-    "prettier": "^3.9.6"
+    "prettier": "^3.9.6",
+    "stylelint": "^17.14.1",
+    "stylelint-config-standard": "^40.0.0"
   },
   "allowScripts": {
     "better-sqlite3": true,

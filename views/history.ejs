@@ -1,102 +1,91 @@
 <!-- views/history.ejs -->
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
-<%- include('partials/shell/head-start', { pageTitle: 'Modified Documents - Zettelrobbe' }) %>
-    <link rel="stylesheet" href="/vendor/datatables/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="/css/history.css">
+<html lang="en" data-theme="<%= theme || 'light' %>">
+<%- include('partials/shell/head-start', { pageTitle: 'History - Zettelrobbe' }) %>
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', {
+    pageTitle: 'History',
     version: typeof version !== 'undefined' ? version : '',
     chatEnabled: typeof chatEnabled !== 'undefined' ? chatEnabled : false,
     mainClass: 'main-content modified-documents-page'
 }) %>
-            <div class="content-wrapper">
-                <div class="content-header">
-                    <div class="content-header-main">
-                        <h1 class="content-title">Modified Documents</h1>
-                    </div>
-                    <div class="content-header-actions toolbar-actions">
-                        <button id="selectAllDocsBtn" class="toolbar-btn toolbar-btn--success toolbar-btn--sm" title="Select all visible documents">
-                            <i class="fas fa-check-square"></i> Select All
-                        </button>
-                        <button id="deselectAllDocsBtn" class="toolbar-btn toolbar-btn--neutral toolbar-btn--sm" title="Deselect all visible documents">
-                            <i class="fas fa-square"></i> Deselect All
-                        </button>
-                        <button id="rescanSelectedBtn" class="toolbar-btn toolbar-btn--warning toolbar-btn--sm" title="Reprocess selected documents (clears local processing record and triggers a scan)">
-                            <i class="fas fa-rotate-right"></i> Rescan Selected
-                        </button>
-                        <button id="forceReloadBtn" class="toolbar-btn toolbar-btn--primary toolbar-btn--sm" title="Force reload filters (bypass cache)">
-                            <i class="fas fa-sync-alt"></i> Force Reload
-                        </button>
-                        <button id="resetSelectedBtn" class="toolbar-btn toolbar-btn--danger toolbar-btn--sm">
-                            Reset Selected
-                        </button>
-                        <button id="resetAllBtn" class="toolbar-btn toolbar-btn--danger toolbar-btn--sm">
-                            Reset All
-                        </button>
-                        <span class="text-sm text-gray-500 italic ml-2">
-                            <i class="fas fa-info-circle"></i>
-                            History is reconciled automatically. To run manually, go to <a href="/settings#troubleshooting" class="underline hover:text-blue-600">Settings &rarr; Troubleshooting</a>.
-                        </span>
-                    </div>
+            <div>
+                <div class="zr-viewhead">
+                    <p class="zr-viewhead__sub" style="margin-top: 0">
+                        Documents Zettelrobbe has already processed. Resetting one makes it eligible
+                        for the next scan again.
+                    </p>
                 </div>
 
-                <!-- Custom Filters -->
-                <div class="app-toolbar-filters mb-6">
-                    <div class="filter-item">
-                        <select id="tagFilter" class="toolbar-input">
-                            <option value="">All Tags</option>
-                            <% filters.allTags.forEach(function(tag) { %>
-                                <option value="<%= tag.id %>"><%= tag.name %></option>
-                            <% }); %>
-                        </select>
-                    </div>
-                    
-                    <div class="filter-item">
-                        <select id="correspondentFilter" class="toolbar-input">
-                            <option value="">All Correspondents</option>
-                            <% filters.allCorrespondents.forEach(function(corr) { %>
-                                <option value="<%= corr %>"><%= corr %></option>
-                            <% }); %>
-                        </select>
+                <!-- Slotted into the table toolbar next to the search once the
+                     table exists, so every way to narrow the list is one row.
+                     Hidden until then to avoid a layout jump. -->
+                <div id="historyFilters" class="zr-row" hidden>
+                    <select id="tagFilter" class="zr-select history-filter" aria-label="Filter by tag">
+                        <option value="">All tags</option>
+                        <% filters.allTags.forEach(function(tag) { %>
+                            <option value="<%= tag.id %>"><%= tag.name %></option>
+                        <% }); %>
+                    </select>
+                    <select id="correspondentFilter" class="zr-select history-filter" aria-label="Filter by correspondent">
+                        <option value="">All correspondents</option>
+                        <% filters.allCorrespondents.forEach(function(corr) { %>
+                            <option value="<%= corr %>"><%= corr %></option>
+                        <% }); %>
+                    </select>
+                </div>
+
+                <div class="zr-row zr-row--wrap zr-btnbar" data-module="toolbar-menu" style="margin-bottom: var(--zr-3)">
+                    <button id="rescanSelectedBtn" class="zr-btn" title="Reprocess selected documents (clears the local record and triggers a scan)">
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                        Rescan selected
+                    </button>
+                    <button id="forceReloadBtn" class="zr-btn" title="Reload the tag and correspondent lists, bypassing the cache">
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                        Refresh filters
+                    </button>
+                    <span class="zr-grow"></span>
+                    <button id="resetSelectedBtn" class="zr-btn zr-btn--danger">Reset selected</button>
+                    <button id="resetAllBtn" class="zr-btn zr-btn--danger">Reset all</button>
+                </div>
+
+                <div class="zr-alert zr-alert--info" style="margin-bottom: var(--zr-4)">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-info"/></svg>
+                    <div class="zr-alert__body">
+                        <p class="zr-sm">History is reconciled automatically. To run it by hand, go to
+                        <a href="/settings#troubleshooting-tab" class="zr-link">Settings &rarr; Maintenance</a>.</p>
                     </div>
                 </div>
 
                 <!-- Loading Indicator -->
-                <div id="historyLoadingIndicator" class="material-card mb-6">
-                    <div class="text-center py-8">
-                        <div class="mb-4">
-                            <i class="fas fa-spinner fa-spin text-5xl text-blue-500" aria-label="Loading" role="status"></i>
+                <div id="historyLoadingIndicator" class="zr-module">
+                    <div class="zr-empty">
+                        <div >
+                            <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                         </div>
-                        <div class="mb-2 text-xl font-semibold">Loading history...</div>
-                        <div id="historyProgressContainer" class="w-full max-w-md mx-auto bg-gray-200 rounded-full h-3 mb-3"
+                        <div class="zr-empty__title">Loading history…</div>
+                        <div id="historyProgressContainer" class="zr-meter" style="max-width: 320px; margin: var(--zr-3) auto"
                              role="progressbar"
                              aria-valuemin="0"
                              aria-valuemax="100"
                              aria-valuenow="0"
                              aria-label="Loading progress">
-                            <div id="historyLoadProgress" class="bg-blue-500 h-3 rounded-full transition-all duration-300" style="width: 0%"></div>
+                            <div id="historyLoadProgress" class="zr-meter__fill" style="width: 0%"></div>
                         </div>
-                        <div id="historyLoadStatus" class="text-sm text-gray-600" aria-live="polite">Preparing to load history data...</div>
+                        <div id="historyLoadStatus" class="zr-sm zr-muted" aria-live="polite">Preparing to load history data...</div>
                     </div>
                 </div>
 
                 <!-- DataTable -->
-                <div id="historyTableContainer" class="material-card" style="display: none;">
-                    <div class="overflow-x-auto">
-                        <table id="historyTable" class="w-full">
-                            <thead>
-                                <tr>
-                                    <th><input type="checkbox" id="selectAll" class="rounded"></th>
-                                    <th>ID</th>
-                                    <th>Title</th>
-                                    <th>AI Info</th>
-                                    <th>Correspondent</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                        </table>
+                <div id="historyTableContainer" class="zr-module" data-module="row-menu" style="display: none;">
+                    <div class="zr-module__head">
+                        <label class="zr-row zr-sm">
+                            <input type="checkbox" id="selectAll" class="zr-check">
+                            Select all on this page
+                        </label>
                     </div>
+                    <!-- The table body is rendered by js/modules/data-table.js -->
+                    <div id="historyTable"></div>
                 </div>
             </div>
         </main>
@@ -109,105 +98,97 @@
             <div class="modal-header" style="display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;">
                 <div>
                     <h3 class="modal-title" id="infoModalTitle">AI Analysis Details</h3>
-                    <a id="infoModalLink" href="#" target="_blank" class="text-sm text-blue-500 hover:underline" style="display:none;">
-                        <i class="fa-solid fa-arrow-up-right-from-square"></i> Open in Paperless-ngx
+                    <a id="infoModalLink" href="#" target="_blank" class="zr-link zr-sm" style="display:none;">
+                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-external"/></svg> Open in Paperless-ngx
                     </a>
                 </div>
-                <button class="modal-close" id="infoModalClose"><i class="fas fa-times"></i></button>
+                <button class="modal-close" id="infoModalClose"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
             </div>
             <div class="modal-content" style="flex:1;min-height:0;overflow-y:auto;max-height:none;">
                 <!-- Loading State -->
-                <div id="infoModalLoading" class="text-center py-8">
-                    <i class="fas fa-spinner fa-spin text-4xl text-blue-500 mb-3"></i>
-                    <div class="text-gray-600 mt-3">Loading details...</div>
+                <div id="infoModalLoading" class="zr-empty">
+                    <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                    <div class="zr-muted">Loading details...</div>
                 </div>
                 <!-- Content -->
-                <div id="infoModalBody" style="display:none;">
+                <div id="infoModalBody" class="zr-modal-sections" style="display:none;">
                     <!-- Tags Section -->
-                    <div class="mb-5">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
-                            <i class="fas fa-tags mr-1"></i> AI-Set Tags
-                            <span id="infoModalLiveHint" class="ml-2 text-xs font-normal text-gray-400"></span>
+                    <div >
+                        <h4 class="zr-label">
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-tag"/></svg> AI-Set Tags
+                            <span id="infoModalLiveHint" class="zr-xs zr-faint"></span>
                         </h4>
-                        <div id="infoModalTags" class="flex flex-wrap gap-2 mb-2"></div>
-                        <div id="infoModalExternalTags" class="flex flex-wrap gap-2"></div>
+                        <div id="infoModalTags" class="zr-row zr-row--wrap"></div>
+                        <div id="infoModalExternalTags" class="zr-row zr-row--wrap"></div>
                     </div>
                     <!-- Correspondent Section -->
-                    <div class="mb-5">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
-                            <i class="fas fa-user mr-1"></i> Correspondent
+                    <div >
+                        <h4 class="zr-label">
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-user"/></svg> Correspondent
                         </h4>
-                        <div id="infoModalCorrespondent" class="text-sm"></div>
+                        <div id="infoModalCorrespondent" class="zr-sm"></div>
                     </div>
                     <!-- Document Classification Section -->
-                    <div class="mb-5" id="infoModalClassificationSection">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
-                            <i class="fas fa-folder-open mr-1"></i> Document Classification
+                    <div  id="infoModalClassificationSection">
+                        <h4 class="zr-label">
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-folder"/></svg> Document Classification
                         </h4>
-                        <div class="flex flex-wrap gap-3 text-sm">
+                        <div class="zr-row zr-row--wrap">
                             <div>
-                                <span class="text-gray-400 text-xs block mb-1">Type</span>
-                                <span id="infoModalDocType" class="px-3 py-1 rounded-full theme-pill-info text-xs font-medium">–</span>
+                                <span class="zr-label">Type</span>
+                                <span id="infoModalDocType" class="zr-badge zr-badge--info">–</span>
                             </div>
                             <div>
-                                <span class="text-gray-400 text-xs block mb-1">Language</span>
-                                <span id="infoModalLanguage" class="px-3 py-1 rounded-full bg-purple-50 text-purple-700 text-xs font-medium">–</span>
+                                <span class="zr-label">Language</span>
+                                <span id="infoModalLanguage" class="zr-badge zr-badge--brand">–</span>
                             </div>
                         </div>
                     </div>
                     <!-- Custom Fields Section -->
-                    <div class="mb-5" id="infoModalCustomFieldsSection">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
-                            <i class="fas fa-list-check mr-1"></i> Custom Fields
+                    <div  id="infoModalCustomFieldsSection">
+                        <h4 class="zr-label">
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-list"/></svg> Custom Fields
                         </h4>
-                        <div id="infoModalCustomFields" class="text-sm"></div>
+                        <div id="infoModalCustomFields" class="zr-sm"></div>
                     </div>
                     <!-- Processed At -->
-                    <div class="mb-5">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
-                            <i class="fas fa-clock mr-1"></i> Processed At
+                    <div >
+                        <h4 class="zr-label">
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-clock"/></svg> Processed At
                         </h4>
-                        <div id="infoModalProcessedAt" class="text-sm"></div>
+                        <div id="infoModalProcessedAt" class="zr-sm"></div>
                     </div>
                     <!-- Token Usage -->
-                    <div class="mb-2" id="infoModalTokensSection">
-                        <h4 class="font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2">
-                            <i class="fas fa-coins mr-1"></i> Token Usage
+                    <div  id="infoModalTokensSection">
+                        <h4 class="zr-label">
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-coins"/></svg> Token Usage
                         </h4>
-                        <div id="infoModalTokens" class="flex gap-4 flex-wrap text-sm"></div>
+                        <div id="infoModalTokens" class="zr-row zr-row--wrap"></div>
                     </div>
                     <!-- Original State (collapsible) -->
-                    <div class="mb-2" id="infoModalOriginalSection" style="display:none;">
-                        <button id="infoModalOriginalToggle" class="flex items-center gap-2 font-semibold text-xs uppercase tracking-wide text-gray-500 mb-2 focus:outline-none w-full text-left">
-                            <i class="fas fa-chevron-right text-xs transition-transform" id="infoModalOriginalChevron"></i>
-                            <i class="fas fa-history mr-1"></i> Original State (before AI)
+                    <div  id="infoModalOriginalSection" style="display:none;">
+                        <button id="infoModalOriginalToggle" class="zr-label zr-row" style="width:100%; text-align:left">
+                            <svg class="zr-icon" id="infoModalOriginalChevron" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
+                            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-history"/></svg> Original State (before AI)
                         </button>
                         <div id="infoModalOriginalBody" class="hidden">
-                            <div id="infoModalOriginalContent" class="text-sm space-y-1"></div>
+                            <div id="infoModalOriginalContent" class="zr-col zr-col--tight"></div>
                         </div>
                     </div>
                 </div>
             </div>
             <!-- Footer: outside scrollable area so buttons are always visible -->
-            <div class="flex justify-end gap-3 px-5 py-4 border-t flex-shrink-0" style="background:var(--card-bg);border-radius:0 0 12px 12px;">
-                <button id="infoModalRestoreBtn" class="toolbar-btn toolbar-btn--danger" style="display:none;">
-                    <i class="fas fa-rotate-left mr-1"></i> Restore Original
+            <div class="zr-dialog__foot" style="background:var(--card-bg);border-radius:0 0 12px 12px;">
+                <button id="infoModalRestoreBtn" class="zr-btn zr-btn--danger" style="display:none;">
+                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg> Restore Original
                 </button>
-                <button id="infoModalRescanBtn" class="toolbar-btn toolbar-btn--warning">
-                    <i class="fas fa-rotate-right mr-1"></i> Rescan
+                <button id="infoModalRescanBtn" class="zr-btn">
+                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Rescan
                 </button>
-                <button id="infoModalCloseBtn" class="toolbar-btn toolbar-btn--outline">
+                <button id="infoModalCloseBtn" class="zr-btn">
                     Close
                 </button>
             </div>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 hidden" style="z-index:9999;">
-        <div id="toastInner" class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
-            <i id="toastIcon" class="fas fa-check-circle"></i>
-            <span id="toastMessage">Operation successful</span>
         </div>
     </div>
 
@@ -217,13 +198,13 @@
         <div class="modal-container">
             <div class="modal-header">
                 <h3 class="modal-title">Confirm Reset</h3>
-                <button class="modal-close"><i class="fas fa-times"></i></button>
+                <button class="modal-close"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
             </div>
             <div class="modal-content">
-                <p class="mb-4">Are you sure you want to reset the selected documents to their original values? This action cannot be undone.</p>
-                <div class="flex justify-end gap-4">
-                    <button id="cancelReset" class="toolbar-btn toolbar-btn--outline">Cancel</button>
-                    <button id="confirmReset" class="toolbar-btn toolbar-btn--danger">Confirm Reset</button>
+                <p >Are you sure you want to reset the selected documents to their original values? This action cannot be undone.</p>
+                <div class="zr-row" style="justify-content: flex-end">
+                    <button id="cancelReset" class="zr-btn">Cancel</button>
+                    <button id="confirmReset" class="zr-btn zr-btn--danger">Confirm Reset</button>
                 </div>
             </div>
         </div>
@@ -235,20 +216,16 @@
         <div class="modal-container">
             <div class="modal-header">
                 <h3 class="modal-title">Confirm Reset All</h3>
-                <button class="modal-close"><i class="fas fa-times"></i></button>
+                <button class="modal-close"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg></button>
             </div>
             <div class="modal-content">
-                <p class="mb-4">Are you sure you want to reset <b>all</b> documents to their original values? This action cannot be undone.</p>
-                <div class="flex justify-end gap-4">
-                    <button id="cancelResetAll" class="toolbar-btn toolbar-btn--outline">Cancel</button>
-                    <button id="confirmResetAll" class="toolbar-btn toolbar-btn--danger">Confirm Reset</button>
+                <p >Are you sure you want to reset <b>all</b> documents to their original values? This action cannot be undone.</p>
+                <div class="zr-row" style="justify-content: flex-end">
+                    <button id="cancelResetAll" class="zr-btn">Cancel</button>
+                    <button id="confirmResetAll" class="zr-btn zr-btn--danger">Confirm Reset</button>
                 </div>
             </div>
         </div>
     </div>
-
-    <script src="/vendor/jquery/jquery.min.js"></script>
-    <script src="/vendor/datatables/js/jquery.dataTables.min.js"></script>
-    <script src="js/history.js"></script>
-    <%- include('partials/shell/footer') %>
+    <script type="module" src="/js/history.js"></script>
     <%- include('partials/shell/body-close') %>

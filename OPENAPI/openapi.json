@@ -661,6 +661,52 @@
         }
       }
     },
+    "/styleguide": {
+      "get": {
+        "summary": "UI framework styleguide page (development builds only)",
+        "description": "Renders one sample of every zr framework component. The route is only\nregistered when `NODE_ENV` is not `production`; a production build\nanswers this path with the generic 404 handler.\n",
+        "tags": [
+          "Navigation"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Styleguide page rendered successfully",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "302": {
+            "description": "Redirect to login when authentication is missing or invalid",
+            "headers": {
+              "Location": {
+                "schema": {
+                  "type": "string",
+                  "example": "/login"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Route not registered because the app runs in production"
+          },
+          "500": {
+            "description": "Server error"
+          }
+        }
+      }
+    },
     "/": {
       "get": {
         "summary": "Root endpoint that redirects to the dashboard",
@@ -5201,6 +5247,67 @@
           },
           "500": {
             "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/update-check": {
+      "get": {
+        "summary": "Report whether a newer release is available",
+        "description": "Compares the running version against the latest GitHub release tag.\n\nThe lookup happens on the server and its result is cached for 24 hours,\nso browsers never contact GitHub themselves and a busy instance makes at\nmost one outbound request per day. Set `UPDATE_CHECK_ENABLED=no` to turn\nthe outbound call off; the endpoint then reports `enabled: false`.\n",
+        "tags": [
+          "System",
+          "API"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Update status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "currentVersion": {
+                          "type": "string"
+                        },
+                        "latestVersion": {
+                          "type": "string",
+                          "nullable": true
+                        },
+                        "updateAvailable": {
+                          "type": "boolean"
+                        },
+                        "checkedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not authenticated"
           }
         }
       }

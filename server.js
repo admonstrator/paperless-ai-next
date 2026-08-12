@@ -1115,6 +1115,55 @@ async function scanDocuments(source = 'scheduler') {
 // Routes
 app.use('/', setupRoutes);
 
+// Development-only reference page for the zr UI framework. It ships no product
+// behaviour, only one sample of every component, so it is not registered in a
+// production build and is deliberately absent from the navigation.
+if (process.env.NODE_ENV !== 'production') {
+  /**
+   * @swagger
+   * /styleguide:
+   *   get:
+   *     summary: UI framework styleguide page (development builds only)
+   *     description: |
+   *       Renders one sample of every zr framework component. The route is only
+   *       registered when `NODE_ENV` is not `production`; a production build
+   *       answers this path with the generic 404 handler.
+   *     tags:
+   *       - Navigation
+   *     security:
+   *       - BearerAuth: []
+   *       - ApiKeyAuth: []
+   *     responses:
+   *       200:
+   *         description: Styleguide page rendered successfully
+   *         content:
+   *           text/html:
+   *             schema:
+   *               type: string
+   *       302:
+   *         description: Redirect to login when authentication is missing or invalid
+   *         headers:
+   *           Location:
+   *             schema:
+   *               type: string
+   *               example: /login
+   *       404:
+   *         description: Route not registered because the app runs in production
+   *       500:
+   *         description: Server error
+   */
+  app.get('/styleguide', isAuthenticated, async (req, res) => {
+    try {
+      return res.render('styleguide', {
+        version: config.PAPERLESS_AI_VERSION || ' ',
+      });
+    } catch (error) {
+      console.error('[ERROR] Styleguide page:', error);
+      return res.status(500).json({ success: false, error: error.message });
+    }
+  });
+}
+
 /**
  * @swagger
  * /:

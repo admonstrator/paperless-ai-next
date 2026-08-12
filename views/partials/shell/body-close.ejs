@@ -1,2 +1,19 @@
+            </main>
+        </div>
+
+        <nav class="zr-tabbar" aria-label="Primary">
+<%- include('../nav', { surface: 'tabbar' }) -%>
+            <button class="zr-tab" type="button" data-action="drawer-open">
+                <svg class="zr-icon zr-icon--lg" aria-hidden="true"><use href="/icons.svg#i-menu"/></svg>
+                More
+            </button>
+        </nav>
+    </div>
+
+    <script type="module" src="/js/zr.js"></script>
+    <script src="/js/sidebar-badges.js"></script>
+    <script src="/js/changelog-modal.js"></script>
+    <script src="/js/bug-report-link.js"></script>
+    <%- include('../sidebar-nav-scripts') %>
 </body>
 </html>

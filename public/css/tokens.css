@@ -1,0 +1,203 @@
+/* ==========================================================================
+   Zettelrobbe UI framework — design tokens.
+
+   The layer order below is the cascade contract for the whole framework: a
+   later layer beats an earlier one no matter how specific the earlier selector
+   is, so a component can override a base primitive without doubling its
+   selector, and a state utility wins over any component. 'pages' carries the
+   page-scoped stylesheets in css/pages/*: they still beat every framework
+   layer — the role their load order used to give them — but a state utility
+   now wins over them too.
+
+   Everything the rest of the framework draws with is a custom property in this
+   file, so both themes and the whole spacing/typography scale live in one
+   place. Behaviour is in js/zr.js plus js/modules/*.
+   ========================================================================== */
+
+@layer tokens, base, shell, components, modules, pages, utilities;
+
+/* Two static faces, each declared at its own weight. The regular one used to
+   claim `font-weight: 400 700` — the syntax for a variable font — which made it
+   a candidate for bold as well and left the browser picking between two faces
+   for the same weight. Only the weight actually asked for is ever downloaded;
+   today that is 700, the only weight the brand font is used at. */
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../vendor/fonts/outfit/outfit-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../vendor/fonts/outfit/outfit-700.woff2') format('woff2');
+}
+
+@layer tokens {
+  :root {
+    /* type — UI text uses the system stack (0 KB), Outfit is brand only */
+    --zr-font:
+      ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto,
+      'Helvetica Neue', sans-serif;
+    --zr-font-brand: 'Outfit', var(--zr-font);
+    --zr-font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+
+    --zr-fs-xs: 0.6875rem; /* 11 */
+    --zr-fs-sm: 0.75rem; /* 12 */
+    --zr-fs-base: 0.8125rem; /* 13 */
+    --zr-fs-md: 0.875rem; /* 14 */
+    --zr-fs-lg: 1rem; /* 16 */
+    --zr-fs-xl: 1.25rem; /* 20 */
+    --zr-fs-2xl: 1.75rem; /* 28 */
+
+    /* space — 4px rhythm */
+    --zr-1: 4px;
+    --zr-2: 8px;
+    --zr-3: 12px;
+    --zr-4: 16px;
+    --zr-5: 20px;
+    --zr-6: 24px;
+    --zr-8: 32px;
+    --zr-10: 40px;
+
+    --zr-r-sm: 6px;
+    --zr-r-md: 8px;
+    --zr-r-lg: 12px;
+    --zr-r-full: 999px;
+
+    --zr-rail-w: 216px;
+    --zr-rail-w-collapsed: 56px;
+    --zr-topbar-h: 48px;
+    --zr-tabbar-h: 56px;
+    --zr-view-max: 1560px;
+
+    --zr-dur: 140ms;
+    --zr-ease: cubic-bezier(0.2, 0, 0.2, 1);
+  }
+
+  :root,
+  :root[data-theme='light'] {
+    color-scheme: light;
+    --zr-canvas: #f4f7f8;
+    --zr-surface: #ffffff;
+    --zr-surface-2: #f7fafb;
+    --zr-surface-sunken: #eef3f5;
+    --zr-rail-bg: #ffffff;
+
+    /* Three tiers, all above 4.5:1 against every surface in this theme. The
+       faintest used to sit at 3.1:1 on white, which is below AA for the 11-12px
+       it is mostly used at; lifting it alone would have made it indistinguishable
+       from muted, so the middle tier moved up with it. */
+    --zr-text: #0d1b26;
+    --zr-text-muted: #485760;
+    --zr-text-faint: #5f6f79;
+
+    --zr-line: #dfe7eb;
+    --zr-line-strong: #c6d3da;
+    /* Off-state switch track. Not --zr-line-strong: against the white thumb
+       that read 1.53:1 and the off state all but disappeared. This grey holds
+       3.46:1 to the thumb and 3.40:1 to the surface (WCAG 1.4.11). */
+    --zr-toggle-off: #7d8c96;
+
+    --zr-brand: #12776d;
+    --zr-brand-hover: #0e625a;
+    --zr-brand-soft: #e0f2ef;
+    --zr-brand-text: #0b5850;
+    --zr-on-brand: #ffffff;
+    --zr-ink: #12314e;
+
+    --zr-ok: #17794f;
+    --zr-ok-soft: #dff3e8;
+    /* Amber is the one tone that has to carry text on its own soft background
+       (the OCR queue badge); at #9a6414 that pairing reached only 4.4:1. */
+    --zr-warn: #8f5d12;
+    --zr-warn-soft: #fdf0d9;
+    --zr-danger: #b53a30;
+    --zr-danger-soft: #fce6e3;
+    --zr-info: #2160a8;
+    --zr-info-soft: #e2edfb;
+
+    /* Categorical chart colours. Kept apart from ok/warn/danger on purpose: those
+       carry a meaning, and reusing them would paint a plain document type in the
+       same red the dashboard uses for failures. */
+    --zr-cat-1: #12776d;
+    --zr-cat-2: #2160a8;
+    --zr-cat-3: #9a6414;
+    --zr-cat-4: #7a4b9c;
+    --zr-cat-5: #1c7f96;
+    --zr-cat-6: #a04a6b;
+    --zr-cat-7: #4a7a2b;
+    --zr-cat-8: #6b7280;
+
+    --zr-focus: #12776d;
+    /* Scrims. One tone for everything that sits behind a modal layer, a lighter
+       one for the mobile drawer. Deliberately identical in both themes: a scrim
+       darkens whatever is under it, and a light one over a dark page would
+       brighten the content it is supposed to push back. */
+    --zr-scrim: rgba(6, 16, 24, 0.55);
+    --zr-scrim-soft: rgba(6, 16, 24, 0.45);
+    --zr-shadow-sm: 0 1px 2px rgba(13, 27, 38, 0.06);
+    --zr-shadow-md: 0 4px 12px -4px rgba(13, 27, 38, 0.14);
+    --zr-shadow-lg: 0 16px 40px -12px rgba(13, 27, 38, 0.26);
+  }
+
+  :root[data-theme='dark'] {
+    color-scheme: dark;
+    --zr-canvas: #0b141c;
+    --zr-surface: #121f2a;
+    --zr-surface-2: #182734;
+    --zr-surface-sunken: #0e1a23;
+    --zr-rail-bg: #101c25;
+
+    --zr-text: #e7eef2;
+    --zr-text-muted: #a6b6c1;
+    --zr-text-faint: #80909c;
+
+    --zr-line: #22343f;
+    --zr-line-strong: #2f4756;
+    /* The dark track already holds 9.7:1 against the white thumb. */
+    --zr-toggle-off: var(--zr-line-strong);
+
+    --zr-brand: #3fbfb2;
+    --zr-brand-hover: #55d0c3;
+    --zr-brand-soft: #12332f;
+    --zr-brand-text: #7fded3;
+    --zr-on-brand: #06231f;
+    --zr-ink: #eaf2f8;
+
+    --zr-ok: #4cc38a;
+    --zr-ok-soft: #102c1f;
+    --zr-warn: #e0a33a;
+    --zr-warn-soft: #33260e;
+    --zr-danger: #f0736a;
+    --zr-danger-soft: #351817;
+    --zr-info: #6aa9f0;
+    --zr-info-soft: #10243b;
+
+    --zr-cat-1: #3fbfb2;
+    --zr-cat-2: #6aa9f0;
+    --zr-cat-3: #e0a33a;
+    --zr-cat-4: #b18cd9;
+    --zr-cat-5: #4fc0d8;
+    --zr-cat-6: #e58bab;
+    --zr-cat-7: #8fc45c;
+    --zr-cat-8: #9aa7b2;
+
+    --zr-focus: #3fbfb2;
+    --zr-scrim: rgba(6, 16, 24, 0.55);
+    --zr-scrim-soft: rgba(6, 16, 24, 0.45);
+    --zr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --zr-shadow-md: 0 4px 12px -4px rgba(0, 0, 0, 0.5);
+    --zr-shadow-lg: 0 16px 40px -12px rgba(0, 0, 0, 0.7);
+  }
+
+  @media (max-width: 860px) {
+    :root {
+      --zr-fs-base: 0.875rem;
+      --zr-fs-md: 0.9375rem;
+    }
+  }
+}

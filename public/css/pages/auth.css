@@ -1,0 +1,111 @@
+/* ==========================================================================
+   Auth pages — the login card, the page frame both it and the setup
+   wizard sit in, and the stepped panes they share.
+   Page-level rules live in @layer pages: above the framework layers
+   (tokens/base/shell/components/modules), below utilities. That is the
+   override role the one page stylesheet these files replace used to get
+   from being the last one loaded.
+   ========================================================================== */
+
+@layer pages {
+  .zr-authpage {
+    position: relative;
+    min-height: 100vh;
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--zr-4);
+  }
+  .zr-authpage__glow {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        circle at 18% 16%,
+        color-mix(in srgb, var(--zr-brand) 14%, transparent),
+        transparent 42%
+      ),
+      radial-gradient(
+        circle at 84% 82%,
+        color-mix(in srgb, var(--zr-info) 12%, transparent),
+        transparent 46%
+      );
+  }
+  .zr-authpage__theme {
+    position: fixed;
+    top: var(--zr-3);
+    right: var(--zr-3);
+    z-index: 2;
+  }
+  .zr-authcard {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 380px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--zr-4);
+    padding: var(--zr-6);
+    background: var(--zr-surface);
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-lg);
+    box-shadow: var(--zr-shadow-lg);
+  }
+  .zr-authcard__head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--zr-1);
+    text-align: center;
+  }
+  .zr-authcard__mascot {
+    height: 84px;
+    margin-bottom: var(--zr-1);
+  }
+  /* The login card gives the wordmark more room than the rail does. */
+  .zr-authcard__head .zr-wordmark {
+    font-size: var(--zr-fs-xl);
+  }
+  .zr-authcard__title {
+    font-family: var(--zr-font-brand);
+    font-size: var(--zr-fs-xl);
+    font-weight: 700;
+    margin-top: var(--zr-2);
+  }
+
+  /* One pane out of a stepped set — hidden until it is the active one.
+     Shared by the login form (credentials / MFA) and the setup wizard's step
+     sections; keep it free of page-specific spacing so both can use it. */
+  .zr-steppane {
+    display: none;
+    flex-direction: column;
+    gap: var(--zr-3);
+  }
+  .zr-steppane.is-active {
+    display: flex;
+  }
+
+  /* The submit button swaps its label while the request is in flight. */
+  .login-submit .submit-idle,
+  .login-submit .submit-loading {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .login-submit .submit-loading {
+    display: none;
+  }
+  .login-submit.is-loading .submit-idle {
+    display: none;
+  }
+  .login-submit.is-loading .submit-loading {
+    display: inline-flex;
+  }
+
+  /* login: the step-back link only shows during the MFA step */
+  .login-back-button {
+    align-self: center;
+  }
+}

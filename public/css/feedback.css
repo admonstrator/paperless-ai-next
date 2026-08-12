@@ -1,0 +1,175 @@
+/* ==========================================================================
+   Feedback — meters, alerts, toasts, the module overlay and the spinner.
+   ========================================================================== */
+
+@keyframes zr-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@layer components {
+  /* meter / progress */
+  .zr-meter {
+    height: 5px;
+    border-radius: var(--zr-r-full);
+    background: var(--zr-surface-sunken);
+    overflow: hidden;
+  }
+  .zr-meter__fill {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--zr-brand);
+    transition: width 300ms var(--zr-ease);
+  }
+  .zr-meter__fill--ok {
+    background: var(--zr-ok);
+  }
+  .zr-meter__fill--warn {
+    background: var(--zr-warn);
+  }
+  .zr-meter__fill--danger {
+    background: var(--zr-danger);
+  }
+  .zr-meter--stacked {
+    display: flex;
+    height: 8px;
+  }
+  .zr-meter--stacked > span {
+    height: 100%;
+  }
+
+  /* alert */
+  .zr-alert {
+    display: flex;
+    gap: var(--zr-2);
+    padding: var(--zr-2) var(--zr-3);
+    border-radius: var(--zr-r-md);
+    border: 1px solid;
+    font-size: var(--zr-fs-base);
+  }
+  .zr-alert__body {
+    min-width: 0;
+  }
+  .zr-alert__title {
+    font-weight: 600;
+  }
+  .zr-alert--info {
+    background: var(--zr-info-soft);
+    border-color: color-mix(in srgb, var(--zr-info) 26%, transparent);
+    color: var(--zr-info);
+  }
+  .zr-alert--warn {
+    background: var(--zr-warn-soft);
+    border-color: color-mix(in srgb, var(--zr-warn) 26%, transparent);
+    color: var(--zr-warn);
+  }
+  .zr-alert--danger {
+    background: var(--zr-danger-soft);
+    border-color: color-mix(in srgb, var(--zr-danger) 26%, transparent);
+    color: var(--zr-danger);
+  }
+  .zr-alert--ok {
+    background: var(--zr-ok-soft);
+    border-color: color-mix(in srgb, var(--zr-ok) 26%, transparent);
+    color: var(--zr-ok);
+  }
+  .zr-alert p {
+    color: color-mix(in srgb, currentColor 82%, var(--zr-text));
+  }
+
+  /* toast */
+  .zr-toasts {
+    position: fixed;
+    right: var(--zr-4);
+    bottom: var(--zr-4);
+    z-index: 60;
+    display: flex;
+    flex-direction: column;
+    gap: var(--zr-2);
+    max-width: 320px;
+  }
+  .zr-toast {
+    display: flex;
+    gap: var(--zr-2);
+    padding: var(--zr-2) var(--zr-3);
+    border-radius: var(--zr-r-md);
+    background: var(--zr-surface);
+    border: 1px solid var(--zr-line);
+    border-left-width: 3px;
+    box-shadow: var(--zr-shadow-md);
+    font-size: var(--zr-fs-base);
+    cursor: pointer;
+  }
+  .zr-toast .zr-icon {
+    flex: none;
+    margin-top: 1px;
+  }
+  .zr-toast--ok {
+    border-left-color: var(--zr-ok);
+  }
+  .zr-toast--ok .zr-icon {
+    color: var(--zr-ok);
+  }
+  .zr-toast--danger {
+    border-left-color: var(--zr-danger);
+  }
+  .zr-toast--danger .zr-icon {
+    color: var(--zr-danger);
+  }
+  .zr-toast--warn {
+    border-left-color: var(--zr-warn);
+  }
+  .zr-toast--warn .zr-icon {
+    color: var(--zr-warn);
+  }
+  .zr-toast--info {
+    border-left-color: var(--zr-info);
+  }
+  .zr-toast--info .zr-icon {
+    color: var(--zr-info);
+  }
+
+  /* loading overlay covering a module while it refreshes */
+  .zr-overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: color-mix(in srgb, var(--zr-surface) 78%, transparent);
+    border-radius: inherit;
+  }
+
+  /* spinner */
+  .zr-spinner {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 2px solid var(--zr-line-strong);
+    border-top-color: var(--zr-brand);
+    animation: zr-spin 0.7s linear infinite;
+    flex: none;
+  }
+  .zr-spinner--lg {
+    width: 28px;
+    height: 28px;
+    border-width: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .zr-spinner {
+      animation-duration: 2s;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .zr-toasts {
+      left: var(--zr-3);
+      right: var(--zr-3);
+      bottom: calc(var(--zr-tabbar-h) + var(--zr-2));
+      max-width: none;
+    }
+  }
+}

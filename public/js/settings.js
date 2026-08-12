@@ -1,53 +1,6 @@
 //settings.js
 
-/* global Swal, tippy, Sortable */
-
-class SettingsTabsManager {
-  constructor() {
-    this.buttons = Array.from(
-      document.querySelectorAll('.settings-tab-button')
-    );
-    this.contents = Array.from(
-      document.querySelectorAll('.settings-tab-content')
-    );
-    this.initialize();
-  }
-
-  initialize() {
-    if (this.buttons.length === 0 || this.contents.length === 0) {
-      return;
-    }
-
-    this.buttons.forEach((button) => {
-      button.addEventListener('click', () => {
-        const tabId = button.dataset.tab;
-        this.activateTab(tabId);
-      });
-    });
-  }
-
-  activateTab(tabId) {
-    this.buttons.forEach((button) => {
-      const isActive = button.dataset.tab === tabId;
-      button.classList.toggle('active', isActive);
-      button.classList.toggle('border-blue-500', isActive);
-      button.classList.toggle('border-transparent', !isActive);
-    });
-
-    this.contents.forEach((content) => {
-      const isActive = content.id === tabId;
-      content.classList.toggle('hidden', !isActive);
-    });
-
-    // The changelog tab is read-only, so the save row would be misleading.
-    const saveRow = document.getElementById('settingsSaveRow');
-    if (saveRow) {
-      saveRow.classList.toggle('hidden', tabId === 'changelog-tab');
-    }
-
-    refreshSettingsHints();
-  }
-}
+/* global Sortable, zrDialog */
 
 class FormManager {
   constructor() {
@@ -223,8 +176,6 @@ class FormManager {
         azureApiVersion.required = true;
         break;
     }
-
-    refreshSettingsHints();
   }
 
   // Rest of the class methods remain the same
@@ -258,8 +209,6 @@ class FormManager {
     } else {
       aiTagNameSection.classList.add('hidden');
     }
-
-    refreshSettingsHints();
   }
 
   togglePromptTagsInput() {
@@ -277,8 +226,6 @@ class FormManager {
       promptTagsSection.classList.add('hidden');
       this.enablePromptElements();
     }
-
-    refreshSettingsHints();
   }
 
   disablePromptElements() {
@@ -360,7 +307,7 @@ class TagsManager {
   }
 
   initializeExistingTags() {
-    const existingTags = this.tagsContainer.querySelectorAll('.bg-blue-100');
+    const existingTags = this.tagsContainer.querySelectorAll('.zr-chip');
     existingTags.forEach((tagElement) => {
       const removeButton = tagElement.querySelector('button');
       if (removeButton) {
@@ -371,7 +318,7 @@ class TagsManager {
 
   initializeTagRemoval(button) {
     button.addEventListener('click', async () => {
-      const result = await Swal.fire({
+      const result = await zrDialog({
         title: 'Remove Tag',
         text: 'Are you sure you want to remove this tag?',
         icon: 'question',
@@ -386,7 +333,7 @@ class TagsManager {
       });
 
       if (result.isConfirmed) {
-        const tagElement = button.closest('.bg-blue-100');
+        const tagElement = button.closest('.zr-chip');
         if (tagElement) {
           tagElement.remove();
           this.updateHiddenInput();
@@ -402,7 +349,7 @@ class TagsManager {
     const specialChars = /[,;:\n\r\\/]/;
 
     if (specialChars.test(tagText)) {
-      await Swal.fire({
+      await zrDialog({
         title: 'Invalid Characters',
         text: 'Tags cannot contain commas, semi-colons, colons, or line breaks.',
         icon: 'warning',
@@ -425,16 +372,16 @@ class TagsManager {
 
   createTagElement(text) {
     const tag = document.createElement('div');
-    tag.className =
-      'bg-blue-100 text-blue-800 px-3 py-1 rounded-full flex items-center gap-2 animate-fade-in';
+    tag.className = 'zr-chip';
 
     const tagText = document.createElement('span');
     tagText.textContent = text;
 
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
-    removeButton.className = 'hover:text-blue-600';
-    removeButton.innerHTML = '<i class="fas fa-times"></i>';
+    removeButton.className = '';
+    removeButton.innerHTML =
+      '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>';
 
     this.initializeTagRemoval(removeButton);
 
@@ -448,7 +395,7 @@ class TagsManager {
     if (!this.tagsHiddenInput || !this.tagsContainer) return;
 
     const tags = Array.from(
-      this.tagsContainer.querySelectorAll('.bg-blue-100 span')
+      this.tagsContainer.querySelectorAll('.zr-chip span')
     )
       .map((span) => span.textContent.trim())
       .filter((tag) => tag); // Remove any empty tags
@@ -516,7 +463,6 @@ For the language:
 }
 
 function initializeCoreSettings() {
-  new SettingsTabsManager();
   new FormManager();
   new TagsManager('tagInput', 'tagsContainer', 'tags');
   new TagsManager('ignoreTagInput', 'ignoreTagsContainer', 'ignoreTags');
@@ -566,7 +512,7 @@ function initializeFormHandlers() {
         button.dataset.originalHtml = button.innerHTML;
       }
       button.disabled = true;
-      button.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>${loadingText}</span>`;
+      button.innerHTML = `<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg><span>${loadingText}</span>`;
       return;
     }
 
@@ -865,7 +811,7 @@ function initializeFormHandlers() {
       const apiUrl = String(ollamaUrlInput?.value || '').trim();
 
       if (provider !== 'ollama') {
-        await Swal.fire({
+        await zrDialog({
           icon: 'info',
           title: 'Switch provider',
           text: 'Use this button with AI Provider set to Ollama.',
@@ -874,7 +820,7 @@ function initializeFormHandlers() {
       }
 
       if (!apiUrl) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'warning',
           title: 'Missing URL',
           text: 'Please enter the Ollama API URL first.',
@@ -899,7 +845,7 @@ function initializeFormHandlers() {
         const resolvedInfo = result.resolvedApiUrl
           ? `\nResolved API URL: ${result.resolvedApiUrl}`
           : '';
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'Models loaded',
           text: `${models.length > 0 ? `Found ${models.length} model(s).` : 'No models found.'}${resolvedInfo}`,
@@ -911,7 +857,7 @@ function initializeFormHandlers() {
           error,
           null
         );
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: errorDetails.isTimeout
             ? 'AI timeout reached'
@@ -933,7 +879,7 @@ function initializeFormHandlers() {
       const token = String(customApiKeyInput?.value || '').trim();
 
       if (provider !== 'custom') {
-        await Swal.fire({
+        await zrDialog({
           icon: 'info',
           title: 'Switch provider',
           text: 'Use this button with AI Provider set to Custom.',
@@ -942,7 +888,7 @@ function initializeFormHandlers() {
       }
 
       if (!apiUrl) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'warning',
           title: 'Missing URL',
           text: 'Please enter the custom base URL first.',
@@ -967,7 +913,7 @@ function initializeFormHandlers() {
         const resolvedInfo = result.resolvedApiUrl
           ? `\nResolved API URL: ${result.resolvedApiUrl}`
           : '';
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'Models loaded',
           text: `${models.length > 0 ? `Found ${models.length} model(s).` : 'No models found.'}${resolvedInfo}`,
@@ -979,7 +925,7 @@ function initializeFormHandlers() {
           error,
           null
         );
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: errorDetails.isTimeout
             ? 'AI timeout reached'
@@ -1182,7 +1128,7 @@ function initializeFormHandlers() {
     quickstartDetectBtn.addEventListener('click', async () => {
       const baseUrl = String(quickstartUrlInput?.value || '').trim();
       if (!baseUrl) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'warning',
           title: 'URL required',
           text: 'Enter the base URL of your AI server first.',
@@ -1278,7 +1224,7 @@ function initializeFormHandlers() {
           error,
           null
         );
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: errorDetails.isTimeout
             ? 'Detection timeout reached'
@@ -1293,7 +1239,7 @@ function initializeFormHandlers() {
 
   const applyQuickstartDetectionToForm = async () => {
     if (!quickstartDetection) {
-      await Swal.fire({
+      await zrDialog({
         icon: 'warning',
         title: 'Detection required',
         text: 'Run detection first.',
@@ -1303,7 +1249,7 @@ function initializeFormHandlers() {
 
     const selectedAiModel = String(quickstartAiModelSelect?.value || '').trim();
     if (!selectedAiModel) {
-      await Swal.fire({
+      await zrDialog({
         icon: 'warning',
         title: 'No AI model selected',
         text: 'Choose an AI model before applying.',
@@ -1410,16 +1356,31 @@ function initializeFormHandlers() {
     }
 
     const iconPresets = {
-      pending: { className: 'fas fa-spinner fa-spin', color: '' },
-      success: { className: 'fas fa-circle-check', color: '#16a34a' },
-      error: { className: 'fas fa-circle-xmark', color: '#dc2626' },
-      skipped: { className: 'fas fa-circle-minus', color: '#94a3b8' },
+      pending: { symbol: 'i-refresh', spin: true, color: '' },
+      success: { symbol: 'i-check-circle', spin: false, color: 'var(--zr-ok)' },
+      error: {
+        symbol: 'i-alert-circle',
+        spin: false,
+        color: 'var(--zr-danger)',
+      },
+      skipped: {
+        symbol: 'i-minus',
+        spin: false,
+        color: 'var(--zr-text-faint)',
+      },
     };
     const preset = iconPresets[state] || iconPresets.pending;
 
     row.innerHTML = '';
-    const icon = document.createElement('i');
-    icon.className = preset.className;
+    const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    icon.setAttribute(
+      'class',
+      `zr-icon zr-icon--sm${preset.spin ? ' zr-icon--spin' : ''}`
+    );
+    icon.setAttribute('aria-hidden', 'true');
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', `/icons.svg#${preset.symbol}`);
+    icon.appendChild(use);
     if (preset.color) {
       icon.style.color = preset.color;
     }
@@ -1557,7 +1518,7 @@ function initializeFormHandlers() {
           );
         }
 
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: 'Model test failed',
           text: `${failures.join('\n')}\n\nAdjust the model selection and try again.`,
@@ -1598,7 +1559,7 @@ function initializeFormHandlers() {
       const originalHtml = testOcrBtn.innerHTML;
       testOcrBtn.disabled = true;
       testOcrBtn.innerHTML =
-        '<i class="fas fa-spinner fa-spin"></i><span>Testing...</span>';
+        '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg><span>Testing...</span>';
       setOcrTestPill('loading', 'Testing...');
 
       try {
@@ -1620,7 +1581,7 @@ function initializeFormHandlers() {
         }
 
         setOcrTestPill('success', 'Connection valid');
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'OCR test successful',
           text: result.message || 'OCR provider is reachable.',
@@ -1635,7 +1596,7 @@ function initializeFormHandlers() {
           'error',
           errorDetails.isTimeout ? 'Timeout reached' : 'Test failed'
         );
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: errorDetails.isTimeout
             ? 'OCR timeout reached'
@@ -1661,7 +1622,7 @@ function initializeFormHandlers() {
       const apiKey = String(ocrApiKeyInput?.value || '').trim();
 
       if (provider === 'mistral' && !apiKey) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'warning',
           title: 'Missing API key',
           text: 'Mistral OCR requires an API key to load models.',
@@ -1697,7 +1658,7 @@ function initializeFormHandlers() {
 
         const models = Array.isArray(result.models) ? result.models : [];
         populateModelSelect(ocrModelInput, models, 'Select OCR model');
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'OCR models loaded',
           text:
@@ -1711,7 +1672,7 @@ function initializeFormHandlers() {
           error,
           getOcrValidationTimeoutMs()
         );
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: errorDetails.isTimeout
             ? 'OCR timeout reached'
@@ -1931,7 +1892,7 @@ function initializeFormHandlers() {
         // Disable button and show loading state
         btn.disabled = true;
         btn.innerHTML =
-          '<i class="fas fa-spinner fa-spin"></i> Clearing Cache...';
+          '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Clearing Cache...';
 
         const response = await fetch('/api/settings/clear-tag-cache', {
           method: 'POST',
@@ -1943,7 +1904,7 @@ function initializeFormHandlers() {
         const result = await response.json();
 
         if (result.success) {
-          await Swal.fire({
+          await zrDialog({
             icon: 'success',
             title: 'Cache Cleared!',
             text: result.message || 'Tag cache has been cleared successfully.',
@@ -1955,7 +1916,7 @@ function initializeFormHandlers() {
         }
       } catch (error) {
         console.error('Error clearing tag cache:', error);
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: 'Error',
           text: error.message || 'Failed to clear tag cache. Please try again.',
@@ -1982,7 +1943,7 @@ function initializeFormHandlers() {
   );
   if (clearThumbnailCacheBtn) {
     clearThumbnailCacheBtn.addEventListener('click', async () => {
-      const confirmResult = await Swal.fire({
+      const confirmResult = await zrDialog({
         icon: 'warning',
         title: 'Clear thumbnail cache?',
         text: 'This will delete all locally cached thumbnail previews. They will be downloaded again when needed.',
@@ -2001,7 +1962,7 @@ function initializeFormHandlers() {
       try {
         clearThumbnailCacheBtn.disabled = true;
         clearThumbnailCacheBtn.innerHTML =
-          '<i class="fas fa-spinner fa-spin"></i> Clearing...';
+          '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Clearing...';
 
         const response = await fetch('/api/settings/thumbnail-cache/clear', {
           method: 'POST',
@@ -2017,14 +1978,14 @@ function initializeFormHandlers() {
 
         renderThumbnailCacheStats(result.remaining || {});
 
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'Thumbnail cache cleared',
           text: result.message || `Removed ${result.removedFiles || 0} files.`,
         });
       } catch (error) {
         console.error('Error clearing thumbnail cache:', error);
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: 'Action failed',
           text: error.message || 'Failed to clear thumbnail cache.',
@@ -2044,7 +2005,7 @@ function initializeFormHandlers() {
   );
   if (resetLocalOverridesBtn) {
     resetLocalOverridesBtn.addEventListener('click', async () => {
-      const confirmResult = await Swal.fire({
+      const confirmResult = await zrDialog({
         icon: 'warning',
         title: 'Reset local runtime overrides?',
         text: 'This removes local overrides. Container-managed environment values are applied after restart.',
@@ -2078,7 +2039,7 @@ function initializeFormHandlers() {
       try {
         resetLocalOverridesBtn.disabled = true;
         resetLocalOverridesBtn.innerHTML =
-          '<i class="fas fa-spinner fa-spin"></i> Resetting...';
+          '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Resetting...';
 
         const response = await fetch('/api/settings/reset-local-overrides', {
           method: 'POST',
@@ -2095,7 +2056,7 @@ function initializeFormHandlers() {
           );
         }
 
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'Local overrides reset',
           text:
@@ -2106,7 +2067,7 @@ function initializeFormHandlers() {
         showRestartOverlay();
         await waitForServerRecovery();
       } catch (error) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'error',
           title: 'Reset failed',
           text: error.message,
@@ -2127,11 +2088,12 @@ function initializeFormHandlers() {
       const originalHtml = btn.innerHTML;
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Running...';
+      btn.innerHTML =
+        '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Running...';
       if (resultDiv) {
         resultDiv.className = 'mt-3';
         resultDiv.innerHTML =
-          '<span class="text-sm text-gray-500"><i class="fas fa-spinner fa-spin mr-1"></i> Reconciliation in progress...</span>';
+          '<span class="zr-sm zr-faint"><svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Reconciliation in progress...</span>';
       }
 
       try {
@@ -2182,12 +2144,12 @@ function initializeFormHandlers() {
           if (resultDiv) {
             if (lastEvent.skipped) {
               resultDiv.innerHTML =
-                '<span class="text-sm text-yellow-600"><i class="fas fa-exclamation-triangle mr-1"></i> Skipped: a scan or reconciliation is already in progress.</span>';
+                '<span class="zr-sm zr-warn-text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg> Skipped: a scan or reconciliation is already in progress.</span>';
             } else if (lastEvent.removed > 0) {
-              resultDiv.innerHTML = `<span class="text-sm text-green-600"><i class="fas fa-check-circle mr-1"></i> Removed ${lastEvent.removed} stale entr${lastEvent.removed === 1 ? 'y' : 'ies'} in ${lastEvent.durationMs}ms.</span>`;
+              resultDiv.innerHTML = `<span class="zr-sm zr-ok-text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg> Removed ${lastEvent.removed} stale entr${lastEvent.removed === 1 ? 'y' : 'ies'} in ${lastEvent.durationMs}ms.</span>`;
             } else {
               resultDiv.innerHTML =
-                '<span class="text-sm text-green-600"><i class="fas fa-check-circle mr-1"></i> No stale entries found.</span>';
+                '<span class="zr-sm zr-ok-text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg> No stale entries found.</span>';
             }
           }
         } else if (lastEvent && lastEvent.type === 'error') {
@@ -2196,7 +2158,7 @@ function initializeFormHandlers() {
       } catch (error) {
         console.error('Error during reconciliation:', error);
         if (resultDiv) {
-          resultDiv.innerHTML = `<span class="text-sm text-red-600"><i class="fas fa-times-circle mr-1"></i> ${error.message || 'Reconciliation failed.'}</span>`;
+          resultDiv.innerHTML = `<span class="zr-sm zr-danger-text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg> ${error.message || 'Reconciliation failed.'}</span>`;
         }
       } finally {
         btn.disabled = false;
@@ -2216,7 +2178,8 @@ function initializeFormHandlers() {
     const submitBtn = setupForm.querySelector('button[type="submit"]');
     const originalBtnText = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+    submitBtn.innerHTML =
+      '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Saving...';
 
     try {
       const formData = new FormData(setupForm);
@@ -2389,7 +2352,7 @@ function initializeFormHandlers() {
       const result = await response.json();
 
       if (result.success) {
-        await Swal.fire({
+        await zrDialog({
           icon: 'success',
           title: 'Success!',
           text: result.message,
@@ -2407,7 +2370,7 @@ function initializeFormHandlers() {
         throw new Error(result.error || 'An unknown error occurred');
       }
     } catch (error) {
-      await Swal.fire({
+      await zrDialog({
         icon: 'error',
         title: 'Error',
         text: error.message,
@@ -2523,7 +2486,7 @@ class URLValidator {
       }
     } catch (error) {
       this.isShowingError = true;
-      const result = await Swal.fire({
+      const result = await zrDialog({
         icon: 'warning',
         title: 'Invalid URL',
         text: error.message,
@@ -2548,7 +2511,7 @@ class URLValidator {
       const url = new URL(this.urlInput.value);
       this.urlInput.value = `${url.protocol}//${url.hostname}${url.port ? ':' + url.port : ''}`;
     } catch {
-      Swal.fire({
+      zrDialog({
         icon: 'error',
         title: 'Invalid URL',
         text: 'Please enter a valid URL. ( http[s]://your-paperless-instance:8000 )',
@@ -2560,408 +2523,82 @@ class URLValidator {
   }
 }
 
-const TOOLTIP_CARD_STYLES =
-  'background:#ffffff;color:#111827;border:1px solid #d1d5db;border-radius:8px;';
-const REGISTERED_TOOLTIP_INSTANCES = [];
-let tooltipResizeListenerAttached = false;
+/**
+ * Field help dialogs.
+ *
+ * Two settings carry more explanation than fits under an input. They used to
+ * open a Tippy tooltip built from hardcoded light colours, which was unreadable
+ * in the dark theme, and the same machinery tried to fold all 63 field hints
+ * into `?` buttons — driven by `#setupForm p.text-xs.text-gray-500`, a selector
+ * that stopped matching anything once the markup moved to framework classes.
+ * With the hints readable inline, only these two long ones are left and they
+ * open a plain dialog.
+ */
+const FIELD_HELP = {
+  urlHelp: {
+    title: 'Paperless-ngx API URL',
+    html: `
+      <div class="zr-prose">
+        <p>The URL points at the Paperless-ngx host itself, without a path:
+          <code>http://your-host:8000</code>. The <code>/api</code> endpoint is
+          appended automatically.</p>
+        <p><strong>Requirements</strong></p>
+        <ul>
+          <li>Starts with <code>http://</code> or <code>https://</code></li>
+          <li>Host or IP, optionally a port</li>
+          <li>No additional path or query</li>
+        </ul>
+        <p><strong>Running in Docker</strong></p>
+        <ul>
+          <li><code>localhost</code> and <code>127.0.0.1</code> point at this
+            container, not at Paperless-ngx</li>
+          <li>Use the machine's address on the network, for example
+            <code>http://192.168.1.100:8000</code></li>
+          <li>Or the container name when both services share a network, for
+            example <code>http://paperless-ngx:8000</code></li>
+        </ul>
+      </div>`,
+  },
+  tagCacheTTLHelp: {
+    title: 'Tag cache lifetime',
+    html: `
+      <div class="zr-prose">
+        <p>How long the tag list from Paperless-ngx is reused before it is
+          fetched again. During batch processing this is the difference between
+          one request and one per document.</p>
+        <ul>
+          <li><strong>60–180 s</strong> — new tags show up quickly, more API
+            calls</li>
+          <li><strong>300 s</strong> — the default, balanced</li>
+          <li><strong>600–3600 s</strong> — fewest API calls, new tags take
+            longer to appear</li>
+        </ul>
+      </div>`,
+  },
+};
 
-function getSettingsTooltipPlacement() {
-  return window.innerWidth < 768 ? 'bottom' : 'right';
-}
-
-function createReadableTooltipContent(innerHtml, padding = '10px 12px') {
-  return `<div style="${TOOLTIP_CARD_STYLES}padding:${padding};line-height:1.45;">${innerHtml}</div>`;
-}
-
-function getReadableTooltipOptions(overrides = {}) {
-  return {
-    allowHTML: true,
-    placement: getSettingsTooltipPlacement(),
-    interactive: true,
-    trigger: 'mouseenter focus click',
-    theme: 'light-border',
-    touch: 'hold',
-    appendTo: () => document.body,
-    ...overrides,
-  };
-}
-
-function normalizeTooltipInstances(instances) {
-  if (!instances) {
-    return [];
-  }
-
-  if (Array.isArray(instances)) {
-    return instances.filter(
-      (instance) => instance && typeof instance.setProps === 'function'
-    );
-  }
-
-  return typeof instances.setProps === 'function' ? [instances] : [];
-}
-
-function refreshAllTooltipPlacements() {
-  const placement = getSettingsTooltipPlacement();
-  REGISTERED_TOOLTIP_INSTANCES.forEach((instance) => {
-    instance.setProps({ placement });
-  });
-}
-
-function registerTooltipInstances(instances) {
-  const normalizedInstances = normalizeTooltipInstances(instances);
-  if (normalizedInstances.length === 0) {
-    return;
-  }
-
-  normalizedInstances.forEach((instance) => {
-    if (!REGISTERED_TOOLTIP_INSTANCES.includes(instance)) {
-      REGISTERED_TOOLTIP_INSTANCES.push(instance);
-    }
-  });
-
-  if (!tooltipResizeListenerAttached) {
-    window.addEventListener('resize', refreshAllTooltipPlacements);
-    tooltipResizeListenerAttached = true;
-  }
-}
-
-// Tooltip System
-class TooltipManager {
-  constructor() {
-    this.initialize();
-  }
-
-  initialize() {
-    this.tooltipInstance = tippy(
-      '#urlHelp',
-      getReadableTooltipOptions({
-        content: this.getTooltipContent(),
-        maxWidth: 450,
-        trigger: 'mouseenter click',
-        zIndex: 40,
-      })
-    );
-    registerTooltipInstances(this.tooltipInstance);
-  }
-
-  getTooltipContent() {
-    return createReadableTooltipContent(
-      `
-                <h3 style="font-size:16px;font-weight:700;margin-bottom:8px;">API URL Configuration</h3>
-                
-                <div style="margin-bottom:10px;">
-                    <p>The URL should follow this format:</p>
-                    <code style="display:block;padding:8px;background:#f3f4f6;border-radius:6px;color:#111827;">
-                        http://your-host:8000
-                    </code>
-                </div>
-                
-                <div style="margin-bottom:10px;">
-                    <p style="font-weight:600;">Important Notes:</p>
-                    <ul style="padding-left:18px;margin-top:4px;">
-                        <li>Must start with <u>http://</u> or <u>https://</u></li>
-                        <li>Contains <strong>host/IP</strong> and optionally a <strong>port</strong></li>
-                        <li>No additional paths or parameters</li>
-                    </ul>
-                </div>
-
-                <div style="margin-bottom:10px;">
-                    <p style="font-weight:600;">Docker Network Configuration:</p>
-                    <ul style="padding-left:18px;margin-top:4px;">
-                        <li>Using <strong>localhost</strong> or <strong>127.0.0.1</strong> won't work in Docker bridge mode</li>
-                        <li>Use your machine's local IP (e.g., <code>192.168.1.x</code>) instead</li>
-                        <li>Or use the Docker container name if both services are in the same network</li>
-                    </ul>
-                </div>
-
-                <div style="margin-bottom:10px;">
-                    <p style="font-weight:600;">Examples:</p>
-                    <ul style="list-style:none;padding-left:0;margin-top:4px;">
-                        <li>🔸 Local IP: <code>http://192.168.1.100:8000</code></li>
-                        <li>🔸 Container: <code>http://paperless-ngx:8000</code></li>
-                        <li>🔸 Remote: <code>http://paperless.domain.com</code></li>
-                    </ul>
-                </div>
-
-                <p style="font-size:12px;font-style:italic;margin-top:8px;">The /api endpoint will be added automatically.</p>
-        `,
-      '12px'
-    );
-  }
-}
-
-class SettingsHintManager {
-  getHintTriggerClasses() {
-    return [
-      'inline-flex',
-      'items-center',
-      'justify-center',
-      'ml-2',
-      'text-blue-700',
-      'hover:text-blue-900',
-      'focus:outline-none',
-      'focus:ring-2',
-      'focus:ring-blue-600',
-      'rounded-full',
-      'transition-colors',
-    ];
-  }
-
-  constructor() {
-    this.initializeTagCacheHint();
-    this.refresh();
-  }
-
-  getHintRows() {
-    return Array.from(
-      document.querySelectorAll('#setupForm p.text-xs.text-gray-500')
-    );
-  }
-
-  findAssociatedLabel(hint) {
-    const container = hint.closest('.space-y-2') || hint.parentElement;
-    if (!container) {
-      return null;
+function initializeFieldHelp() {
+  Object.entries(FIELD_HELP).forEach(([id, help]) => {
+    const button = document.getElementById(id);
+    if (!button) {
+      return;
     }
 
-    const directLabels = Array.from(container.querySelectorAll('label'));
-    if (directLabels.length > 0) {
-      return directLabels[0];
-    }
-
-    let sibling = hint.previousElementSibling;
-    while (sibling) {
-      if (sibling.matches && sibling.matches('label')) {
-        return sibling;
-      }
-
-      if (sibling.querySelector) {
-        const nestedLabel = sibling.querySelector('label');
-        if (nestedLabel) {
-          return nestedLabel;
-        }
-      }
-
-      sibling = sibling.previousElementSibling;
-    }
-
-    return null;
-  }
-
-  findFallbackAnchor(hint) {
-    const container = hint.closest('.space-y-2') || hint.parentElement;
-    if (!container) {
-      return null;
-    }
-
-    return (
-      container.querySelector('input, select, textarea, button') || container
-    );
-  }
-
-  ensureHintTriggers() {
-    const hintRows = this.getHintRows();
-    const tooltipTargets = [];
-
-    hintRows.forEach((hint) => {
-      const label = this.findAssociatedLabel(hint);
-
-      const fallbackAnchor = label ? null : this.findFallbackAnchor(hint);
-      if (!label && !fallbackAnchor) {
-        return;
-      }
-
-      if (label && label.querySelector('.setting-hint-trigger')) {
-        hint.classList.add('hidden');
-        return;
-      }
-
-      if (
-        !label &&
-        hint.parentElement?.querySelector(
-          '.setting-hint-trigger[data-hint-fallback="true"]'
-        )
-      ) {
-        hint.classList.add('hidden');
-        return;
-      }
-
-      const trigger = document.createElement('button');
-      trigger.type = 'button';
-      trigger.className = `setting-hint-trigger ${this.getHintTriggerClasses().join(' ')}`;
-      trigger.setAttribute('aria-label', 'Show setting hint');
-      trigger.style.width = '1.125rem';
-      trigger.style.height = '1.125rem';
-      trigger.style.minWidth = '1.125rem';
-      trigger.style.minHeight = '1.125rem';
-      trigger.innerHTML =
-        '<i class="fas fa-circle-question" style="font-size:0.875rem;line-height:1;"></i>';
-      trigger.dataset.hintContent = hint.innerHTML;
-      trigger.dataset.hintFallback = label ? 'false' : 'true';
-
-      if (label) {
-        if (!label.classList.contains('flex')) {
-          label.classList.add('flex', 'items-center');
-        }
-
-        label.appendChild(trigger);
-      } else if (
-        fallbackAnchor.matches &&
-        fallbackAnchor.matches('input, select, textarea, button')
-      ) {
-        fallbackAnchor.insertAdjacentElement('afterend', trigger);
-      } else {
-        fallbackAnchor.appendChild(trigger);
-      }
-
-      hint.classList.add('hidden');
-      tooltipTargets.push(trigger);
+    button.setAttribute('aria-label', `Help: ${help.title}`);
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      zrDialog({
+        title: help.title,
+        html: help.html,
+        confirmButtonText: 'Close',
+      });
     });
-
-    return tooltipTargets;
-  }
-
-  bindHintTooltips(tooltipTargets) {
-    if (!Array.isArray(tooltipTargets) || tooltipTargets.length === 0) {
-      return;
-    }
-
-    const hintTooltipInstances = tippy(
-      tooltipTargets,
-      getReadableTooltipOptions({
-        maxWidth: 360,
-        content(reference) {
-          return createReadableTooltipContent(
-            reference.dataset.hintContent || '',
-            '8px 10px'
-          );
-        },
-      })
-    );
-    registerTooltipInstances(hintTooltipInstances);
-  }
-
-  refresh() {
-    const tooltipTargets = this.ensureHintTriggers();
-    this.bindHintTooltips(tooltipTargets);
-
-    const unboundTriggers = Array.from(
-      document.querySelectorAll('.setting-hint-trigger')
-    ).filter((trigger) => !trigger._tippy);
-    this.bindHintTooltips(unboundTriggers);
-  }
-
-  initialize() {
-    this.refresh();
-    this.initializeTagCacheHint();
-  }
-
-  initializeTagCacheHint() {
-    const tagCacheTTLHelp = document.getElementById('tagCacheTTLHelp');
-    if (!tagCacheTTLHelp) {
-      return;
-    }
-
-    const urlHelp = document.getElementById('urlHelp');
-    if (urlHelp) {
-      urlHelp.classList.remove('text-gray-400', 'hover:text-gray-600');
-      urlHelp.classList.add(...this.getHintTriggerClasses());
-      urlHelp.style.width = '1.125rem';
-      urlHelp.style.height = '1.125rem';
-      urlHelp.style.minWidth = '1.125rem';
-      urlHelp.style.minHeight = '1.125rem';
-
-      const urlHelpIcon = urlHelp.querySelector('i');
-      if (urlHelpIcon) {
-        urlHelpIcon.style.fontSize = '0.875rem';
-        urlHelpIcon.style.lineHeight = '1';
-      }
-    }
-
-    tagCacheTTLHelp.classList.remove('text-gray-400', 'hover:text-gray-600');
-    tagCacheTTLHelp.classList.add(...this.getHintTriggerClasses());
-    tagCacheTTLHelp.style.width = '1.125rem';
-    tagCacheTTLHelp.style.height = '1.125rem';
-    tagCacheTTLHelp.style.minWidth = '1.125rem';
-    tagCacheTTLHelp.style.minHeight = '1.125rem';
-
-    const tagCacheIcon = tagCacheTTLHelp.querySelector('i');
-    if (tagCacheIcon) {
-      tagCacheIcon.style.fontSize = '0.875rem';
-      tagCacheIcon.style.lineHeight = '1';
-    }
-
-    const tagCacheTooltipInstance = tippy(
-      tagCacheTTLHelp,
-      getReadableTooltipOptions({
-        maxWidth: 420,
-        content: createReadableTooltipContent(`
-                    <p style="margin-bottom:8px;">Controls how long tags are cached before refreshing from Paperless-ngx.</p>
-                    <ul style="padding-left:18px; margin:0 0 8px 0;">
-                        <li><strong>60-180s:</strong> fresher data, more API calls</li>
-                        <li><strong>300s (recommended):</strong> balanced</li>
-                        <li><strong>600-3600s:</strong> fewer API calls, slower visibility of new tags</li>
-                    </ul>
-                    <p style="font-size:12px;">Good cache settings can reduce Paperless tag API calls significantly during batch processing.</p>
-            `),
-      })
-    );
-    registerTooltipInstances(tagCacheTooltipInstance);
-  }
+  });
 }
 
 function initializeTooltipAndValidation() {
   new URLValidator();
-  new TooltipManager();
-  settingsHintManager = new SettingsHintManager();
-  initializeSettingsHintObserver();
-  scheduleSettingsHintsRefresh();
-}
-
-let settingsHintManager = null;
-let settingsHintObserver = null;
-let settingsHintRefreshScheduled = false;
-
-function refreshSettingsHints() {
-  if (!settingsHintManager) {
-    return;
-  }
-
-  settingsHintManager.refresh();
-}
-
-function scheduleSettingsHintsRefresh() {
-  if (settingsHintRefreshScheduled) {
-    return;
-  }
-
-  settingsHintRefreshScheduled = true;
-  requestAnimationFrame(() => {
-    settingsHintRefreshScheduled = false;
-    refreshSettingsHints();
-  });
-}
-
-function initializeSettingsHintObserver() {
-  if (settingsHintObserver) {
-    return;
-  }
-
-  const setupForm = document.getElementById('setupForm');
-  if (!setupForm) {
-    return;
-  }
-
-  settingsHintObserver = new MutationObserver(() => {
-    scheduleSettingsHintsRefresh();
-  });
-
-  settingsHintObserver.observe(setupForm, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ['class', 'style', 'hidden'],
-  });
+  initializeFieldHelp();
 }
 
 function initializeRuntimeOverridePills() {
@@ -3023,6 +2660,8 @@ function initializeRuntimeOverridePills() {
     return;
   }
 
+  // Kept local because classic scripts cannot import ES modules; keep in sync
+  // with modules/text-utils.js.
   const escapeHtml = (value) =>
     String(value)
       .replace(/&/g, '&amp;')
@@ -3180,8 +2819,7 @@ function initializeRuntimeOverridePills() {
       !targetLabel.querySelector('.override-pill')
     ) {
       const pill = document.createElement('span');
-      pill.className =
-        'override-pill inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-100 text-amber-800 cursor-help';
+      pill.className = 'override-pill zr-badge zr-badge--warn';
       pill.textContent = 'Overwritten';
       const overrideDetails = parsedOverrideDetails[envKey] || {};
       const injectedValue = overrideDetails.injected || '[unknown]';
@@ -3201,19 +2839,13 @@ function initializeRuntimeOverridePills() {
     }
 
     if (lockedEnvKeys.has(envKey)) {
+      // The :disabled styling in the framework carries the visual state.
       fieldElement.disabled = true;
       fieldElement.setAttribute('aria-disabled', 'true');
-      fieldElement.classList.add(
-        'bg-gray-100',
-        'text-gray-500',
-        'cursor-not-allowed',
-        'opacity-70'
-      );
 
       if (!targetLabel.querySelector('.locked-pill')) {
         const lockedPill = document.createElement('span');
-        lockedPill.className =
-          'locked-pill inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-200 text-slate-700 cursor-help';
+        lockedPill.className = 'locked-pill zr-badge';
         lockedPill.textContent = 'Managed by ENV';
         const lockedDetails = parsedLockedEnvDetails[envKey] || {};
         const managedValue = lockedDetails.managed || '[unknown]';
@@ -3234,7 +2866,7 @@ function initializeRuntimeOverridePills() {
       let lockedHelpText = container.querySelector('.locked-env-help');
       if (!lockedHelpText) {
         lockedHelpText = document.createElement('p');
-        lockedHelpText.className = 'locked-env-help text-xs text-slate-500';
+        lockedHelpText.className = 'locked-env-help zr-xs zr-faint';
         lockedHelpText.textContent =
           'Managed by container environment. Change it in Docker Compose or your container environment, then restart the service.';
         container.appendChild(lockedHelpText);
@@ -3242,21 +2874,13 @@ function initializeRuntimeOverridePills() {
     }
   });
 
-  if (pills.length > 0 && typeof tippy === 'function') {
-    const instances = tippy(
-      pills,
-      getReadableTooltipOptions({
-        maxWidth: 360,
-        content(reference) {
-          return createReadableTooltipContent(
-            reference.getAttribute('data-tooltip') ||
-              'Overwritten by local runtime settings.'
-          );
-        },
-      })
-    );
-    registerTooltipInstances(instances);
-  }
+  // One line of explanation per pill. A native title needs no library, works on
+  // keyboard focus and reads correctly in both themes.
+  pills.forEach((pill) => {
+    pill.title =
+      pill.getAttribute('data-tooltip') ||
+      'Overwritten by local runtime settings.';
+  });
 }
 
 // Custom Fields Management
@@ -3283,13 +2907,6 @@ function initializeCustomFieldsManagement() {
       handle: '.cursor-move',
       onEnd: updateCustomFieldsJson,
     });
-
-    // Add initial theme classes based on current theme
-    const isDarkMode =
-      document.documentElement.getAttribute('data-theme') === 'dark';
-    if (isDarkMode) {
-      updateThemeClasses(true);
-    }
   }
 
   // Initialize type selection
@@ -3311,21 +2928,8 @@ function initializeCustomFieldsManagement() {
     });
   }
 
-  // Observer for theme changes
-  const observer = new MutationObserver(function (mutations) {
-    mutations.forEach(function (mutation) {
-      if (mutation.attributeName === 'data-theme') {
-        const isDark =
-          document.documentElement.getAttribute('data-theme') === 'dark';
-        updateThemeClasses(isDark);
-      }
-    });
-  });
-
-  observer.observe(document.documentElement, {
-    attributes: true,
-    attributeFilter: ['data-theme'],
-  });
+  // No theme observer here: the framework themes everything through CSS
+  // variables bound to data-theme, so nothing has to be restyled from JS.
 }
 
 class MfaSettingsManager {
@@ -3355,6 +2959,7 @@ class MfaSettingsManager {
     this.enableBtn = document.getElementById('mfaEnableBtn');
     this.verifyBtn = document.getElementById('mfaVerifyBtn');
     this.disableBtn = document.getElementById('mfaDisableBtn');
+    this.tokenField = document.getElementById('mfaTokenField');
 
     this.setupReady = false;
     this.invalidTotpAttempts = 0;
@@ -3383,18 +2988,13 @@ class MfaSettingsManager {
       return;
     }
 
-    this.resultMessage.className = 'rounded-lg p-3 text-sm';
+    this.resultMessage.className = 'zr-alert';
     if (type === 'success') {
-      this.resultMessage.classList.add('theme-alert-success', 'border');
+      this.resultMessage.classList.add('zr-alert--ok');
     } else if (type === 'error') {
-      this.resultMessage.classList.add('theme-alert-error', 'border');
+      this.resultMessage.classList.add('zr-alert--danger');
     } else {
-      this.resultMessage.classList.add(
-        'bg-blue-50',
-        'text-blue-800',
-        'border',
-        'border-blue-200'
-      );
+      this.resultMessage.classList.add('zr-alert--info');
     }
 
     this.resultMessage.textContent = text;
@@ -3407,59 +3007,29 @@ class MfaSettingsManager {
     }
   }
 
+  // The field only ever carries a colour, so the hint below it does the talking.
+  setTokenFieldState(state) {
+    if (!this.tokenInput) {
+      return;
+    }
+    this.tokenInput.classList.toggle('zr-input--invalid', state === 'error');
+    this.tokenInput.classList.toggle('zr-input--valid', state === 'success');
+  }
+
   setTokenHint(type, text) {
     if (!this.tokenHint) {
       return;
     }
 
-    this.tokenHint.className = 'text-xs';
+    this.tokenHint.className = 'zr-xs';
     if (type === 'error') {
-      this.tokenHint.classList.add('text-red-600');
-      this.tokenInput?.classList.add(
-        'border-red-500',
-        'focus:border-red-500',
-        'focus:ring-red-500'
-      );
-      this.tokenInput?.classList.remove(
-        'border-gray-300',
-        'focus:border-blue-500',
-        'focus:ring-blue-500'
-      );
+      this.tokenHint.classList.add('zr-danger-text');
     } else if (type === 'success') {
-      this.tokenHint.classList.add('text-green-600');
-      this.tokenInput?.classList.remove(
-        'border-red-500',
-        'focus:border-red-500',
-        'focus:ring-red-500'
-      );
-      this.tokenInput?.classList.add(
-        'border-green-500',
-        'focus:border-green-500',
-        'focus:ring-green-500'
-      );
-      this.tokenInput?.classList.remove(
-        'border-gray-300',
-        'focus:border-blue-500',
-        'focus:ring-blue-500'
-      );
+      this.tokenHint.classList.add('zr-ok-text');
     } else {
-      this.tokenHint.classList.add('text-gray-500');
-      this.tokenInput?.classList.remove(
-        'border-red-500',
-        'focus:border-red-500',
-        'focus:ring-red-500'
-      );
-      this.tokenInput?.classList.remove(
-        'border-green-500',
-        'focus:border-green-500',
-        'focus:ring-green-500'
-      );
-      this.tokenInput?.classList.add(
-        'border-gray-300',
-        'focus:border-blue-500',
-        'focus:ring-blue-500'
-      );
+      this.tokenHint.classList.add('zr-muted');
     }
+    this.setTokenFieldState(type);
 
     this.tokenHint.textContent = text;
     this.tokenHint.classList.remove('hidden');
@@ -3469,21 +3039,7 @@ class MfaSettingsManager {
     if (this.tokenHint) {
       this.tokenHint.classList.add('hidden');
     }
-    this.tokenInput?.classList.remove(
-      'border-red-500',
-      'focus:border-red-500',
-      'focus:ring-red-500'
-    );
-    this.tokenInput?.classList.remove(
-      'border-green-500',
-      'focus:border-green-500',
-      'focus:ring-green-500'
-    );
-    this.tokenInput?.classList.add(
-      'border-gray-300',
-      'focus:border-blue-500',
-      'focus:ring-blue-500'
-    );
+    this.setTokenFieldState(null);
   }
 
   isInvalidTotpError(error) {
@@ -3526,7 +3082,7 @@ class MfaSettingsManager {
         button.dataset.originalHtml = button.innerHTML;
       }
       button.disabled = true;
-      button.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>${loadingText}</span>`;
+      button.innerHTML = `<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg><span>${loadingText}</span>`;
       return;
     }
 
@@ -3543,23 +3099,34 @@ class MfaSettingsManager {
 
     if (this.statusBadge) {
       this.statusBadge.textContent = this.enabled ? 'Enabled' : 'Disabled';
-      this.statusBadge.className = `px-2 py-1 rounded-full text-xs font-semibold ${
-        this.enabled
-          ? 'bg-green-100 text-green-800'
-          : 'bg-gray-100 text-gray-700'
-      }`;
+      this.statusBadge.className = `zr-badge${this.enabled ? ' zr-badge--ok' : ''}`;
     }
 
+    // Only the controls of the current state exist. With everything rendered
+    // at once the card showed Enable, Disable and Validate side by side, and
+    // which one applied was anyone's guess.
     if (this.disableBtn) {
       this.disableBtn.disabled = !this.enabled;
+      this.disableBtn.classList.toggle('hidden', !this.enabled);
     }
 
     if (this.enableBtn) {
       this.enableBtn.disabled = this.enabled;
+      this.enableBtn.classList.toggle('hidden', this.enabled);
     }
 
     if (this.verifyBtn) {
       this.verifyBtn.disabled = !this.enabled && !this.setupReady;
+    }
+
+    if (this.tokenField) {
+      // Visible during activation (code confirms the pairing) and while
+      // enabled (code check against the authenticator); hidden in the plain
+      // disabled state, where there is nothing to validate against.
+      this.tokenField.classList.toggle(
+        'hidden',
+        !this.enabled && !this.setupReady
+      );
     }
 
     if (this.verifyBtnLabel) {
@@ -3779,7 +3346,7 @@ class MfaSettingsManager {
       return;
     }
 
-    const confirmResult = await Swal.fire({
+    const confirmResult = await zrDialog({
       icon: 'warning',
       title: 'Disable MFA?',
       text: 'Your account will no longer require a TOTP code at login.',
@@ -3915,44 +3482,6 @@ document.addEventListener('DOMContentLoaded', () => {
   new MfaSettingsManager();
 });
 
-function updateThemeClasses(isDark) {
-  // Update custom field items
-  const items = document.querySelectorAll('.custom-field-item');
-  items.forEach((item) => {
-    // Background and border
-    item.classList.toggle('bg-white', !isDark);
-    item.classList.toggle('bg-gray-800', isDark);
-    item.classList.toggle('border-gray-200', !isDark);
-    item.classList.toggle('border-gray-700', isDark);
-
-    // Text colors
-    const title = item.querySelector('p.font-medium');
-    if (title) {
-      title.classList.toggle('text-gray-900', !isDark);
-      title.classList.toggle('text-gray-100', isDark);
-    }
-
-    const subtitle = item.querySelector('p.text-sm');
-    if (subtitle) {
-      subtitle.classList.toggle('text-gray-500', !isDark);
-      subtitle.classList.toggle('text-gray-400', isDark);
-    }
-  });
-
-  // Update form inputs and selects
-  const inputs = document.querySelectorAll(
-    'input:not([type="hidden"]), select'
-  );
-  inputs.forEach((input) => {
-    input.classList.toggle('bg-white', !isDark);
-    input.classList.toggle('bg-gray-800', isDark);
-    input.classList.toggle('text-gray-900', !isDark);
-    input.classList.toggle('text-gray-100', isDark);
-    input.classList.toggle('border-gray-300', !isDark);
-    input.classList.toggle('border-gray-600', isDark);
-  });
-}
-
 function toggleCurrencySelect() {
   const fieldType = document.getElementById('newFieldType').value;
   const currencySelect = document.getElementById('currencyCode');
@@ -3993,11 +3522,7 @@ function updateCustomFieldsJson() {
 
 function createFieldElement(fieldName, data_type, currency = null) {
   const div = document.createElement('div');
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-
-  div.className = `custom-field-item flex items-center gap-2 p-3 rounded-lg border hover:border-blue-500 transition-colors ${
-    isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'
-  }`;
+  div.className = 'custom-field-item zr-row';
 
   let typeDisplay = `Type: ${data_type}`;
   if (data_type === 'monetary' && currency) {
@@ -4005,17 +3530,17 @@ function createFieldElement(fieldName, data_type, currency = null) {
   }
 
   div.innerHTML = `
-        <div class="cursor-move text-gray-400">
-            <i class="fas fa-grip-vertical"></i>
+        <div class="zr-faint">
+            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-grip"/></svg>
         </div>
-        <div class="flex-1">
-            <p class="font-medium ${isDark ? 'text-gray-100' : 'text-gray-900'}" data-field-name></p>
-            <p class="text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}" data-field-type></p>
+        <div class="zr-grow">
+            <p class="zr-strong" data-field-name></p>
+            <p class="zr-sm zr-faint" data-field-type></p>
         </div>
         <button type="button"
                 onclick="removeCustomField(this)"
-                class="text-gray-400 hover:text-red-500 transition-colors">
-            <i class="fas fa-trash"></i>
+                class="zr-btn zr-btn--ghost zr-btn--icon zr-btn--danger">
+            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>
         </button>
     `;
 
@@ -4038,7 +3563,7 @@ function addCustomField() {
   const currency = data_type === 'monetary' ? currencySelect.value : null;
 
   if (!fieldName) {
-    Swal.fire({
+    zrDialog({
       icon: 'warning',
       title: 'Invalid Field Name',
       text: 'Please enter a field name',
@@ -4052,7 +3577,7 @@ function addCustomField() {
   ).map((p) => p.textContent);
 
   if (existingFields.includes(fieldName)) {
-    Swal.fire({
+    zrDialog({
       icon: 'warning',
       title: 'Duplicate Field',
       text: 'A field with this name already exists',
@@ -4073,7 +3598,7 @@ function addCustomField() {
 // Called from inline onclick handlers in the settings view.
 window.removeCustomField = function removeCustomField(button) {
   const fieldItem = button.closest('.custom-field-item');
-  Swal.fire({
+  zrDialog({
     title: 'Delete Field?',
     text: 'Are you sure you want to delete this custom field?',
     icon: 'warning',

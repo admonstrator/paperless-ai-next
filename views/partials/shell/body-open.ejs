@@ -1,23 +1,66 @@
-<body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : 'h-full' %>">
-    <div class="layout-container">
-        <button id="mobileMenuToggle" type="button" class="mobile-menu-toggle" aria-label="Open navigation" aria-controls="appSidebar" aria-expanded="false">
-            <i class="fas fa-bars" aria-hidden="true"></i>
-        </button>
+<body class="<%= typeof bodyClass !== 'undefined' ? bodyClass : '' %>">
+    <div class="zr-shell">
+        <script>
+            // Restore the collapsed rail before first paint so it does not jump.
+            (function () {
+                var match = document.cookie.split('; ').find(function (entry) {
+                    return entry.indexOf('railState=') === 0;
+                });
+                if (match && match.split('=')[1] === 'collapsed') {
+                    document.currentScript.parentNode.dataset.rail = 'collapsed';
+                }
+            })();
+        </script>
 
-        <button id="sidebarOverlay" type="button" class="sidebar-overlay" aria-label="Close navigation"></button>
+        <button class="zr-drawer-scrim" type="button" data-action="drawer-close" aria-label="Close navigation"></button>
 
-        <aside id="appSidebar" class="sidebar" aria-hidden="false">
-            <div class="sidebar-header">
-                <img src="/logo.png" class="no-invert" alt="Zettelrobbe Logo" style="height: 60px;">
-                <h1 class="brand-title">Zettelrobbe<small class="sidebar-version" title="<%= typeof version !== 'undefined' ? version : '' %>"><%= typeof version !== 'undefined' ? version : '' %></small></h1>
+        <aside class="zr-rail" id="appSidebar">
+            <div class="zr-rail__brand">
+                <img class="zr-rail__logo no-invert" src="/logo.png" alt="">
+                <span class="zr-rail__wordmark zr-wordmark">Zettelrobbe</span>
+                <button class="zr-btn zr-btn--ghost zr-btn--icon zr-only-mobile" type="button" data-action="drawer-close"
+                    style="margin-left:auto" aria-label="Close navigation">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
+                </button>
             </div>
 
-            <nav class="sidebar-nav">
-                <%- include('../sidebar-nav', {
-                    chatEnabled: typeof chatEnabled !== 'undefined' ? chatEnabled : false
-                }) %>
+            <nav class="zr-rail__nav" aria-label="Main">
+                <%- include('../sidebar-nav') %>
             </nav>
+
+            <div class="zr-rail__foot">
+                <button class="zr-btn zr-btn--ghost zr-btn--icon zr-only-desktop" type="button" data-action="rail-toggle"
+                    aria-label="Toggle sidebar width">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-panel"/></svg>
+                </button>
+                <a class="zr-btn zr-btn--ghost zr-btn--icon" href="https://github.com/admonstrator/zettelrobbe"
+                    target="_blank" rel="noopener noreferrer" aria-label="Star Zettelrobbe on GitHub">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-star"/></svg>
+                </a>
+                <a class="zr-btn zr-btn--ghost zr-btn--icon" id="sidebarBugReportLink" target="_blank"
+                    rel="noopener noreferrer"
+                    href="https://github.com/admonstrator/zettelrobbe/issues/new?template=bug_report.yml"
+                    aria-label="Report a bug on GitHub">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-bug"/></svg>
+                </a>
+                <span class="zr-rail__version" title="<%= typeof version !== 'undefined' ? version : '' %>"><%= typeof version !== 'undefined' ? version : '' %></span>
+            </div>
         </aside>
 
-        <main class="<%= typeof mainClass !== 'undefined' ? mainClass : 'main-content' %>">
-        <%- include('../changelog-modal') %>
+        <div class="zr-main">
+            <header class="zr-topbar">
+                <!-- No hamburger: on phones the More tab in the bottom bar opens
+                     the same drawer, and one trigger is enough. -->
+                <h1 class="zr-topbar__title"><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Zettelrobbe' %></h1>
+                <span class="zr-topbar__spacer"></span>
+
+                <a class="zr-badge zr-badge--info hidden" id="updateNotification"
+                    href="https://github.com/admonstrator/zettelrobbe/releases/" target="_blank" rel="noopener noreferrer">
+                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-download"/></svg>
+                    <span id="latestVersion"></span>
+                </a>
+                <%- include('theme-toggle') %>
+            </header>
+
+            <main class="zr-view">
+                <%- include('../changelog-modal') %>

@@ -1,0 +1,29 @@
+/* ==========================================================================
+   History.
+   @layer pages: above the framework layers, below utilities.
+   ========================================================================== */
+
+@layer pages {
+  /* The two filters live in the table toolbar next to the search, so they are
+     capped well below the 460px a select is otherwise allowed. Only above the
+     phone breakpoint: below it they split the toolbar row between them, and a
+     cap declared for both widths would beat the framework's `max-width: none`
+     phone rule on layer order alone — @layer pages sits above components. */
+  @media (min-width: 861px) {
+    .history-filter {
+      max-width: 220px;
+    }
+  }
+  @media (max-width: 860px) {
+    /* Two short selects share one row instead of stacking full-width; the
+       flex-basis override wins over the generic 100% row rule because @layer
+       pages sits above the framework layers. */
+    #historyFilters {
+      flex: 1 1 100%;
+    }
+    #historyFilters > .history-filter {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+  }
+}

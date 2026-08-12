@@ -18,7 +18,7 @@ function createMockClassList() {
       classes.delete(item);
       return false;
     },
-    contains: (item) => classes.has(item)
+    contains: (item) => classes.has(item),
   };
 }
 
@@ -48,7 +48,7 @@ function createMockElement(id) {
     focus: () => {},
     select: () => {},
     setAttribute: () => {},
-    removeAttribute: () => {}
+    removeAttribute: () => {},
   };
 }
 
@@ -74,13 +74,15 @@ const elementIds = [
   'paperlessToken',
   'testPaperlessBtn',
   'paperlessTestState',
-  'fetchMetadataBtn',
   'metadataLoadState',
   'documentsCount',
   'correspondentsCount',
   'tagsCount',
   'scanAllDocuments',
   'includeTag',
+  'includeTagsSection',
+  'addIncludeTagBtn',
+  'includeTagsContainer',
   'excludeTagInput',
   'addExcludeTagBtn',
   'excludeTagsContainer',
@@ -131,7 +133,7 @@ const elementIds = [
   'copyEnvPreviewBtn',
   'finalizeSetupBtn',
   'prevStepBtn',
-  'nextStepBtn'
+  'nextStepBtn',
 ];
 
 const elements = new Map(elementIds.map((id) => [id, createMockElement(id)]));
@@ -140,17 +142,17 @@ const steps = Array.from({ length: 7 }, (_unused, index) => ({
   dataset: { stepTitle: `Step ${index + 1}` },
   classList: createMockClassList(),
   style: {},
-  disabled: false
+  disabled: false,
 }));
 
 global.window = {
   __SETUP_BOOTSTRAP__: { config: {}, defaults: {}, aiProviderPresets: [] },
-  fetch: async () => ({})
+  fetch: async () => ({}),
 };
 
 global.document = {
   addEventListener: (_event, callback) => callback(),
-  querySelectorAll: (selector) => (selector === '.setup-step' ? steps : []),
+  querySelectorAll: (selector) => (selector === '.zr-steppane' ? steps : []),
   querySelector: (selector) => {
     if (selector === 'meta[name="csrf-token"]') {
       return { getAttribute: () => '' };
@@ -158,19 +160,19 @@ global.document = {
     return null;
   },
   getElementById: (id) => elements.get(id) || null,
-  createElement: (tagName) => createMockElement(tagName)
+  createElement: (tagName) => createMockElement(tagName),
 };
 
 global.Swal = {
   fire: async () => ({ isConfirmed: false }),
   update: () => {},
-  close: () => {}
+  close: () => {},
 };
 
 global.navigator = {
   clipboard: {
-    writeText: async () => {}
-  }
+    writeText: async () => {},
+  },
 };
 
 global.Headers = class Headers {};
@@ -181,23 +183,72 @@ const source = fs.readFileSync(setupJsPath, 'utf8');
 vm.runInThisContext(source, { filename: setupJsPath });
 
 assert.ok(window.setupWizard, 'Setup wizard should initialize');
-assert.strictEqual(window.setupWizard.scanAllDocuments.checked, false, 'Fresh setup should default to include-tag mode');
-assert.strictEqual(window.setupWizard.includeTag.disabled, false, 'Include tag input should stay enabled by default');
+assert.strictEqual(
+  window.setupWizard.scanAllDocuments.checked,
+  false,
+  'Fresh setup should default to include-tag mode'
+);
+assert.strictEqual(
+  window.setupWizard.includeTag.disabled,
+  false,
+  'Include tag input should stay enabled by default'
+);
 
-// Verify reactive behavior: toggling the checkbox enables/disables the field
+// Verify reactive behavior: toggling the checkbox hides/shows the whole block.
+// An include filter is ignored while scan-all is on, so the field is taken away
+// rather than left sitting there disabled next to a live Add button.
 window.setupWizard.scanAllDocuments.checked = true;
 window.setupWizard.scanAllDocuments.dispatchEvent('change');
-assert.strictEqual(window.setupWizard.includeTag.disabled, true, 'Tag field should be disabled when scan-all is checked');
+assert.strictEqual(
+  window.setupWizard.includeTag.disabled,
+  true,
+  'Tag field should be disabled when scan-all is checked'
+);
+assert.ok(
+  window.setupWizard.includeTagsSection.classList.contains('hidden'),
+  'Include tag section should be hidden when scan-all is checked'
+);
+assert.strictEqual(
+  window.setupWizard.addIncludeTagBtn.disabled,
+  true,
+  'Add button should be disabled when scan-all is checked'
+);
 
 window.setupWizard.scanAllDocuments.checked = false;
 window.setupWizard.scanAllDocuments.dispatchEvent('change');
-assert.strictEqual(window.setupWizard.includeTag.disabled, false, 'Tag field should re-enable when scan-all is unchecked');
+assert.strictEqual(
+  window.setupWizard.includeTag.disabled,
+  false,
+  'Tag field should re-enable when scan-all is unchecked'
+);
+assert.ok(
+  !window.setupWizard.includeTagsSection.classList.contains('hidden'),
+  'Include tag section should reappear when scan-all is unchecked'
+);
 
 // Verify loading an existing config with PROCESS_PREDEFINED_DOCUMENTS=no marks scan-all as checked
-window.__SETUP_BOOTSTRAP__ = { config: { PROCESS_PREDEFINED_DOCUMENTS: 'no' }, defaults: {}, aiProviderPresets: [] };
+window.__SETUP_BOOTSTRAP__ = {
+  config: { PROCESS_PREDEFINED_DOCUMENTS: 'no' },
+  defaults: {},
+  aiProviderPresets: [],
+};
 window.setupWizard.config = { PROCESS_PREDEFINED_DOCUMENTS: 'no' };
 window.setupWizard.populateInitialValues();
-assert.strictEqual(window.setupWizard.scanAllDocuments.checked, true, 'PROCESS_PREDEFINED_DOCUMENTS=no should result in scan-all checked');
-assert.strictEqual(window.setupWizard.includeTag.disabled, false, 'Tag field state is driven by checkbox, not populateInitialValues');
+assert.strictEqual(
+  window.setupWizard.scanAllDocuments.checked,
+  true,
+  'PROCESS_PREDEFINED_DOCUMENTS=no should result in scan-all checked'
+);
+// Re-entering setup with an existing config must apply the switch too, otherwise
+// the wizard shows "scan all" while still offering the include field.
+assert.strictEqual(
+  window.setupWizard.includeTag.disabled,
+  true,
+  'populateInitialValues should apply the scan-all state to the field'
+);
+assert.ok(
+  window.setupWizard.includeTagsSection.classList.contains('hidden'),
+  'populateInitialValues should hide the include section when scan-all is on'
+);
 
 console.log('✅ test-setup-wizard-tag-default passed');

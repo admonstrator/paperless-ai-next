@@ -1,0 +1,39 @@
+/* ==========================================================================
+   Settings: the custom-field add row and the two blocking overlays the
+   page puts up while the server restarts or a model is being tested.
+   @layer pages: above the framework layers, below utilities.
+   ========================================================================== */
+
+@layer pages {
+  /* --- blocking overlays (restart, model test) ---------------------------- */
+  /* Both partials are toggled as a whole, so the spacing belongs to the
+     elements rather than to a rule between them. */
+  #modelTestOverlay .zr-fullscreen__card > .zr-row:first-child,
+  #restartOverlay .zr-fullscreen__card > .zr-row:first-child {
+    margin-bottom: var(--zr-3);
+  }
+  #restartOverlayPercent {
+    margin-top: var(--zr-1);
+    text-align: right;
+  }
+  #restartOverlayActions {
+    margin-top: var(--zr-3);
+    justify-content: flex-end;
+  }
+
+  /* --- settings ------------------------------------------------------------ */
+
+  /* The "field name + type + Add" row: its controls sit in wrapper divs (a bare
+     width:100% control would hijack the whole flex row), so the generic
+     full-width phone rule cannot reach them. Stack the wrappers instead. */
+  @media (max-width: 860px) {
+    .customfield-add > div {
+      flex: 1 1 100%;
+    }
+    /* The currency select hides until the type is monetary; stacked, its empty
+       wrapper would still claim a row of gap. */
+    .customfield-add > div:has(> .hidden:only-child) {
+      display: none;
+    }
+  }
+}

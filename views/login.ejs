@@ -1,171 +1,125 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-    <title>Login - Zettelrobbe</title>
-    <link rel="icon" type="image/webp" href="/favicon.webp">
-    <%- include('partials/shell/theme-init-head') %>
-    <script src="/vendor/tailwind/tailwindcss-3.4.16.js"></script>
-    <link rel="stylesheet" href="/vendor/fontawesome/css/all.min.css">
-    <link rel="stylesheet" href="css/dashboard.css">
-    <link rel="stylesheet" href="/css/darkmode.css">
-    <link rel="stylesheet" href="/css/login.css">
-</head>
-<body class="h-full bg-secondary login-page">
-    <button id="themeToggle" class="theme-toggle" aria-label="Toggle theme">
-        <i class="fas fa-moon"></i>
-    </button>
+<html lang="en" data-theme="<%= theme || 'light' %>">
+<%- include('partials/shell/head-start', { pageTitle: 'Login - Zettelrobbe' }) %>
+<%- include('partials/shell/head-end') %>
+<body>
+    <div class="zr-authpage">
+        <div class="zr-authpage__glow" aria-hidden="true"></div>
 
-    <div class="login-background" aria-hidden="true">
-        <div class="login-glow login-glow-a"></div>
-        <div class="login-glow login-glow-b"></div>
-        <div class="login-grid"></div>
-    </div>
+        <%- include('partials/shell/theme-toggle', { extraClass: 'zr-authpage__theme' }) %>
 
-    <main class="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8">
-        <section class="material-card login-card w-full max-w-md" aria-labelledby="loginTitle">
-            <div class="text-center mb-8">
-                <div class="flex flex-col items-center justify-center gap-4 mb-6">
-                    <img src="/mascot-animated.svg" class="no-invert" alt="Zettelrobbe mascot" style="height: 96px;">
-                    <h1 class="brand-title text-2xl">Zettelrobbe</h1>
-                </div>
-                <h2 id="loginTitle" class="text-2xl font-bold">
+        <section class="zr-authcard" aria-labelledby="loginTitle">
+            <header class="zr-authcard__head">
+                <img src="/mascot-animated.svg" class="zr-authcard__mascot no-invert" alt="">
+                <span class="zr-wordmark">Zettelrobbe</span>
+                <h1 id="loginTitle" class="zr-authcard__title">
                     <%= mfaRequired ? 'Verify your identity' : 'Welcome back' %>
-                </h2>
-                <p class="login-subtitle">
+                </h1>
+                <p class="zr-sm zr-muted">
                     <%= mfaRequired
-                        ? 'Use the authentication code to complete sign in.'
-                        : 'Sign in to continue processing your documents with AI.' %>
+                        ? 'Enter the code from your authenticator app to finish signing in.'
+                        : 'Sign in to continue processing your documents.' %>
                 </p>
+            </header>
 
-                <% if (typeof loginCookieSecurityWarning === 'string' && loginCookieSecurityWarning) { %>
-                    <div class="text-sm p-3 rounded-md theme-alert-error border login-alert mt-4" role="alert">
-                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-                        <div class="text-left leading-relaxed">
-                            <p><strong>Connection warning</strong></p>
-                            <p><%= loginCookieSecurityWarning %></p>
-                            <p class="mt-2 text-xs">
-                                More information:<br>
-                                <a
-                                    href="https://zettelrob.be/getting-started/configuration/#cookie-and-proxy-flags-all-supported-values"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="underline"
-                                >Cookie and proxy flags documentation</a>
-                            </p>
-                        </div>
+            <% if (typeof loginCookieSecurityWarning === 'string' && loginCookieSecurityWarning) { %>
+                <div class="zr-alert zr-alert--warn" role="alert">
+                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
+                    <div class="zr-alert__body">
+                        <div class="zr-alert__title">Connection warning</div>
+                        <p class="zr-sm"><%= loginCookieSecurityWarning %></p>
+                        <p class="zr-sm">
+                            <a href="https://zettelrob.be/getting-started/configuration/#cookie-and-proxy-flags-all-supported-values"
+                                target="_blank" rel="noopener noreferrer" class="zr-link zr-link--underline">Cookie and proxy flags documentation</a>
+                        </p>
                     </div>
-                <% } %>
-            </div>
+                </div>
+            <% } %>
 
             <% const isMfaStep = !!mfaRequired; %>
             <% const prefilledUsername = typeof username === 'string' ? username : ''; %>
 
-            <form class="space-y-6" action="/login" method="POST" id="loginForm" data-login-form>
+            <form class="zr-col zr-col--loose" action="/login" method="POST" id="loginForm" data-login-form>
                 <% if (typeof csrfToken !== 'undefined') { %>
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>">
                 <% } %>
                 <input type="hidden" name="mfaStep" id="mfaStep" value="<%= isMfaStep ? '1' : '0' %>">
                 <input type="hidden" name="theme" id="themePreference" value="<%= theme || 'light' %>">
 
-                <div class="login-step <%= isMfaStep ? '' : 'is-active' %>" data-step="credentials" aria-hidden="<%= isMfaStep ? 'true' : 'false' %>">
-                    <div>
-                        <label for="username" class="block text-sm font-medium mb-2">Username</label>
-                        <input id="username"
-                               name="username"
-                               type="text"
-                               <%= isMfaStep ? '' : 'required' %>
-                               class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-accent-primary"
-                               placeholder="Enter your username"
-                               autocomplete="username"
-                               value="<%= prefilledUsername %>">
+                <div class="zr-steppane <%= isMfaStep ? '' : 'is-active' %>" data-step="credentials"
+                    aria-hidden="<%= isMfaStep ? 'true' : 'false' %>">
+                    <div class="zr-field zr-field--stacked">
+                        <label for="username" class="zr-field__name">Username</label>
+                        <input id="username" name="username" type="text" class="zr-input"
+                            <%= isMfaStep ? '' : 'required' %>
+                            placeholder="Enter your username" autocomplete="username"
+                            value="<%= prefilledUsername %>">
                     </div>
 
-                    <div>
-                        <label for="password" class="block text-sm font-medium mb-2">Password</label>
-                        <input id="password"
-                               name="password"
-                               type="password"
-                               <%= isMfaStep ? '' : 'required' %>
-                               class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-accent-primary"
-                               placeholder="Enter your password"
-                               autocomplete="current-password">
+                    <div class="zr-field zr-field--stacked">
+                        <label for="password" class="zr-field__name">Password</label>
+                        <input id="password" name="password" type="password" class="zr-input"
+                            <%= isMfaStep ? '' : 'required' %>
+                            placeholder="Enter your password" autocomplete="current-password">
                     </div>
                 </div>
 
-                <div class="login-step <%= isMfaStep ? 'is-active' : '' %>" data-step="mfa" aria-hidden="<%= isMfaStep ? 'false' : 'true' %>">
-                    <div>
-                        <label for="mfaToken" class="block text-sm font-medium mb-2">Authentication code</label>
-                        <input id="mfaToken"
-                               name="mfaToken"
-                               type="text"
-                               inputmode="numeric"
-                               class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-accent-primary"
-                               placeholder="Enter code"
-                               autocomplete="one-time-code"
-                               <%= isMfaStep ? 'required' : '' %>>
-                        <p class="mfa-hint">Enter the one-time code from your authenticator app.</p>
+                <div class="zr-steppane <%= isMfaStep ? 'is-active' : '' %>" data-step="mfa"
+                    aria-hidden="<%= isMfaStep ? 'false' : 'true' %>">
+                    <div class="zr-field zr-field--stacked">
+                        <label for="mfaToken" class="zr-field__name">Authentication code</label>
+                        <input id="mfaToken" name="mfaToken" type="text" inputmode="numeric" class="zr-input"
+                            placeholder="6-digit code" autocomplete="one-time-code"
+                            <%= isMfaStep ? 'required' : '' %>>
+                        <p class="zr-field__hint">From the authenticator app you paired with this account.</p>
                     </div>
                 </div>
 
                 <% if (error) { %>
-                    <div class="text-sm p-3 rounded-md theme-alert-error border login-alert" role="alert">
-                        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
-                        <div class="text-left leading-relaxed">
+                    <div class="zr-alert zr-alert--danger" role="alert">
+                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
+                        <div class="zr-alert__body">
                             <p><%= error %></p>
                             <% if (typeof error === 'string' && error.includes('Invalid CSRF token')) { %>
-                                <p class="mt-2 text-xs">
-                                    Help:<br>
-                                    <a
-                                        href="https://zettelrob.be/getting-started/configuration/#cookie-and-proxy-flags-all-supported-values"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="underline"
-                                    >Cookie and proxy flags documentation</a>
+                                <p class="zr-sm">
+                                    <a href="https://zettelrob.be/getting-started/configuration/#cookie-and-proxy-flags-all-supported-values"
+                                        target="_blank" rel="noopener noreferrer" class="zr-link zr-link--underline">Cookie and proxy flags documentation</a>
                                 </p>
                             <% } %>
                             <% if (mfaRequired) { %>
-                                <p class="mt-2 text-xs">
-                                    Recovery help:<br>
-                                    <a
-                                        href="https://zettelrob.be/getting-started/troubleshooting/#mfa-lockout-recovery"
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        class="underline"
-                                    >Open MFA troubleshooting guide</a>
+                                <p class="zr-sm">
+                                    <a href="https://zettelrob.be/getting-started/troubleshooting/#mfa-lockout-recovery"
+                                        target="_blank" rel="noopener noreferrer" class="zr-link zr-link--underline">MFA troubleshooting guide</a>
                                 </p>
                             <% } %>
                         </div>
                     </div>
                 <% } %>
 
-                <div class="space-y-3">
-                    <button type="submit"
-                            class="w-full login-submit flex justify-center items-center gap-2 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                            id="submitButton"
-                            data-submit-button>
+                <div class="zr-col">
+                    <button type="submit" class="zr-btn zr-btn--primary zr-btn--lg zr-btn--block login-submit"
+                        id="submitButton" data-submit-button>
                         <span class="submit-idle">
-                            <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-login"/></svg>
                             <span><%= isMfaStep ? 'Verify and continue' : 'Sign in' %></span>
                         </span>
                         <span class="submit-loading" aria-hidden="true">
-                            <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
-                            <span><%= isMfaStep ? 'Verifying...' : 'Signing in...' %></span>
+                            <svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                            <span><%= isMfaStep ? 'Verifying…' : 'Signing in…' %></span>
                         </span>
                     </button>
 
-                    <button type="button" class="login-back-button <%= isMfaStep ? '' : 'hidden' %>" data-back-button>
-                        <i class="fa-solid fa-arrow-left" aria-hidden="true"></i>
+                    <button type="button" class="zr-btn zr-btn--ghost login-back-button <%= isMfaStep ? '' : 'hidden' %>"
+                        data-back-button>
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-arrow-left"/></svg>
                         Back to credentials
                     </button>
                 </div>
             </form>
         </section>
-    </main>
+    </div>
 
-    <%- include('partials/scripts/login-scripts') %>
+    <script type="module" src="/js/zr.js"></script>
     <script src="/js/login.js" defer></script>
 </body>
 </html>

@@ -1,91 +1,87 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
+<html lang="en" data-theme="<%= theme || 'light' %>">
 <%- include('partials/shell/head-start', { pageTitle: 'About - Zettelrobbe' }) %>
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', {
+    pageTitle: 'About',
     version: typeof version !== 'undefined' ? version : '',
     chatEnabled: typeof chatEnabled !== 'undefined' ? chatEnabled : false
 }) %>
-            <div class="content-wrapper space-y-6">
-                <div class="content-header">
-                    <div class="content-header-main">
-                        <h1 class="content-title">About this Fork</h1>
-                        <p class="content-subtitle">Support information, project background, and author details.</p>
-                    </div>
+            <div class="zr-col zr-col--loose">
+                <div class="zr-viewhead">
+                    <p class="zr-viewhead__sub">Support information, project background, and author details.</p>
                 </div>
 
-                <div class="material-card">
-                    <h3 class="card-title">💖 Support the Project</h3>
-                    <div class="text-sm text-gray-600 space-y-3 leading-relaxed">
+                <div class="zr-module">
+                    <h3 class="zr-module__title">💖 Support the Project</h3>
+                    <div class="zr-col zr-muted">
                         <p>
                             If you find this tool helpful, consider supporting its development:
                         </p>
-                        <div class="flex flex-wrap gap-2">
-                            <a href="https://github.com/sponsors/admonstrator" target="_blank" rel="noopener noreferrer" aria-label="GitHub Sponsors" class="inline-flex">
+                        <div class="zr-row zr-row--wrap">
+                            <a href="https://github.com/sponsors/admonstrator" target="_blank" rel="noopener noreferrer" aria-label="GitHub Sponsors" class="zr-row">
                                 <img class="no-invert" alt="GitHub Sponsors" src="https://img.shields.io/badge/GitHub-Sponsors-EA4AAA?style=for-the-badge&amp;logo=github">
                             </a>
-                            <a href="https://buymeacoffee.com/admon" target="_blank" rel="noopener noreferrer" aria-label="Buy Me A Coffee" class="inline-flex">
+                            <a href="https://buymeacoffee.com/admon" target="_blank" rel="noopener noreferrer" aria-label="Buy Me A Coffee" class="zr-row">
                                 <img class="no-invert" alt="Buy Me A Coffee" src="https://img.shields.io/badge/Buy%20Me%20A%20Coffee-FFDD00?style=for-the-badge&amp;logo=buy-me-a-coffee&amp;logoColor=black">
                             </a>
-                            <a href="https://ko-fi.com/admon" target="_blank" rel="noopener noreferrer" aria-label="Ko-fi" class="inline-flex">
+                            <a href="https://ko-fi.com/admon" target="_blank" rel="noopener noreferrer" aria-label="Ko-fi" class="zr-row">
                                 <img class="no-invert" alt="Ko-fi" src="https://img.shields.io/badge/Ko--fi-FF5E5B?style=for-the-badge&amp;logo=ko-fi&amp;logoColor=white">
                             </a>
-                            <a href="https://paypal.me/aaronviehl" target="_blank" rel="noopener noreferrer" aria-label="PayPal" class="inline-flex">
+                            <a href="https://paypal.me/aaronviehl" target="_blank" rel="noopener noreferrer" aria-label="PayPal" class="zr-row">
                                 <img class="no-invert" alt="PayPal" src="https://img.shields.io/badge/PayPal-00457C?style=for-the-badge&amp;logo=paypal&amp;logoColor=white">
                             </a>
                         </div>
                     </div>
                 </div>
 
-                <div class="material-card">
-                    <h3 class="card-title">System Information (Support)</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                        <div class="p-3 rounded-lg bg-gray-50"><strong>App Version:</strong> <%= supportInfo.appVersion %></div>
-                        <div class="p-3 rounded-lg bg-gray-50"><strong>Build Commit SHA:</strong> <span class="font-mono break-all"><%= supportInfo.commitSha %></span></div>
-                        <div class="p-3 rounded-lg bg-gray-50"><strong>Node.js:</strong> <%= supportInfo.nodeVersion %></div>
-                        <div class="p-3 rounded-lg bg-gray-50"><strong>Platform:</strong> <%= supportInfo.platform %></div>
-                        <div class="p-3 rounded-lg bg-gray-50"><strong>Environment:</strong> <%= supportInfo.nodeEnv %></div>
-                        <div class="p-3 rounded-lg bg-gray-50"><strong>AI Provider:</strong> <%= supportInfo.aiProvider %></div>
-                        <div class="p-3 rounded-lg bg-gray-50"><strong>Uptime:</strong> <%= supportInfo.uptime %></div>
-                        <div class="p-3 rounded-lg bg-gray-50"><strong>Server Time (UTC):</strong> <%= supportInfo.serverTimeUtc %></div>
-                        <div class="p-3 rounded-lg bg-gray-50"><strong>Server Timezone:</strong> <%= supportInfo.timezone %></div>
-                        <div class="p-3 rounded-lg bg-gray-50"><strong>Mistral OCR Enabled:</strong> <%= supportInfo.ocrEnabled ? 'yes' : 'no' %></div>
+                <div class="zr-module">
+                    <h3 class="zr-module__title">System Information (Support)</h3>
+                    <div>
+                        <div class="zr-panel"><strong>App Version:</strong> <%= supportInfo.appVersion %></div>
+                        <div class="zr-panel"><strong>Build Commit SHA:</strong> <span class="zr-mono"><%= supportInfo.commitSha %></span></div>
+                        <div class="zr-panel"><strong>Node.js:</strong> <%= supportInfo.nodeVersion %></div>
+                        <div class="zr-panel"><strong>Platform:</strong> <%= supportInfo.platform %></div>
+                        <div class="zr-panel"><strong>Environment:</strong> <%= supportInfo.nodeEnv %></div>
+                        <div class="zr-panel"><strong>AI Provider:</strong> <%= supportInfo.aiProvider %></div>
+                        <div class="zr-panel"><strong>Uptime:</strong> <%= supportInfo.uptime %></div>
+                        <div class="zr-panel"><strong>Server Time (UTC):</strong> <%= supportInfo.serverTimeUtc %></div>
+                        <div class="zr-panel"><strong>Server Timezone:</strong> <%= supportInfo.timezone %></div>
+                        <div class="zr-panel"><strong>Mistral OCR Enabled:</strong> <%= supportInfo.ocrEnabled ? 'yes' : 'no' %></div>
                     </div>
                 </div>
 
-                <div class="material-card">
-                    <h3 class="card-title">Issue Reporting</h3>
-                    <p class="text-sm text-gray-600 mb-4">
+                <div class="zr-module">
+                    <h3 class="zr-module__title">Issue Reporting</h3>
+                    <p class="zr-sm zr-muted">
                         Open a prefilled issue report with version and environment details, or copy diagnostics to your clipboard.
                     </p>
-                    <div class="flex flex-wrap gap-3">
+                    <div class="zr-row zr-row--wrap">
                         <a
                             id="openPrefilledIssueBtn"
                             href="https://github.com/admonstrator/zettelrobbe/issues/new?template=bug_report.yml"
                             target="_blank"
                             rel="noopener noreferrer"
-                            class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm"
-                        >
-                            <i class="fas fa-bug mr-2"></i>Open Issue Form
+                            class="zr-btn zr-btn--primary">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-bug"/></svg>Open Issue Form
                         </a>
                         <button
                             id="copyIssueDiagnosticsBtn"
                             type="button"
-                            class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors text-sm"
-                        >
-                            <i class="fas fa-copy mr-2"></i>Copy Issue Details
+                            class="zr-btn">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-copy"/></svg>Copy Issue Details
                         </button>
-                        <span id="issueHelperStatus" class="text-sm text-gray-500 self-center"></span>
+                        <span id="issueHelperStatus" class="zr-sm zr-faint"></span>
                     </div>
                 </div>
 
-                <div class="material-card">
-                    <h3 class="card-title">This app is awesome because ✨</h3>
-                    <div class="text-sm text-gray-600 space-y-3 leading-relaxed">
+                <div class="zr-module">
+                    <h3 class="zr-module__title">This app is awesome because ✨</h3>
+                    <div class="zr-col zr-muted">
                         <p>
                             No corporate blah blah - just useful stuff that makes daily document chaos easier to handle 😄
                         </p>
-                        <ul class="list-disc pl-5 space-y-1">
+                        <ul class="zr-col zr-col--tight" style="padding-left: var(--zr-4)">
                             <li>⚡ Faster dashboard and history pages → less waiting, more doing</li>
                             <li>🧠 Smarter OCR + AI fallback flows → fewer dead ends when documents are messy</li>
                             <li>🛡️ Stronger security defaults → safer setup out of the box</li>
@@ -98,31 +94,31 @@
                         </p>
                         <p>
                             ❤️ Big, fat thank you to the original project:
-                            <a class="text-blue-600 hover:underline" href="https://github.com/clusterzx" target="_blank" rel="noopener noreferrer">@clusterzx</a>
+                            <a class="zr-link" href="https://github.com/clusterzx" target="_blank" rel="noopener noreferrer">@clusterzx</a>
                             and
-                            <a class="text-blue-600 hover:underline" href="https://github.com/clusterzx/paperless-ai" target="_blank" rel="noopener noreferrer">clusterzx/paperless-ai</a>.
+                            <a class="zr-link" href="https://github.com/clusterzx/paperless-ai" target="_blank" rel="noopener noreferrer">clusterzx/paperless-ai</a>.
                             This fork stands on that foundation.
                         </p>
                     </div>
                 </div>
                 
-                <div class="material-card">
-                    <h3 class="card-title">About the Author 👋</h3>
-                    <div class="text-sm text-gray-600 space-y-2">
+                <div class="zr-module">
+                    <h3 class="zr-module__title">About the Author 👋</h3>
+                    <div class="zr-sm zr-muted zr-col zr-col--tight">
                         <p>
                             Meet the maintainer behind this fork: <strong>admonstrator (Aaron Viehl)</strong> 🔥
-                            (<a class="text-blue-600 hover:underline" href="https://github.com/admonstrator" target="_blank" rel="noopener noreferrer">@admonstrator</a>)
+                            (<a class="zr-link" href="https://github.com/admonstrator" target="_blank" rel="noopener noreferrer">@admonstrator</a>)
                         </p>
                         <p>
                             Aaron is all about building practical tools that actually help in daily operations:<br />
                             less noise, more reliability, smarter automation, fewer annoying edge-case surprises 💪<br />
                             Also known as “the grumpy nerd next door,” he is CTO at
-                            <a class="text-blue-600 hover:underline" href="https://singleton-factory.de" target="_blank" rel="noopener noreferrer">@singleton-factory</a>,
+                            <a class="zr-link" href="https://singleton-factory.de" target="_blank" rel="noopener noreferrer">@singleton-factory</a>,
                             based in Germany.
                         </p>
                         <p>
                             Want updates, ideas, or just nerdy tech talk? 👇<br />
-                            <a class="text-blue-600 hover:underline" href="https://admon.me" target="_blank" rel="noopener noreferrer">admon.me</a>
+                            <a class="zr-link" href="https://admon.me" target="_blank" rel="noopener noreferrer">admon.me</a>
                         </p>
                         <p>
                             I am a trained IT specialist for system integration, not a classic full-time software engineer — and yes,
@@ -132,33 +128,33 @@
                     </div>
                 </div>
                 
-                <div class="material-card">
-                    <h3 class="card-title">Credits</h3>
-                    <div class="text-sm text-gray-600 space-y-3 leading-relaxed">
+                <div class="zr-module">
+                    <h3 class="zr-module__title">Credits</h3>
+                    <div class="zr-col zr-muted">
                         <p>
                             This project exists because many people contribute in different ways. Thank you for helping make
                             Zettelrobbe better for everyone.
                         </p>
-                        <ul class="list-disc pl-5 space-y-1">
+                        <ul class="zr-col zr-col--tight" style="padding-left: var(--zr-4)">
                             <li>
                                 Original project and core foundation:
-                                <a class="text-blue-600 hover:underline" href="https://github.com/clusterzx" target="_blank"
+                                <a class="zr-link" href="https://github.com/clusterzx" target="_blank"
                                     rel="noopener noreferrer">@clusterzx</a>
                                 and
-                                <a class="text-blue-600 hover:underline" href="https://github.com/clusterzx/paperless-ai"
+                                <a class="zr-link" href="https://github.com/clusterzx/paperless-ai"
                                     target="_blank" rel="noopener noreferrer">clusterzx/paperless-ai</a>
                             </li>
                             <li>
                                 Fork maintainer:
-                                <a class="text-blue-600 hover:underline" href="https://github.com/admonstrator" target="_blank"
+                                <a class="zr-link" href="https://github.com/admonstrator" target="_blank"
                                     rel="noopener noreferrer">@admonstrator</a>
                             </li>
                             <li>
                                 Community code contributors:
-                                <a class="text-blue-600 hover:underline" href="https://github.com/claymore666" target="_blank"
+                                <a class="zr-link" href="https://github.com/claymore666" target="_blank"
                                     rel="noopener noreferrer">@claymore666</a>
                                 and
-                                <a class="text-blue-600 hover:underline" href="https://github.com/saschabuehrle" target="_blank"
+                                <a class="zr-link" href="https://github.com/saschabuehrle" target="_blank"
                                     rel="noopener noreferrer">@saschabuehrle</a>
                             </li>
                             <li>Users and testers who report bugs, verify fixes, and provide clear reproduction steps</li>
@@ -176,5 +172,4 @@
     <script id="supportInfoPayload" type="application/json"><%- JSON.stringify(supportInfo || {}).replace(/</g, '\\u003c') %></script>
 
     <%- include('partials/scripts/about-scripts') %>
-    <%- include('partials/shell/footer') %>
     <%- include('partials/shell/body-close') %>

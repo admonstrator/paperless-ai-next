@@ -1,14 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" class="<%= theme === 'dark' ? 'dark' : '' %>" data-theme="<%= theme || 'light' %>">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title || 'System Error' %></title>
-    <link rel="stylesheet" href="/css/login.css">
-    <link rel="stylesheet" href="/css/darkmode.css">
-    <link rel="stylesheet" href="/css/setup-error.css">
-</head>
-<body>
+<html lang="en" data-theme="<%= theme || 'light' %>">
+<%- include('partials/shell/head-start', { pageTitle: title || 'System Error' }) %>
+<%- include('partials/shell/head-end') %>
+<body class="zr-errorpage">
     <div class="error-container">
         <div class="error-icon">⚠️</div>
         <h1><%= title %></h1>
@@ -28,8 +22,8 @@
         </div>
 
         <div class="action-buttons">
-            <button onclick="location.reload()" class="btn btn-secondary">Retry Connection</button>
-            <a href="/" class="btn btn-primary">Return Home</a>
+            <button onclick="location.reload()" class="zr-btn">Retry Connection</button>
+            <a href="/" class="zr-btn zr-btn--primary">Return Home</a>
         </div>
 
         <div class="tech-details">

@@ -1,0 +1,107 @@
+/* ==========================================================================
+   The queue pages: OCR (progress overlay, run log, disabled state) and
+   the ignored-documents list.
+   @layer pages: above the framework layers, below utilities.
+   ========================================================================== */
+
+@layer pages {
+  /* --- ocr ------------------------------------------------------------- */
+  #progressOverlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  #progressBox {
+    background: var(--zr-surface);
+    border-radius: 12px;
+    padding: 2rem;
+    width: 560px;
+    max-width: 95vw;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  }
+
+  /* The OCR progress log. It used to reference --input-bg / --border-color /
+     --text-color, which this framework never defined, so it fell back to the
+     hardcoded greys that came with those declarations. */
+  #progressLog {
+    max-height: 260px;
+    overflow-y: auto;
+    font-family: var(--zr-font-mono);
+    font-size: var(--zr-fs-sm);
+    background: var(--zr-surface-sunken);
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-md);
+    padding: var(--zr-3);
+    color: var(--zr-text-muted);
+  }
+
+  .log-line {
+    margin-bottom: 4px;
+  }
+  .log-download,
+  .log-ocr,
+  .log-writeback {
+    color: var(--zr-info);
+  }
+  .log-ai {
+    color: var(--zr-brand);
+  }
+  .log-done {
+    color: var(--zr-ok);
+    font-weight: 600;
+  }
+  .log-error {
+    color: var(--zr-danger);
+    font-weight: 600;
+  }
+
+  .disabled-overlay {
+    text-align: center;
+    padding: 3rem 2rem;
+  }
+
+  .ocr-env-codeblock {
+    display: block;
+    width: min(100%, 34rem);
+    margin: 0 auto 1rem;
+    text-align: left;
+    font-family: var(--zr-font-mono);
+    font-size: 0.82rem;
+    line-height: 1.45;
+    background: var(--zr-canvas);
+    border: 1px solid var(--zr-line);
+    border-radius: 0.75rem;
+    padding: 0.85rem 1rem;
+    overflow-x: auto;
+    white-space: pre;
+  }
+
+  @media (max-width: 640px) {
+    .disabled-overlay {
+      padding: 1.5rem 1rem;
+    }
+
+    .ocr-env-codeblock {
+      width: 100%;
+      font-size: 0.75rem;
+      line-height: 1.35;
+      padding: 0.7rem 0.75rem;
+    }
+  }
+
+  /* --- ignored ------------------------------------------------------------- */
+
+  /* A document id is a handful of digits, so the field stays short beside the
+     reason and the button. Only above the phone breakpoint: below it the row
+     stacks and every field takes the full width. */
+  @media (min-width: 861px) {
+    .ignore-docid {
+      max-width: 160px;
+    }
+  }
+}

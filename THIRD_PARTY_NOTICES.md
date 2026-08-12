@@ -1,47 +1,35 @@
 # Third-Party Notices
 
-This repository includes vendored frontend assets under public/vendor.
+This repository includes vendored frontend assets under `public/vendor`.
 
-## Frontend and Vendor Assets
+## Vendored Frontend Assets
 
-| Package                       | Version  | License                       |
-| ----------------------------- | -------- | ----------------------------- |
-| @fortawesome/fontawesome-free | 6.7.2    | CC-BY-4.0 AND OFL-1.1 AND MIT |
-| @popperjs/core                | 2.11.8   | MIT                           |
-| alpinejs                      | 3.15.8   | MIT                           |
-| chart.js                      | 3.9.1    | MIT                           |
-| datatables.net                | 1.13.11  | MIT                           |
-| datatables.net-dt             | 1.13.11  | MIT                           |
-| date-fns                      | 4.1.0    | MIT                           |
-| highlight.js                  | 11.11.1  | BSD-3-Clause                  |
-| jquery                        | 3.7.1    | MIT                           |
-| jquery-jsonview               | 1.2.3    | MIT                           |
-| marked                        | 9.1.6    | MIT                           |
-| qrcode                        | 1.5.4    | MIT                           |
-| shepherd.js                   | 10.0.1   | MIT                           |
-| sortablejs                    | 1.15.7   | MIT                           |
-| sweetalert2                   | 11.26.21 | MIT                           |
-| tippy.js                      | 6.3.7    | MIT                           |
+| Asset                            | Version | License  | Used for                         |
+| -------------------------------- | ------- | -------- | -------------------------------- |
+| Outfit (outfit-400/700.woff2)    | 1.100   | OFL-1.1  | Brand headings                   |
+| sortablejs (Sortable.min.js)     | 1.15.6  | MIT      | Custom field drag ordering       |
 
-## Special Notes
+The full Outfit license text ships alongside the fonts in
+`public/vendor/fonts/outfit/Outfit-OFL.txt`.
 
-### Font Awesome Free
+Everything else the browser loads — the stylesheet, the icon sprite and the
+JavaScript modules — is written in this repository and carries the project
+license.
 
-Font Awesome Free is distributed under a composite license:
-- Icons: CC BY 4.0
-- Fonts: SIL OFL 1.1
-- Code and CSS: MIT
+## Removed Assets
 
-Official license information: https://fontawesome.com/license/free
+The UI framework rewrite dropped the vendored Tailwind runtime, FontAwesome,
+Chart.js, DataTables, jQuery, SweetAlert2, Alpine, highlight.js, marked,
+jquery-jsonview and Shepherd; the settings tooltips later replaced Tippy and
+Popper with a dialog. None of them are shipped any more, and their entries have
+been removed from the table above rather than kept as history.
 
-### Highlight.js
+## Backend Dependencies
 
-highlight.js is licensed under BSD-3-Clause.
-
-## Source of Version and License Data
-
-The versions and license strings in this document are synchronized with package-lock.json.
+Node dependencies are declared in `package.json` and pinned in
+`package-lock.json`; their licenses are not duplicated here. Run `npm ls` or
+consult the lockfile for the current set.
 
 ## Maintenance
 
-When vendor assets or related dependencies are updated, this file must be updated in the same change.
+When vendor assets change, this file must be updated in the same change.

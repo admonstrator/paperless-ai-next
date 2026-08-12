@@ -1,0 +1,91 @@
+<%
+/* The app's navigation destinations, declared once for both surfaces.
+
+   Call sites: sidebar-nav.ejs (surface 'rail', included by the shell's aside)
+   and shell/body-close.ejs (surface 'tabbar'). The rail renders every entry,
+   grouped; the phone tab bar renders only the entries carrying `tab`, in list
+   order, and body-close.ejs appends the drawer trigger as its fifth tab.
+
+   `tab` may override icon and label: the phone bar has one tab for the whole
+   queue group, so /ocr appears there as "Queues" rather than "OCR Queue".
+   Badges are rail-only — a tab has no room for a number, just the dot. */
+const NAV = [
+    {
+        label: null,
+        items: [
+            { href: '/dashboard', icon: 'i-home', label: 'Dashboard', tab: {} },
+            { href: '/manual', icon: 'i-file', label: 'Manual', tab: {} },
+            { href: '/playground', icon: 'i-flask', label: 'Playground' },
+            { href: '/history', icon: 'i-history', label: 'History', tab: {} }
+        ]
+    },
+    {
+        label: 'Queues',
+        items: [
+            {
+                href: '/ocr',
+                icon: 'i-scan',
+                label: 'OCR Queue',
+                badge: { id: 'sidebarOcrBadge', tone: 'zr-badge--warn' },
+                tab: { icon: 'i-inbox', label: 'Queues', dotId: 'tabbarQueueDot' }
+            },
+            {
+                href: '/failed',
+                icon: 'i-ban',
+                label: 'Failed',
+                badge: { id: 'sidebarFailedBadge', tone: 'zr-badge--danger' }
+            },
+            {
+                href: '/ignored',
+                icon: 'i-eye-off',
+                label: 'Ignored',
+                badge: { id: 'sidebarIgnoredBadge' }
+            }
+        ]
+    },
+    {
+        label: 'System',
+        items: [
+            { href: '/settings', icon: 'i-cog', label: 'Settings' },
+            { href: '/about', icon: 'i-info', label: 'About' },
+            { href: '/logout', icon: 'i-logout', label: 'Logout' }
+        ]
+    }
+];
+
+const navSurface = typeof surface === 'undefined' ? 'rail' : surface;
+-%>
+<%_ if (navSurface === 'tabbar') { _%>
+<%_ NAV.forEach(function (section) { _%>
+<%_ section.items.filter(function (item) { return item.tab; }).forEach(function (item) { _%>
+<a class="zr-tab" href="<%= item.href %>">
+    <svg class="zr-icon zr-icon--lg" aria-hidden="true"><use href="/icons.svg#<%= item.tab.icon || item.icon %>"/></svg>
+    <%= item.tab.label || item.label %>
+<%_ if (item.tab.dotId) { _%>
+    <span class="zr-tab__dot hidden" id="<%= item.tab.dotId %>"></span>
+<%_ } _%>
+</a>
+<%_ }); _%>
+<%_ }); _%>
+<%_ } else { _%>
+<%_ NAV.forEach(function (section, index) { _%>
+<%_ const pad = section.label ? '    ' : ''; _%>
+<%_ if (section.label) { _%>
+<%- index ? '\n' : '' -%>
+<div class="zr-rail__group">
+    <div class="zr-rail__grouplabel"><%= section.label %></div>
+<%_ } _%>
+<%_ section.items.forEach(function (item) { _%>
+<%- pad %><a class="zr-navitem" href="<%= item.href %>">
+<%- pad %>    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#<%= item.icon %>"/></svg>
+<%- pad %>    <span class="zr-navitem__label"><%= item.label %></span>
+<%_ if (item.badge) { _%>
+<%- pad %>    <span id="<%= item.badge.id %>" class="<%= ['zr-badge', item.badge.tone, 'zr-badge--nav', 'hidden'].filter(Boolean).join(' ') %>">0</span>
+<%_ } _%>
+<%- pad %></a>
+<%_ }); _%>
+<%_ if (section.label) { _%>
+</div>
+<%_ } _%>
+<%_ }); _%>
+<%_ } _%>

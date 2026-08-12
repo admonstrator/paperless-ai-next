@@ -18,7 +18,7 @@ function createMockClassList() {
       classes.delete(item);
       return false;
     },
-    contains: (item) => classes.has(item)
+    contains: (item) => classes.has(item),
   };
 }
 
@@ -48,7 +48,7 @@ function createMockElement(id) {
     focus: () => {},
     select: () => {},
     setAttribute: () => {},
-    removeAttribute: () => {}
+    removeAttribute: () => {},
   };
 }
 
@@ -74,13 +74,15 @@ const elementIds = [
   'paperlessToken',
   'testPaperlessBtn',
   'paperlessTestState',
-  'fetchMetadataBtn',
   'metadataLoadState',
   'documentsCount',
   'correspondentsCount',
   'tagsCount',
   'scanAllDocuments',
   'includeTag',
+  'includeTagsSection',
+  'addIncludeTagBtn',
+  'includeTagsContainer',
   'excludeTagInput',
   'addExcludeTagBtn',
   'excludeTagsContainer',
@@ -131,7 +133,7 @@ const elementIds = [
   'copyEnvPreviewBtn',
   'finalizeSetupBtn',
   'prevStepBtn',
-  'nextStepBtn'
+  'nextStepBtn',
 ];
 
 const elements = new Map(elementIds.map((id) => [id, createMockElement(id)]));
@@ -140,7 +142,7 @@ const steps = Array.from({ length: 7 }, (_unused, index) => ({
   dataset: { stepTitle: `Step ${index + 1}` },
   classList: createMockClassList(),
   style: {},
-  disabled: false
+  disabled: false,
 }));
 
 const detectionResponse = {
@@ -152,17 +154,32 @@ const detectionResponse = {
     ocrProvider: 'custom',
     resolvedOcrApiUrl: 'http://192.168.1.5:1234/v1',
     models: [
-      { id: 'qwen2.5-7b-instruct', capabilities: ['text'], state: 'loaded', source: 'lmstudio-api' },
-      { id: 'minicpm-v', capabilities: ['text', 'vision'], state: 'not-loaded', source: 'lmstudio-api' },
-      { id: 'nomic-embed-text', capabilities: ['embedding'], state: 'loaded', source: 'lmstudio-api' }
+      {
+        id: 'qwen2.5-7b-instruct',
+        capabilities: ['text'],
+        state: 'loaded',
+        source: 'lmstudio-api',
+      },
+      {
+        id: 'minicpm-v',
+        capabilities: ['text', 'vision'],
+        state: 'not-loaded',
+        source: 'lmstudio-api',
+      },
+      {
+        id: 'nomic-embed-text',
+        capabilities: ['embedding'],
+        state: 'loaded',
+        source: 'lmstudio-api',
+      },
     ],
     textModels: ['qwen2.5-7b-instruct', 'minicpm-v'],
     visionModels: ['minicpm-v'],
     embeddingModels: ['nomic-embed-text'],
     suggestedAiModel: 'qwen2.5-7b-instruct',
-    suggestedOcrModel: 'minicpm-v'
+    suggestedOcrModel: 'minicpm-v',
   },
-  message: 'Detected LM Studio: 3 models (2 text, 1 vision, 1 embedding).'
+  message: 'Detected LM Studio: 3 models (2 text, 1 vision, 1 embedding).',
 };
 
 // Regression fixture for issue #236: a dedicated OCR model (like Mistral's
@@ -179,16 +196,27 @@ const mistralDetectionResponse = {
     ocrProvider: 'mistral',
     resolvedOcrApiUrl: 'https://api.mistral.ai/v1',
     models: [
-      { id: 'mistral-small-latest', capabilities: ['text'], state: null, source: 'heuristic' },
-      { id: 'mistral-ocr-latest', capabilities: ['text'], state: null, source: 'heuristic' }
+      {
+        id: 'mistral-small-latest',
+        capabilities: ['text'],
+        state: null,
+        source: 'heuristic',
+      },
+      {
+        id: 'mistral-ocr-latest',
+        capabilities: ['text'],
+        state: null,
+        source: 'heuristic',
+      },
     ],
     textModels: ['mistral-small-latest', 'mistral-ocr-latest'],
     visionModels: [],
     embeddingModels: [],
     suggestedAiModel: 'mistral-small-latest',
-    suggestedOcrModel: null
+    suggestedOcrModel: null,
   },
-  message: 'Detected an OpenAI-compatible API: 2 models (2 text, 0 vision, 0 embedding).'
+  message:
+    'Detected an OpenAI-compatible API: 2 models (2 text, 0 vision, 0 embedding).',
 };
 
 let lastFetchUrl = null;
@@ -199,7 +227,11 @@ const responsesByUrl = {
   '/api/setup/quickstart/detect': detectionResponse,
   '/api/setup/ai/test': { success: true, message: 'AI provider is reachable.' },
   '/api/setup/ocr/test': { success: true, message: 'OCR connection is valid.' },
-  '/api/setup/complete': { success: true, restart: false, message: 'Setup completed.' }
+  '/api/setup/complete': {
+    success: true,
+    restart: false,
+    message: 'Setup completed.',
+  },
 };
 
 const mockFetch = async (url, options = {}) => {
@@ -208,13 +240,13 @@ const mockFetch = async (url, options = {}) => {
   fetchedUrls.push(url);
   return {
     ok: true,
-    json: async () => responsesByUrl[url] || detectionResponse
+    json: async () => responsesByUrl[url] || detectionResponse,
   };
 };
 
 global.window = {
   __SETUP_BOOTSTRAP__: { config: {}, defaults: {}, aiProviderPresets: [] },
-  fetch: mockFetch
+  fetch: mockFetch,
 };
 
 // The wizard's request() helper calls the bare global fetch.
@@ -222,7 +254,7 @@ global.fetch = mockFetch;
 
 global.document = {
   addEventListener: (_event, callback) => callback(),
-  querySelectorAll: (selector) => (selector === '.setup-step' ? steps : []),
+  querySelectorAll: (selector) => (selector === '.zr-steppane' ? steps : []),
   querySelector: (selector) => {
     if (selector === 'meta[name="csrf-token"]') {
       return { getAttribute: () => '' };
@@ -230,19 +262,18 @@ global.document = {
     return null;
   },
   getElementById: (id) => elements.get(id) || null,
-  createElement: (tagName) => createMockElement(tagName)
+  createElement: (tagName) => createMockElement(tagName),
 };
 
-global.Swal = {
-  fire: async () => ({ isConfirmed: false }),
-  update: () => {},
-  close: () => {}
-};
+// setup.js talks to the local dialog module (public/js/dialogs.js), which the
+// browser loads separately; a stub is enough for the wizard logic under test.
+global.zrDialog = async () => ({ isConfirmed: false, isDismissed: true });
+global.zrToast = () => {};
 
 global.navigator = {
   clipboard: {
-    writeText: async () => {}
-  }
+    writeText: async () => {},
+  },
 };
 
 global.Headers = class Headers {};
@@ -256,14 +287,34 @@ const wizard = window.setupWizard;
 assert.ok(wizard, 'Setup wizard should initialize');
 
 // Fresh install (no AI_PROVIDER in config) defaults to quickstart mode
-assert.strictEqual(wizard.quickstartState.mode, 'quickstart', 'Fresh install should default to quickstart mode');
-assert.strictEqual(wizard.aiQuickstartPanel.classList.contains('hidden'), false, 'Quickstart panel should be visible');
-assert.strictEqual(wizard.aiManualPanel.classList.contains('hidden'), true, 'Manual panel should be hidden');
+assert.strictEqual(
+  wizard.quickstartState.mode,
+  'quickstart',
+  'Fresh install should default to quickstart mode'
+);
+assert.strictEqual(
+  wizard.aiQuickstartPanel.classList.contains('hidden'),
+  false,
+  'Quickstart panel should be visible'
+);
+assert.strictEqual(
+  wizard.aiManualPanel.classList.contains('hidden'),
+  true,
+  'Manual panel should be hidden'
+);
 
 // Mode toggle switches panels
 wizard.setAiConfigMode('manual');
-assert.strictEqual(wizard.aiQuickstartPanel.classList.contains('hidden'), true, 'Quickstart panel should hide in manual mode');
-assert.strictEqual(wizard.aiManualPanel.classList.contains('hidden'), false, 'Manual panel should show in manual mode');
+assert.strictEqual(
+  wizard.aiQuickstartPanel.classList.contains('hidden'),
+  true,
+  'Quickstart panel should hide in manual mode'
+);
+assert.strictEqual(
+  wizard.aiManualPanel.classList.contains('hidden'),
+  false,
+  'Manual panel should show in manual mode'
+);
 wizard.setAiConfigMode('quickstart');
 
 // Detection populates selects and applies values to the hidden manual fields
@@ -273,44 +324,134 @@ wizard.quickstartApiKey.value = 'test-key';
 (async () => {
   await wizard.runQuickstartDetect();
 
-  assert.strictEqual(lastFetchUrl, '/api/setup/quickstart/detect', 'Detect should call the quickstart endpoint');
+  assert.strictEqual(
+    lastFetchUrl,
+    '/api/setup/quickstart/detect',
+    'Detect should call the quickstart endpoint'
+  );
   assert.strictEqual(lastFetchBody.baseUrl, 'http://192.168.1.5:1234');
   assert.strictEqual(lastFetchBody.apiKey, 'test-key');
 
-  assert.strictEqual(wizard.quickstartState.detected, true, 'Detection state should be set');
-  assert.strictEqual(wizard.quickstartAiModel.value, 'qwen2.5-7b-instruct', 'Suggested AI model should be selected');
-  assert.strictEqual(wizard.quickstartOcrModel.value, 'minicpm-v', 'Suggested OCR model should be selected');
-  assert.strictEqual(wizard.quickstartEnableOcr.checked, true, 'OCR checkbox should be checked when vision models exist');
-  assert.strictEqual(wizard.quickstartEnableOcr.disabled, false, 'OCR checkbox should be enabled when vision models exist');
+  assert.strictEqual(
+    wizard.quickstartState.detected,
+    true,
+    'Detection state should be set'
+  );
+  assert.strictEqual(
+    wizard.quickstartAiModel.value,
+    'qwen2.5-7b-instruct',
+    'Suggested AI model should be selected'
+  );
+  assert.strictEqual(
+    wizard.quickstartOcrModel.value,
+    'minicpm-v',
+    'Suggested OCR model should be selected'
+  );
+  assert.strictEqual(
+    wizard.quickstartEnableOcr.checked,
+    true,
+    'OCR checkbox should be checked when vision models exist'
+  );
+  assert.strictEqual(
+    wizard.quickstartEnableOcr.disabled,
+    false,
+    'OCR checkbox should be enabled when vision models exist'
+  );
 
   // Hidden AI fields are synced
-  assert.strictEqual(wizard.aiProvider.value, 'custom', 'AI provider should be applied');
-  assert.strictEqual(wizard.aiApiUrl.value, 'http://192.168.1.5:1234/v1', 'AI API URL should be applied');
-  assert.strictEqual(wizard.aiToken.value, 'test-key', 'AI token should be applied');
-  assert.strictEqual(wizard.aiModel.value, 'qwen2.5-7b-instruct', 'AI model should be applied');
+  assert.strictEqual(
+    wizard.aiProvider.value,
+    'custom',
+    'AI provider should be applied'
+  );
+  assert.strictEqual(
+    wizard.aiApiUrl.value,
+    'http://192.168.1.5:1234/v1',
+    'AI API URL should be applied'
+  );
+  assert.strictEqual(
+    wizard.aiToken.value,
+    'test-key',
+    'AI token should be applied'
+  );
+  assert.strictEqual(
+    wizard.aiModel.value,
+    'qwen2.5-7b-instruct',
+    'AI model should be applied'
+  );
 
   // OCR fields are synced
-  assert.strictEqual(wizard.mistralOcrEnabled.value, 'yes', 'OCR should be enabled');
-  assert.strictEqual(wizard.ocrProvider.value, 'custom', 'OCR provider should be custom');
-  assert.strictEqual(wizard.ocrApiUrl.value, 'http://192.168.1.5:1234/v1', 'OCR API URL should be applied');
-  assert.strictEqual(wizard.ocrApiKey.value, 'test-key', 'OCR API key should be applied');
-  assert.strictEqual(wizard.mistralOcrModel.value, 'minicpm-v', 'OCR model should be applied');
-  assert.strictEqual(wizard.ocrQuickstartNotice.classList.contains('hidden'), false, 'OCR notice should be visible');
+  assert.strictEqual(
+    wizard.mistralOcrEnabled.value,
+    'yes',
+    'OCR should be enabled'
+  );
+  assert.strictEqual(
+    wizard.ocrProvider.value,
+    'custom',
+    'OCR provider should be custom'
+  );
+  assert.strictEqual(
+    wizard.ocrApiUrl.value,
+    'http://192.168.1.5:1234/v1',
+    'OCR API URL should be applied'
+  );
+  assert.strictEqual(
+    wizard.ocrApiKey.value,
+    'test-key',
+    'OCR API key should be applied'
+  );
+  assert.strictEqual(
+    wizard.mistralOcrModel.value,
+    'minicpm-v',
+    'OCR model should be applied'
+  );
+  assert.strictEqual(
+    wizard.ocrQuickstartNotice.classList.contains('hidden'),
+    false,
+    'OCR notice should be visible'
+  );
 
   // Env preview reflects the applied quickstart config
   const envPreview = wizard.buildEnvPreview();
-  assert.ok(envPreview.includes('AI_PROVIDER=custom'), 'Env preview should contain the custom provider');
-  assert.ok(envPreview.includes('CUSTOM_BASE_URL=http://192.168.1.5:1234/v1'), 'Env preview should contain the custom base URL');
-  assert.ok(envPreview.includes('CUSTOM_MODEL=qwen2.5-7b-instruct'), 'Env preview should contain the AI model');
-  assert.ok(envPreview.includes('MISTRAL_OCR_ENABLED=yes'), 'Env preview should enable OCR');
-  assert.ok(envPreview.includes('OCR_PROVIDER=custom'), 'Env preview should use the custom OCR provider');
-  assert.ok(envPreview.includes('MISTRAL_OCR_MODEL=minicpm-v'), 'Env preview should contain the OCR model');
+  assert.ok(
+    envPreview.includes('AI_PROVIDER=custom'),
+    'Env preview should contain the custom provider'
+  );
+  assert.ok(
+    envPreview.includes('CUSTOM_BASE_URL=http://192.168.1.5:1234/v1'),
+    'Env preview should contain the custom base URL'
+  );
+  assert.ok(
+    envPreview.includes('CUSTOM_MODEL=qwen2.5-7b-instruct'),
+    'Env preview should contain the AI model'
+  );
+  assert.ok(
+    envPreview.includes('MISTRAL_OCR_ENABLED=yes'),
+    'Env preview should enable OCR'
+  );
+  assert.ok(
+    envPreview.includes('OCR_PROVIDER=custom'),
+    'Env preview should use the custom OCR provider'
+  );
+  assert.ok(
+    envPreview.includes('MISTRAL_OCR_MODEL=minicpm-v'),
+    'Env preview should contain the OCR model'
+  );
 
   // Unchecking the OCR option reverts OCR enablement
   wizard.quickstartEnableOcr.checked = false;
   wizard.applyQuickstartToManualFields();
-  assert.strictEqual(wizard.mistralOcrEnabled.value, 'no', 'Unchecking OCR should disable OCR again');
-  assert.strictEqual(wizard.ocrQuickstartNotice.classList.contains('hidden'), true, 'OCR notice should hide when unchecked');
+  assert.strictEqual(
+    wizard.mistralOcrEnabled.value,
+    'no',
+    'Unchecking OCR should disable OCR again'
+  );
+  assert.strictEqual(
+    wizard.ocrQuickstartNotice.classList.contains('hidden'),
+    true,
+    'OCR notice should hide when unchecked'
+  );
 
   // Idempotent re-apply must not reset a successful AI test
   wizard.quickstartEnableOcr.checked = true;
@@ -318,10 +459,18 @@ wizard.quickstartApiKey.value = 'test-key';
   wizard.aiTestState.ran = true;
   wizard.aiTestState.success = true;
   wizard.applyQuickstartToManualFields();
-  assert.strictEqual(wizard.aiTestState.success, true, 'Re-applying unchanged values must not reset the AI test state');
+  assert.strictEqual(
+    wizard.aiTestState.success,
+    true,
+    'Re-applying unchanged values must not reset the AI test state'
+  );
 
   // The save row becomes visible after a successful detection
-  assert.strictEqual(wizard.quickstartSaveRow.classList.contains('hidden'), false, 'Save row should be visible after detection');
+  assert.strictEqual(
+    wizard.quickstartSaveRow.classList.contains('hidden'),
+    false,
+    'Save row should be visible after detection'
+  );
 
   // Save flow: fill the earlier wizard steps so finalize re-validation passes,
   // then verify both model tests run and setup completes.
@@ -341,18 +490,44 @@ wizard.quickstartApiKey.value = 'test-key';
   fetchedUrls.length = 0;
   await wizard.runQuickstartSaveFlow();
 
-  assert.ok(fetchedUrls.includes('/api/setup/ai/test'), 'Save flow should test the AI model');
-  assert.ok(fetchedUrls.includes('/api/setup/ocr/test'), 'Save flow should test the OCR model');
-  assert.ok(fetchedUrls.includes('/api/setup/complete'), 'Save flow should finalize setup after successful tests');
-  assert.strictEqual(wizard.aiTestState.success, true, 'AI test state should be marked successful');
-  assert.strictEqual(wizard.ocrTestState.success, true, 'OCR test state should be marked successful');
+  assert.ok(
+    fetchedUrls.includes('/api/setup/ai/test'),
+    'Save flow should test the AI model'
+  );
+  assert.ok(
+    fetchedUrls.includes('/api/setup/ocr/test'),
+    'Save flow should test the OCR model'
+  );
+  assert.ok(
+    fetchedUrls.includes('/api/setup/complete'),
+    'Save flow should finalize setup after successful tests'
+  );
+  assert.strictEqual(
+    wizard.aiTestState.success,
+    true,
+    'AI test state should be marked successful'
+  );
+  assert.strictEqual(
+    wizard.ocrTestState.success,
+    true,
+    'OCR test state should be marked successful'
+  );
 
   // Failing AI test must block finalize
-  responsesByUrl['/api/setup/ai/test'] = { success: false, message: 'Model not reachable.' };
+  responsesByUrl['/api/setup/ai/test'] = {
+    success: false,
+    message: 'Model not reachable.',
+  };
   fetchedUrls.length = 0;
   await wizard.runQuickstartSaveFlow();
-  assert.ok(fetchedUrls.includes('/api/setup/ai/test'), 'Failing save flow should still run the AI test');
-  assert.ok(!fetchedUrls.includes('/api/setup/complete'), 'Failing AI test must not finalize setup');
+  assert.ok(
+    fetchedUrls.includes('/api/setup/ai/test'),
+    'Failing save flow should still run the AI test'
+  );
+  assert.ok(
+    !fetchedUrls.includes('/api/setup/complete'),
+    'Failing AI test must not finalize setup'
+  );
 
   // Regression for #236: a dedicated OCR model with no vision-heuristic
   // match must still be selectable, and a detected Mistral host must
@@ -362,17 +537,37 @@ wizard.quickstartApiKey.value = 'test-key';
   wizard.quickstartApiKey.value = 'mistral-key';
   await wizard.runQuickstartDetect();
 
-  assert.strictEqual(wizard.quickstartOcrModel.disabled, false, 'OCR model dropdown must stay enabled even when no model matches the vision name-heuristic, as long as candidate models exist');
-  assert.strictEqual(wizard.quickstartEnableOcr.disabled, false, 'Enable-OCR checkbox must stay enabled when any candidate model exists');
-  assert.strictEqual(wizard.quickstartEnableOcr.checked, true, 'Enable-OCR checkbox should default to checked when candidate models exist');
+  assert.strictEqual(
+    wizard.quickstartOcrModel.disabled,
+    false,
+    'OCR model dropdown must stay enabled even when no model matches the vision name-heuristic, as long as candidate models exist'
+  );
+  assert.strictEqual(
+    wizard.quickstartEnableOcr.disabled,
+    false,
+    'Enable-OCR checkbox must stay enabled when any candidate model exists'
+  );
+  assert.strictEqual(
+    wizard.quickstartEnableOcr.checked,
+    true,
+    'Enable-OCR checkbox should default to checked when candidate models exist'
+  );
 
   // No vision-heuristic match means no suggestedOcrModel; the user picks
   // the dedicated OCR model manually.
   wizard.quickstartOcrModel.value = 'mistral-ocr-latest';
   wizard.applyQuickstartToManualFields();
 
-  assert.strictEqual(wizard.mistralOcrModel.value, 'mistral-ocr-latest', 'Manually selecting the dedicated OCR model should flow through to the manual OCR model field');
-  assert.strictEqual(wizard.ocrProvider.value, 'mistral', 'A detected api.mistral.ai host should default the OCR provider to mistral');
+  assert.strictEqual(
+    wizard.mistralOcrModel.value,
+    'mistral-ocr-latest',
+    'Manually selecting the dedicated OCR model should flow through to the manual OCR model field'
+  );
+  assert.strictEqual(
+    wizard.ocrProvider.value,
+    'mistral',
+    'A detected api.mistral.ai host should default the OCR provider to mistral'
+  );
 
   console.log('✅ test-setup-wizard-quickstart passed');
 })().catch((error) => {

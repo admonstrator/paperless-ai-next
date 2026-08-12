@@ -1,0 +1,181 @@
+/* ==========================================================================
+   Base — reset, page typography and the layout/text primitives.
+
+   These sit in the lowest layer above the tokens on purpose: .zr-row, .zr-col,
+   .zr-truncate and friends are primitives that components have to be able to
+   override, and a low layer lets a component do that with a plain single-class
+   selector instead of a doubled one.
+   ========================================================================== */
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  * {
+    margin: 0;
+  }
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    -webkit-font-smoothing: antialiased;
+    font-family: var(--zr-font);
+    font-size: var(--zr-fs-base);
+    line-height: 1.45;
+    color: var(--zr-text);
+    background: var(--zr-canvas);
+  }
+  img,
+  svg {
+    display: block;
+    max-width: 100%;
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  :focus-visible {
+    outline: 2px solid var(--zr-focus);
+    outline-offset: 2px;
+    border-radius: var(--zr-r-sm);
+  }
+
+  /* icon */
+  .zr-icon {
+    /* Layer 1 makes every svg a block. Inside a flex parent (buttons, rows) that
+       is irrelevant, but an icon sitting directly in text — a label, a link, an
+       empty state — would claim its own line. Inline-block keeps it on the
+       baseline everywhere without affecting the flex cases. */
+    display: inline-block;
+    vertical-align: -3px;
+    width: 16px;
+    height: 16px;
+    /* Layer 1 also gives every svg max-width: 100%, which is meant for images that
+       have to fit their column. An icon has a fixed size, and inside a shrink-to-fit
+       table cell that percentage resolves against a width that is not known yet:
+       the icon collapses to 0 and, since svg clips by default, disappears — while
+       the gap in front of the label stays. */
+    max-width: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.75;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .zr-icon--sm {
+    width: 14px;
+    height: 14px;
+  }
+  .zr-icon--lg {
+    width: 20px;
+    height: 20px;
+  }
+  .zr-icon--spin {
+    animation: zr-spin 0.9s linear infinite;
+  }
+
+  /* inline link */
+  .zr-link {
+    color: var(--zr-brand);
+    text-decoration: none;
+  }
+  .zr-link:hover {
+    text-decoration: underline;
+  }
+  /* A link inside a paragraph has no other cue that it is one, so it is
+     underlined at rest rather than only on hover. */
+  .zr-link--underline {
+    text-decoration: underline;
+  }
+
+  .zr-row {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+  }
+  .zr-row--between {
+    justify-content: space-between;
+  }
+  .zr-row--wrap {
+    flex-wrap: wrap;
+  }
+  .zr-col {
+    display: flex;
+    flex-direction: column;
+    gap: var(--zr-2);
+  }
+  /* A button dropped into a column keeps its natural size — the column's
+     cross-axis stretch was turning maintenance buttons into full-width slabs.
+     A deliberate full-width button says so with .zr-btn--block, whose
+     width: 100% wins regardless of align-self. */
+  .zr-col > .zr-btn {
+    align-self: flex-start;
+  }
+  .zr-col--tight {
+    gap: var(--zr-1);
+  }
+  .zr-col--loose {
+    gap: var(--zr-4);
+  }
+  .zr-grow {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .zr-sm {
+    font-size: var(--zr-fs-sm);
+  }
+  .zr-xs {
+    font-size: var(--zr-fs-xs);
+  }
+  .zr-strong {
+    font-weight: 600;
+  }
+  .zr-num {
+    font-variant-numeric: tabular-nums;
+  }
+  .zr-mono {
+    font-family: var(--zr-font-mono);
+  }
+  .zr-truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 860px) {
+    /* An empty flex spacer only does its job while everything is on one line.
+       Once the row wraps it eats the rest of whichever line it landed on and
+       strands the buttons around it, so it steps aside here.
+
+       Only a span or a div: a void element matches :empty forever, so a bare
+       `.zr-grow:empty` also hid <input class="zr-input zr-grow"> — the reason
+       field on the ignore list was invisible on every phone. */
+    .zr-row--wrap > :is(span, div).zr-grow:empty,
+    .app-toolbar > :is(span, div).zr-grow:empty {
+      display: none;
+    }
+  }
+}

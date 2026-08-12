@@ -1,40 +1,36 @@
 <!-- views/ocr.ejs -->
 <!DOCTYPE html>
-<html lang="en" class="h-full<%= theme === 'dark' ? ' dark' : '' %>" data-theme="<%= theme || 'light' %>">
+<html lang="en" data-theme="<%= theme || 'light' %>">
 <%- include('partials/shell/head-start', { pageTitle: 'OCR Queue - Zettelrobbe' }) %>
-    <link rel="stylesheet" href="/vendor/datatables/css/jquery.dataTables.min.css">
-    <link rel="stylesheet" href="/css/ocr.css">
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', {
+    pageTitle: 'OCR Queue',
     version: typeof version !== 'undefined' ? version : '',
     chatEnabled: typeof chatEnabled !== 'undefined' ? chatEnabled : false
 }) %>
 
-            <div class="content-wrapper">
-                <div class="content-header">
-                    <div class="content-header-main min-w-0">
-                        <h1 class="content-title truncate">OCR Queue</h1>
-                        <p class="content-subtitle">
-                            Documents with missing or insufficient OCR text queued for OCR reprocessing.
-                        </p>
-                    </div>
+            <div>
+                <div class="zr-viewhead">
+                    <p class="zr-viewhead__sub">
+                        Documents with missing or insufficient OCR text queued for OCR reprocessing.
+                    </p>
                     <% if (ocrEnabled) { %>
-                    <div class="content-header-actions ocr-header-badges">
+                    <div class="zr-viewhead__actions">
                         <!-- Stats badges -->
-                        <span id="statPending" class="status-badge status-pending"><i class="fas fa-hourglass-half"></i> <span id="statPendingCount">…</span> pending</span>
-                        <span id="statDone" class="status-badge status-done"><i class="fas fa-check"></i> <span id="statDoneCount">…</span> done</span>
-                        <span id="statFailed" class="status-badge status-failed"><i class="fas fa-times"></i> <span id="statFailedCount">…</span> failed</span>
+                        <span id="statPending" class="zr-badge zr-badge--warn"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-clock"/></svg> <span id="statPendingCount">…</span> pending</span>
+                        <span id="statDone" class="zr-badge zr-badge--ok"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check"/></svg> <span id="statDoneCount">…</span> done</span>
+                        <span id="statFailed" class="zr-badge zr-badge--danger"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg> <span id="statFailedCount">…</span> failed</span>
                     </div>
                     <% } %>
                 </div>
 
                 <% if (!ocrEnabled) { %>
                 <!-- Feature disabled notice -->
-                <div class="material-card mb-6">
+                <div class="zr-module">
                     <div class="disabled-overlay">
-                        <i class="fas fa-eye-slash text-5xl text-gray-400 mb-4"></i>
-                        <h2 class="text-xl font-semibold mb-2">OCR is not enabled</h2>
-                        <p class="text-gray-500 mb-4 max-w-lg mx-auto">
+                        <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>
+                        <h2 class="zr-viewhead__title">OCR is not enabled</h2>
+                        <p class="zr-muted">
                             Enable OCR in settings and configure your OCR provider. You can optionally set these values in <strong>data/.env</strong> and restart the service:
                         </p>
                         <pre class="ocr-env-codeblock">MISTRAL_OCR_ENABLED=yes
@@ -42,7 +38,7 @@ OCR_PROVIDER=mistral|custom
 OCR_API_URL=http://localhost:11434
 OCR_API_KEY=optional_or_required_provider_key
 MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
-                        <p class="text-gray-400 text-xs">Choose the provider and endpoint that match your OCR backend.</p>
+                        <p class="zr-xs zr-faint">Choose the provider and endpoint that match your OCR backend.</p>
                     </div>
                 </div>
                 <% } %>
@@ -50,94 +46,87 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                 <% if (ocrEnabled) { %>
 
                 <!-- Toolbar -->
-                <div class="material-card mb-4 p-4">
-                    <div class="app-toolbar app-toolbar--triple">
-                    <!-- Manual add -->
-                    <div class="app-toolbar-main">
+                <div class="zr-module">
+                    <!-- One row, one control height. The search field, its
+                         scope and the status filter sit on the left, the two
+                         actions on the right. -->
+                    <div class="app-toolbar">
                         <div class="manual-search-wrapper">
+                            <select id="searchModeSelect" class="zr-select app-toolbar-scope" aria-label="Search in">
+                                <option value="all">All fields</option>
+                                <option value="id">ID</option>
+                                <option value="title">Title</option>
+                                <option value="tags">Tags</option>
+                                <option value="correspondent">Correspondent</option>
+                            </select>
                             <input
                                 id="manualDocSearchInput"
-                                class="w-full rounded-md border-border-color bg-bg-primary text-text-primary p-2 focus:border-accent-primary focus:ring-accent-primary"
+                                class="zr-input"
                                 type="search"
-                                placeholder="Search documents..."
+                                placeholder="Search documents to add..."
                                 autocomplete="off">
                             <div id="manualDocSearchResults" class="manual-search-results hidden" role="listbox" aria-label="OCR document search results"></div>
                             <input type="hidden" id="manualDocId" value="">
-                            <p id="manualDocSearchStatus" class="manual-search-status">Type to search documents...</p>
-                            <div id="searchModeToggles" class="search-mode-toggles">
-                                <button type="button" class="search-mode-btn active" data-mode="all">All</button>
-                                <button type="button" class="search-mode-btn" data-mode="id">ID</button>
-                                <button type="button" class="search-mode-btn" data-mode="title">Title</button>
-                                <button type="button" class="search-mode-btn" data-mode="tags">Tags</button>
-                                <button type="button" class="search-mode-btn" data-mode="correspondent">Correspondent</button>
-                            </div>
                         </div>
-                    </div>
 
-                    <div class="app-toolbar-controls">
-                        <!-- Auto-analyze toggle -->
-                        <label class="ocr-toolbar-toggle flex items-center gap-2 cursor-pointer select-none">
-                            <div class="relative">
-                                <input type="checkbox" id="autoAnalyzeToggle" class="sr-only peer">
-                                <div class="w-10 h-5 bg-gray-300 peer-checked:bg-blue-500 rounded-full transition-colors"></div>
-                                <div class="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-5"></div>
-                            </div>
-                            <span>AI analysis after OCR</span>
-                        </label>
-
-                        <!-- Status filter -->
-                        <select id="statusFilter" class="app-toolbar-filter toolbar-input ocr-toolbar-filter">
+                        <select id="statusFilter" class="zr-select app-toolbar-scope">
                             <option value="">All statuses</option>
                             <option value="pending">Pending</option>
                             <option value="processing">Processing</option>
                             <option value="done">Done</option>
                             <option value="failed">Failed</option>
                         </select>
-                    </div>
 
-                    <div class="app-toolbar-actions">
-                        <!-- Process all button -->
+                        <span class="zr-grow"></span>
+
+                        <label class="zr-row">
+                            <input type="checkbox" class="zr-toggle" id="autoAnalyzeToggle">
+                            <span>AI analysis after OCR</span>
+                        </label>
+
                         <button id="processAllBtn"
-                                class="toolbar-btn toolbar-btn--success toolbar-btn--sm"
+                                class="zr-btn zr-btn--primary"
                                 title="Process all pending items">
-                            <i class="fas fa-play"></i> Process All Pending
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process All Pending
                         </button>
                     </div>
+                    <!-- Live search feedback only; empty while idle. -->
+                    <p id="manualDocSearchStatus" class="manual-search-status zr-xs"></p>
                     </div>
                 </div>
 
                 <!-- Queue Table -->
-                <div class="material-card">
-                    <div class="overflow-x-auto">
-                        <table id="ocrTable" class="w-full">
+                <div class="zr-module" data-module="row-menu">
+                    <div class="zr-table-wrap">
+                        <table id="ocrTable"  class="zr-table zr-table--stack">
                             <thead>
                                 <tr>
-                                    <th class="text-left py-3 px-4">Doc ID</th>
-                                    <th class="text-left py-3 px-4">Title</th>
-                                    <th class="text-left py-3 px-4">Reason</th>
-                                    <th class="text-left py-3 px-4">Status</th>
-                                    <th class="text-left py-3 px-4">Added</th>
-                                    <th class="text-left py-3 px-4">Actions</th>
+                                    <th >Doc ID</th>
+                                    <th >Title</th>
+                                    <th >Reason</th>
+                                    <th >Status</th>
+                                    <th >Added</th>
+                                    <th class="zr-table__actions">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="ocrTableBody">
                                 <tr>
-                                    <td colspan="6" class="text-center py-8 text-gray-400">
-                                        <i class="fas fa-spinner fa-spin mr-2"></i> Loading queue…
+                                    <td colspan="6" class="zr-empty">
+                                        <svg class="zr-icon zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Loading queue…
                                     </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <!-- Pagination -->
-                    <div class="flex justify-between items-center mt-4 px-4 pb-4 flex-wrap gap-2">
-                        <span id="tableInfo" class="text-sm text-gray-500"></span>
-                        <div class="flex gap-2">
-                            <button id="prevPageBtn" class="toolbar-btn toolbar-btn--ghost toolbar-btn--sm" disabled>
-                                <i class="fas fa-chevron-left"></i> Prev
+                    <div class="zr-table-foot">
+                        <span id="tableInfo" class="zr-sm zr-faint"></span>
+                        <div class="zr-inputgroup">
+                            <button id="prevPageBtn" class="zr-btn" disabled>
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-left"/></svg> Prev
                             </button>
-                            <button id="nextPageBtn" class="toolbar-btn toolbar-btn--ghost toolbar-btn--sm" disabled>
-                                Next <i class="fas fa-chevron-right"></i>
+                            <button id="nextPageBtn" class="zr-btn" disabled>
+                                Next <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
                             </button>
                         </div>
                     </div>
@@ -150,38 +139,29 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
     <!-- Progress Overlay (SSE) -->
     <div id="progressOverlay" style="display:none;">
         <div id="progressBox">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-semibold text-lg" id="progressTitle">Processing…</h3>
-                <button id="progressCloseBtn" class="toolbar-btn toolbar-btn--ghost toolbar-btn--sm" style="display:none;" aria-label="Close progress overlay">
-                    <i class="fas fa-times text-xl"></i>
+            <div class="zr-row zr-row--between">
+                <h3 id="progressTitle" class="zr-module__title">Processing…</h3>
+                <button id="progressCloseBtn" class="zr-btn" style="display:none;" aria-label="Close progress overlay">
+                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
                 </button>
             </div>
 
             <!-- Progress bar -->
-            <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
-                <div id="progressBar" class="bg-blue-500 h-2 rounded-full transition-all duration-500" style="width:0%"></div>
+            <div class="zr-meter">
+                <div id="progressBar" class="zr-meter__fill" style="width:0%"></div>
             </div>
 
             <div id="progressLog"></div>
 
-            <div class="mt-4 flex justify-end">
-                <button id="progressDoneBtn" class="toolbar-btn toolbar-btn--primary" style="display:none;">
+            <div class="zr-row">
+                <button id="progressDoneBtn" class="zr-btn zr-btn--primary" style="display:none;">
                     Close
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Toast -->
-    <div id="toastNotification" class="fixed bottom-6 right-6 z-50 hidden" style="z-index:9999;">
-        <div id="toastInner" class="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3">
-            <i id="toastIcon" class="fas fa-check-circle"></i>
-            <span id="toastMessage">Done</span>
-        </div>
-    </div>
-
     <%- include('partials/scripts/ocr-scripts') %>
     <script src="/js/document-omnibox.js"></script>
     <script src="/js/ocr.js"></script>
-    <%- include('partials/shell/footer') %>
     <%- include('partials/shell/body-close') %>

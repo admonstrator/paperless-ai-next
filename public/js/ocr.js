@@ -91,7 +91,7 @@
 
   async function _doLoad() {
     if (!tableBody) return;
-    tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-8 text-gray-400"><i class="fas fa-spinner fa-spin mr-2"></i> Loading…</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="6" class="zr-empty"><svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Loading…</td></tr>`;
 
     try {
       const params = new URLSearchParams({
@@ -109,32 +109,35 @@
       renderTable(data.data || []);
       updatePagination();
     } catch (err) {
-      tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-red-500"><i class="fas fa-exclamation-triangle mr-2"></i>${escHtml(err.message)}</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="6" class="zr-empty zr-danger-text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>${escHtml(err.message)}</td></tr>`;
     }
   }
 
   // ── Render table ───────────────────────────────────────────────────────
   function formatReasonLabel(reason) {
     if (!reason) {
-      return '<i class="fas fa-question-circle mr-1"></i>Unknown';
+      return '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-help"/></svg>Unknown';
     }
 
     const reasonMap = {
-      short_content: '<i class="fas fa-file-slash mr-1"></i>Content too short',
+      short_content:
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>Content too short',
       short_content_lt_10:
-        '<i class="fas fa-file-slash mr-1"></i>Content too short (&lt; 10 chars)',
-      ai_failed: '<i class="fas fa-robot mr-1"></i>AI analysis failed',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>Content too short (&lt; 10 chars)',
+      ai_failed:
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg>AI analysis failed',
       ai_insufficient_content:
-        '<i class="fas fa-robot mr-1"></i>AI: insufficient content',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg>AI: insufficient content',
       ai_invalid_json:
-        '<i class="fas fa-brackets-curly mr-1"></i>AI: invalid JSON response',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-code"/></svg>AI: invalid JSON response',
       ai_invalid_response_structure:
-        '<i class="fas fa-diagram-project mr-1"></i>AI: no tags/correspondent found',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-layers"/></svg>AI: no tags/correspondent found',
       ai_invalid_api_response_structure:
-        '<i class="fas fa-server mr-1"></i>AI: invalid API response structure',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-server"/></svg>AI: invalid API response structure',
       ai_failed_unknown:
-        '<i class="fas fa-triangle-exclamation mr-1"></i>AI failed (unknown)',
-      manual: '<i class="fas fa-hand-pointer mr-1"></i>Manual',
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>AI failed (unknown)',
+      manual:
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-user"/></svg>Manual',
     };
 
     if (reasonMap[reason]) {
@@ -144,7 +147,7 @@
     if (reason.startsWith('short_content_lt_')) {
       const threshold = reason.replace('short_content_lt_', '');
       if (/^\d+$/.test(threshold)) {
-        return `<i class="fas fa-file-slash mr-1"></i>Content too short (&lt; ${threshold} chars)`;
+        return `<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>Content too short (&lt; ${threshold} chars)`;
       }
     }
 
@@ -153,56 +156,73 @@
 
   function renderTable(items) {
     if (!items.length) {
-      tableBody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-gray-400"><i class="fas fa-inbox text-2xl mb-2 block"></i>Queue is empty</td></tr>`;
+      tableBody.innerHTML = `<tr><td colspan="6" class="zr-empty"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-inbox"/></svg>Queue is empty</td></tr>`;
       return;
     }
 
     tableBody.innerHTML = items
       .map((item) => {
         const docLink = paperlessUrl
-          ? `<a href="${paperlessUrl}/documents/${item.document_id}/details" target="_blank" class="text-blue-500 hover:underline font-mono">#${item.document_id}</a>`
-          : `<span class="font-mono">#${item.document_id}</span>`;
+          ? `<a href="${paperlessUrl}/documents/${item.document_id}/details" target="_blank" class="zr-link zr-mono">#${item.document_id}</a>`
+          : `<span class="zr-mono">#${item.document_id}</span>`;
 
         const reasonLabel = formatReasonLabel(item.reason);
 
-        const statusHtml = `<span class="status-badge status-${escHtml(item.status)}">${statusIcon(item.status)} ${escHtml(item.status)}</span>`;
+        const statusHtml = `<span class="zr-badge ${statusTone(item.status)}">${statusIcon(item.status)} ${escHtml(item.status)}</span>`;
 
-        const addedDate = item.added_at
-          ? new Date(item.added_at).toLocaleString()
-          : '–';
+        // Date only: the exact second added nothing and its width forced the
+        // table to scroll sideways on ordinary desktop windows. The full
+        // timestamp stays reachable through the cell title.
+        const addedAt = item.added_at ? new Date(item.added_at) : null;
+        const addedDate = addedAt ? addedAt.toLocaleDateString() : '–';
+        const addedTitle = addedAt ? escHtml(addedAt.toLocaleString()) : '';
 
-        const processBtn =
-          item.status === 'pending' || item.status === 'failed'
-            ? `<button class="toolbar-btn toolbar-btn--primary toolbar-btn--sm process-btn" data-id="${item.document_id}" title="Send to OCR provider"><i class="fas fa-play"></i> Process</button>`
-            : '';
-
+        // One labelled action per row, everything else behind the "…" — which
+        // state a row is in decides what that primary action is, so the column
+        // keeps the same two slots throughout.
         const hasOcrText = !!(item.ocr_text && String(item.ocr_text).trim());
-        const analyzeBtn =
-          item.status === 'done' && hasOcrText
-            ? `<button class="toolbar-btn toolbar-btn--warning toolbar-btn--sm analyze-btn" data-id="${item.document_id}" title="Start AI analysis using existing OCR text"><i class="fas fa-robot"></i> Analyze with AI now</button>`
-            : '';
+        const canProcess =
+          item.status === 'pending' || item.status === 'failed';
+        const canAnalyze = item.status === 'done' && hasOcrText;
 
-        const infoBtn = hasOcrText
-          ? `<button class="toolbar-btn toolbar-btn--ghost toolbar-btn--sm info-btn" data-id="${item.document_id}" title="Show OCR output" aria-label="Show OCR output"><i class="fas fa-circle-info"></i></button>`
+        let primaryBtn = '';
+        if (canProcess) {
+          primaryBtn = `<button class="zr-btn process-btn" data-id="${item.document_id}" title="Send to OCR provider"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process</button>`;
+        } else if (canAnalyze) {
+          primaryBtn = `<button class="zr-btn analyze-btn" data-id="${item.document_id}" title="Start AI analysis using existing OCR text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg> Analyze</button>`;
+        }
+
+        // Process and Analyze never apply to the same row, so whichever is
+        // available is already the primary button and never repeats here.
+        const menuId = `ocrRowMenu${item.document_id}`;
+        const menuItems = [
+          hasOcrText
+            ? `<button type="button" class="zr-menu__item info-btn" data-id="${item.document_id}"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg>Show OCR output</button>`
+            : '',
+          item.status !== 'processing'
+            ? `<button type="button" class="zr-menu__item zr-menu__item--danger remove-btn" data-id="${item.document_id}"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-trash"/></svg>Remove from queue</button>`
+            : '',
+        ]
+          .filter(Boolean)
+          .join('');
+
+        const menu = menuItems
+          ? `<button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" popovertarget="${menuId}" title="More actions" aria-label="More actions"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg></button>
+             <div id="${menuId}" popover class="zr-menu">${menuItems}</div>`
           : '';
 
-        const removeBtn =
-          item.status !== 'processing'
-            ? `<button class="toolbar-btn toolbar-btn--danger toolbar-btn--sm remove-btn" data-id="${item.document_id}" title="Remove from queue" aria-label="Remove from queue"><i class="fas fa-trash"></i></button>`
-            : '';
-
-        return `<tr class="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors border-b border-gray-100 dark:border-gray-700">
-                <td class="py-3 px-4">${docLink}</td>
-                <td class="py-3 px-4 max-w-xs truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
-                <td class="py-3 px-4"><span class="reason-badge">${reasonLabel}</span></td>
-                <td class="py-3 px-4">${statusHtml}</td>
-                <td class="py-3 px-4 text-sm text-gray-500 whitespace-nowrap">${addedDate}</td>
-                <td class="py-3 px-4">
-                    <div class="flex flex-wrap items-center gap-2">
-                        ${processBtn}
-                        ${analyzeBtn}
-                        ${infoBtn}
-                        ${removeBtn}
+        // data-label carries the column name into the stacked phone layout,
+        // where the header row is hidden.
+        return `<tr>
+                <td data-label="Doc ID">${docLink}</td>
+                <td data-label="Title" class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
+                <td data-label="Reason"><span class="zr-badge">${reasonLabel}</span></td>
+                <td data-label="Status">${statusHtml}</td>
+                <td data-label="Added" class="zr-sm zr-faint" title="${addedTitle}">${addedDate}</td>
+                <td data-label="" class="zr-table__actions">
+                    <div class="zr-row">
+                        ${primaryBtn}
+                        ${menu}
                     </div>
                 </td>
             </tr>`;
@@ -232,13 +252,29 @@
     });
   }
 
+  // Queue states map onto the framework badge tones rather than a second set of
+  // status colours that would not follow the theme.
+  function statusTone(status) {
+    return (
+      {
+        pending: 'zr-badge--warn',
+        processing: 'zr-badge--info',
+        done: 'zr-badge--ok',
+        failed: 'zr-badge--danger',
+      }[status] || ''
+    );
+  }
+
   function statusIcon(status) {
     return (
       {
-        pending: '<i class="fas fa-hourglass-half"></i>',
-        processing: '<i class="fas fa-spinner fa-spin"></i>',
-        done: '<i class="fas fa-check"></i>',
-        failed: '<i class="fas fa-times"></i>',
+        pending:
+          '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-clock"/></svg>',
+        processing:
+          '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>',
+        done: '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check"/></svg>',
+        failed:
+          '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>',
       }[status] || ''
     );
   }
@@ -338,27 +374,15 @@
     });
   }
 
+  // The placeholder carries the whole scope hint; the status line below is
+  // reserved for live feedback (searching, errors, selection) and stays empty
+  // while idle instead of paraphrasing the placeholder.
   const SEARCH_MODE_HINTS = {
-    all: {
-      placeholder: 'Search documents...',
-      status: 'Type to search documents...',
-    },
-    id: {
-      placeholder: 'Enter exact document ID…',
-      status: 'ID mode: type a positive integer Paperless document ID.',
-    },
-    title: {
-      placeholder: 'Search by title...',
-      status: 'Type to search by title...',
-    },
-    tags: {
-      placeholder: 'Search by tag name...',
-      status: 'Type to search by tag...',
-    },
-    correspondent: {
-      placeholder: 'Search by correspondent...',
-      status: 'Type to search by correspondent...',
-    },
+    all: { placeholder: 'Search documents...' },
+    id: { placeholder: 'Enter a numeric document ID…' },
+    title: { placeholder: 'Search by title...' },
+    tags: { placeholder: 'Search by tag name...' },
+    correspondent: { placeholder: 'Search by correspondent...' },
   };
 
   function applySearchModeHint(mode) {
@@ -372,27 +396,23 @@
     ) {
       const hasQuery =
         manualDocSearchInput && manualDocSearchInput.value.trim();
-      // Only replace the idle status; keep live search results status intact.
+      // Only clear the idle status; keep live search results status intact.
       if (!hasQuery) {
-        manualDocumentOmnibox.setStatus(hint.status, false);
+        manualDocumentOmnibox.setStatus('', false);
       }
     }
   }
 
+  // The search scope used to be a row of pills below the field; it is a select
+  // in front of it now, so the toolbar stays one line high.
   function initializeSearchModeToggles() {
-    const container = document.getElementById('searchModeToggles');
-    if (!container || !manualDocumentOmnibox) return;
+    const select = document.getElementById('searchModeSelect');
+    if (!select || !manualDocumentOmnibox) return;
 
     applySearchModeHint('all');
 
-    container.addEventListener('click', function (e) {
-      const btn = e.target.closest('.search-mode-btn');
-      if (!btn) return;
-      container
-        .querySelectorAll('.search-mode-btn')
-        .forEach((b) => b.classList.remove('active'));
-      btn.classList.add('active');
-      const mode = btn.dataset.mode || 'all';
+    select.addEventListener('change', function () {
+      const mode = this.value || 'all';
       manualDocumentOmnibox.setSearchMode(mode);
       applySearchModeHint(mode);
       const currentValue = manualDocSearchInput
@@ -597,7 +617,13 @@
   function openOverlay(title) {
     if (progressTitle) progressTitle.textContent = title;
     if (progressLog) progressLog.innerHTML = '';
-    if (progressBar) progressBar.style.width = '5%';
+    if (progressBar) {
+      progressBar.style.width = '5%';
+      progressBar.classList.remove(
+        'zr-meter__fill--ok',
+        'zr-meter__fill--danger'
+      );
+    }
     if (closeBtn) closeBtn.style.display = 'none';
     if (doneBtn) doneBtn.style.display = 'none';
     if (overlay) overlay.style.display = 'flex';
@@ -608,11 +634,13 @@
   }
 
   function finalizeOverlay(isError) {
-    if (progressBar) progressBar.style.width = isError ? '100%' : '100%';
-    if (progressBar)
-      progressBar.className = isError
-        ? 'bg-red-500 h-2 rounded-full transition-all duration-500'
-        : 'bg-green-500 h-2 rounded-full transition-all duration-500';
+    if (progressBar) {
+      progressBar.style.width = '100%';
+      // Assigning the whole className used to drop zr-meter__fill along with
+      // the Tailwind classes it replaced, so the bar vanished at 100%.
+      progressBar.classList.toggle('zr-meter__fill--danger', isError);
+      progressBar.classList.toggle('zr-meter__fill--ok', !isError);
+    }
     if (closeBtn) closeBtn.style.display = 'block';
     if (doneBtn) doneBtn.style.display = 'block';
   }
@@ -647,20 +675,14 @@
   }
 
   // ── Toast ──────────────────────────────────────────────────────────────
+  // Adapter only: the toast DOM lives in the module kernel (public/js/zr.js).
+  // This classic script runs before that module, so the lookup is deferred to
+  // call time — toasts only fire on user interaction, never during load.
   function showToast(message, type = 'success') {
-    const toast = document.getElementById('toastNotification');
-    const inner = document.getElementById('toastInner');
-    const icon = document.getElementById('toastIcon');
-    const msg = document.getElementById('toastMessage');
-    if (!toast) return;
-
-    inner.className = `${type === 'error' ? 'bg-red-500' : 'bg-green-500'} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3`;
-    icon.className = `fas ${type === 'error' ? 'fa-exclamation-circle' : 'fa-check-circle'}`;
-    msg.textContent = message;
-
-    toast.classList.remove('hidden');
-    clearTimeout(toast._timer);
-    toast._timer = setTimeout(() => toast.classList.add('hidden'), 4000);
+    if (typeof window.__zrToast !== 'function') return null;
+    return window.__zrToast(message, {
+      tone: type === 'error' ? 'danger' : 'ok',
+    });
   }
 
   // ── Helpers ────────────────────────────────────────────────────────────

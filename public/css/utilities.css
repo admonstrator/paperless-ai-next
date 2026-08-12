@@ -1,0 +1,58 @@
+/* ==========================================================================
+   Utilities — the deliberately few state classes. They sit in the last layer
+   because they have to win over whatever component they are put on: a colour
+   that reports validation, a class the JS toggles to hide something, a
+   viewport gate.
+   ========================================================================== */
+
+@layer utilities {
+  [hidden] {
+    display: none !important;
+  }
+
+  .zr-muted {
+    color: var(--zr-text-muted);
+  }
+  /* Validation feedback has to beat the colour the component underneath it
+     already sets — .zr-field__hint carries one at the same specificity. The
+     utilities layer is the last one, so it wins on layer order alone and no
+     longer depends on sitting further down a single stylesheet. */
+  .zr-danger-text {
+    color: var(--zr-danger);
+  }
+  .zr-ok-text {
+    color: var(--zr-ok);
+  }
+  .zr-warn-text {
+    color: var(--zr-warn);
+  }
+  .zr-faint {
+    color: var(--zr-text-faint);
+  }
+
+  /* Plain `hidden` is kept as a class because the app's JS toggles it at runtime in
+     ~100 places. It is a generic utility here, not a leftover of any CSS framework. */
+  .hidden {
+    display: none !important;
+  }
+  .zr-sr {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  @media (min-width: 861px) {
+    .zr-only-mobile {
+      display: none !important;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .zr-only-desktop {
+      display: none !important;
+    }
+  }
+}

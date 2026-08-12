@@ -1,4 +1,4 @@
-/* global $ */
+import { createTable } from '/js/modules/data-table.js';
 
 class HistoryManager {
   constructor() {
@@ -12,6 +12,7 @@ class HistoryManager {
   initialize() {
     this.loadHistoryWithProgress()
       .then(() => {
+        this.initializeTableEvents();
         this.table = this.initializeDataTable();
         this.initializeModals();
         this.initializeResetButtons();
@@ -212,96 +213,82 @@ class HistoryManager {
   }
 
   initializeDataTable() {
-    return $('#historyTable').DataTable({
-      serverSide: true,
-      processing: true,
-      ajax: {
-        url: '/api/history',
-        data: (d) => {
-          d.tag = $('#tagFilter').val();
-          d.correspondent = $('#correspondentFilter').val();
-        },
-      },
+    const escape = (value) => this._escapeHTML(String(value ?? ''));
+
+    return createTable(document.getElementById('historyTable'), {
+      url: '/api/history',
+      pageLength: 10,
+      order: { column: 1, dir: 'desc' },
+      emptyText: 'No processed documents yet.',
+      toolbar: document.getElementById('historyFilters'),
+      extraParams: () => ({
+        tag: document.getElementById('tagFilter')?.value || '',
+        correspondent:
+          document.getElementById('correspondentFilter')?.value || '',
+      }),
       columns: [
         {
-          data: 'document_id',
-          render: (data) =>
-            `<input type="checkbox" class="doc-select rounded" value="${data}">`,
-          orderable: false,
-          width: '40px',
+          key: 'document_id',
+          label: '',
+          sortable: false,
+          width: '36px',
+          // Kept in the card layout: without the checkbox a phone has no way
+          // to feed "Rescan selected" or "Reset selected".
+          mobileLabel: 'Select',
+          render: (value) =>
+            `<input type="checkbox" class="doc-select zr-check" value="${escape(value)}" aria-label="Select document">`,
+        },
+        { key: 'document_id', label: 'ID', width: '64px', mobileLabel: 'ID' },
+        {
+          key: 'title',
+          label: 'Title',
+          render: (value, row) =>
+            `<div class="zr-strong">${escape(value)}</div>` +
+            // Date only, like the queue pages; the full timestamp sits in the title.
+            `<div class="zr-sm zr-faint" title="${escape(new Date(row.created_at).toLocaleString())}">Modified: ${escape(new Date(row.created_at).toLocaleDateString())}</div>`,
         },
         {
-          data: 'document_id',
-          width: '60px',
+          key: 'correspondent',
+          label: 'Correspondent',
+          render: (value) =>
+            value
+              ? `<span class="zr-badge zr-badge--brand">${escape(value)}</span>`
+              : '<span class="zr-faint zr-sm">None</span>',
         },
         {
-          data: 'title',
-          render: (data, type, row) => {
-            if (type === 'display') {
-              const escapedData = this._escapeHTML(data);
-              return `
-                                <div class="font-medium">${escapedData}</div>
-                                <div class="text-xs text-gray-500">Modified: ${new Date(row.created_at).toLocaleString()}</div>
-                            `;
-            }
-            return data;
+          key: 'document_id',
+          label: 'Actions',
+          sortable: false,
+          // The column sizes itself to the buttons and keeps them on one line;
+          // wrapping used to push "Chat" down and double the row height.
+          cellClass: 'zr-table__actions',
+          mobileLabel: '',
+          // One labelled action plus the overflow, like the queue pages. Wrapping
+          // stays on for the card layout, where a phone has less room; inside
+          // the table the actions column overrides it back to a single line.
+          render: (value, row) => {
+            const docId = escape(row.document_id ?? value);
+            const menuId = `historyRowMenu${docId}`;
+            return (
+              '<div class="zr-row zr-row--wrap">' +
+              `<button type="button" class="history-info-btn zr-btn" data-docid="${escape(value)}" title="Show AI analysis details">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg><span>Details</span></button>' +
+              `<button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" popovertarget="${menuId}" title="More actions" aria-label="More actions">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg></button>' +
+              `<div id="${menuId}" popover class="zr-menu">` +
+              `<button type="button" class="zr-menu__item history-view-btn" data-link="${escape(row.link ?? '')}">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg>Open in Paperless-ngx</button>' +
+              `<button type="button" class="zr-menu__item history-chat-btn" data-docid="${docId}">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-comment"/></svg>Chat about this document</button>' +
+              '<div class="zr-menu__sep"></div>' +
+              `<button type="button" class="zr-menu__item history-ocr-btn" data-docid="${docId}">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>Send to OCR queue</button>' +
+              '</div>' +
+              '</div>'
+            );
           },
-        },
-        {
-          // AI Info button column (replaces raw tag badges)
-          data: 'document_id',
-          render: (data) => {
-            return `<button onclick="window.historyManager.openInfoModal(${data})" class="toolbar-btn toolbar-btn--warning toolbar-btn--sm" title="Show AI analysis details">
-                            <i class="fa-solid fa-circle-info"></i>
-                            <span class="hidden sm:inline ml-1">Details</span>
-                        </button>`;
-          },
-          orderable: false,
-          width: '80px',
-        },
-        {
-          data: 'correspondent',
-          render: (data) =>
-            data
-              ? `<span class="px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded-full text-xs">${this._escapeHTML(data)}</span>`
-              : '<span class="text-gray-400 italic text-xs">None</span>',
-        },
-        {
-          data: null,
-          render: (data) => `
-                        <div class="flex flex-wrap items-center gap-2">
-                            <button type="button" class="history-view-btn toolbar-btn toolbar-btn--primary toolbar-btn--sm" data-link="${this._escapeHTML(String(data.link ?? ''))}">
-                                <i class="fa-solid fa-eye"></i>
-                                <span class="hidden sm:inline ml-1">View</span>
-                            </button>
-                            <button type="button" class="history-chat-btn toolbar-btn toolbar-btn--neutral toolbar-btn--sm" data-docid="${this._escapeHTML(String(data.document_id ?? ''))}">
-                                <i class="fa-solid fa-comment"></i>
-                                <span class="hidden sm:inline ml-1">Chat</span>
-                            </button>
-                        </div>
-                    `,
-          orderable: false,
-          width: '150px',
         },
       ],
-      order: [[1, 'desc']], // Sort by document_id (column 1) descending - newest first
-      pageLength: 10,
-      dom: '<"flex flex-col sm:flex-row justify-between items-center mb-4"<"flex-1"f><"flex-none"l>>rtip',
-      language: {
-        search: 'Search documents:',
-        lengthMenu: 'Show _MENU_ entries',
-        info: 'Showing _START_ to _END_ of _TOTAL_ documents',
-        infoEmpty: 'Showing 0 to 0 of 0 documents',
-        infoFiltered: '(filtered from _MAX_ total documents)',
-      },
-      drawCallback: () => {
-        // Update "Select All" checkbox state after table redraw
-        this.updateSelectAllState();
-        // Reattach event listeners to checkboxes
-        this.attachCheckboxListeners();
-        // Reattach action handlers after each redraw
-        this.attachActionButtonListeners();
-      },
     });
   }
 
@@ -413,9 +400,23 @@ class HistoryManager {
       ?.addEventListener('click', () => this._handleRescanSelected());
   }
 
+  initializeTableEvents() {
+    // The table module re-renders rows on every page, sort and search, so the
+    // row-level handlers are re-attached on its render event.
+    document
+      .getElementById('historyTable')
+      ?.addEventListener('zr:table-rendered', () => {
+        this.updateSelectAllState();
+        this.attachCheckboxListeners();
+        this.attachActionButtonListeners();
+      });
+  }
+
   initializeFilters() {
-    $('#tagFilter, #correspondentFilter').on('change', () => {
-      this.table.ajax.reload();
+    ['tagFilter', 'correspondentFilter'].forEach((id) => {
+      document
+        .getElementById(id)
+        ?.addEventListener('change', () => this.table.reload());
     });
   }
 
@@ -424,14 +425,18 @@ class HistoryManager {
 
     // Handle "Select All" checkbox
     this.selectAll.addEventListener('change', () => {
-      const isChecked = this.selectAll.checked;
-      const checkboxes = document.querySelectorAll('.doc-select');
-      checkboxes.forEach((checkbox) => {
-        checkbox.checked = isChecked;
-      });
+      this.setAllSelected(this.selectAll.checked);
     });
 
     // Initial state check
+    this.updateSelectAllState();
+  }
+
+  /** Checks or clears every row checkbox and brings the header state along. */
+  setAllSelected(selected) {
+    document.querySelectorAll('.doc-select').forEach((checkbox) => {
+      checkbox.checked = selected;
+    });
     this.updateSelectAllState();
   }
 
@@ -441,11 +446,22 @@ class HistoryManager {
       // Remove existing listeners to prevent duplicates
       checkbox.removeEventListener('change', this.handleCheckboxChange);
       // Add new listener
-      checkbox.addEventListener('change', () => this.handleCheckboxChange());
+      checkbox.addEventListener('change', () =>
+        this.handleCheckboxChange(checkbox)
+      );
     });
   }
 
   attachActionButtonListeners() {
+    document.querySelectorAll('.history-info-btn').forEach((button) => {
+      if (button.dataset.boundClick === 'true') return;
+      button.addEventListener('click', () => {
+        const docId = button.dataset.docid || '';
+        if (/^\d+$/.test(docId)) this.openInfoModal(Number(docId));
+      });
+      button.dataset.boundClick = 'true';
+    });
+
     const viewButtons = document.querySelectorAll('.history-view-btn');
     viewButtons.forEach((button) => {
       if (button.dataset.boundClick === 'true') {
@@ -483,6 +499,57 @@ class HistoryManager {
 
       button.dataset.boundClick = 'true';
     });
+
+    document.querySelectorAll('.history-ocr-btn').forEach((button) => {
+      if (button.dataset.boundClick === 'true') return;
+      button.addEventListener('click', () => {
+        const docId = button.dataset.docid || '';
+        if (!/^\d+$/.test(docId)) {
+          console.warn('Blocked unsafe document id:', docId);
+          return;
+        }
+        this.sendToOcrQueue(Number(docId));
+      });
+      button.dataset.boundClick = 'true';
+    });
+  }
+
+  /**
+   * Queues an already-processed document for OCR reprocessing. Useful when the
+   * AI result was poor because the scan carried little or garbled text — the
+   * queue page is otherwise the only way in, and it only knows about documents
+   * the scan loop already flagged.
+   */
+  async sendToOcrQueue(documentId) {
+    let message;
+    let tone = 'success';
+
+    // The request is on its own so a rendering fault in the toast cannot be
+    // reported back as if the queueing itself had failed.
+    try {
+      const response = await fetch('/api/ocr/queue/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        message =
+          data.message || `Document ${documentId} added to the OCR queue.`;
+      } else {
+        // Reached for a document Paperless-ngx no longer has, and for one the
+        // OCR worker is busy with. Re-queueing a pending document succeeds and
+        // simply moves it back to the front.
+        message = data.message || data.error || 'Could not add the document.';
+        tone = 'error';
+      }
+    } catch (error) {
+      message = `Could not add the document: ${error.message}`;
+      tone = 'error';
+    }
+
+    this.showToast(message, tone);
   }
 
   isSafeHistoryLink(link) {
@@ -515,7 +582,17 @@ class HistoryManager {
     }
   }
 
-  handleCheckboxChange() {
+  handleCheckboxChange(changed) {
+    // The table and the card layout are both in the DOM (CSS shows one), so
+    // every document has two checkboxes. Keep the hidden twin in step or the
+    // counts and the selection would depend on the viewport.
+    if (changed) {
+      document.querySelectorAll('.doc-select').forEach((checkbox) => {
+        if (checkbox !== changed && checkbox.value === changed.value) {
+          checkbox.checked = changed.checked;
+        }
+      });
+    }
     this.updateSelectAllState();
   }
 
@@ -549,9 +626,15 @@ class HistoryManager {
   }
 
   getSelectedDocuments() {
-    return Array.from(document.querySelectorAll('.doc-select:checked')).map(
-      (checkbox) => checkbox.value
-    );
+    // Deduplicated: each document renders a checkbox in the table and one in
+    // the card layout, and both are checked after "Select all".
+    return [
+      ...new Set(
+        Array.from(document.querySelectorAll('.doc-select:checked')).map(
+          (checkbox) => checkbox.value
+        )
+      ),
+    ];
   }
 
   async resetDocuments(ids) {
@@ -566,7 +649,7 @@ class HistoryManager {
         throw new Error('Failed to reset documents');
       }
 
-      await this.table.ajax.reload();
+      await this.table.reload();
       return true;
     } catch (error) {
       console.error('Error resetting documents:', error);
@@ -586,7 +669,7 @@ class HistoryManager {
         throw new Error('Failed to reset all documents');
       }
 
-      await this.table.ajax.reload();
+      await this.table.reload();
       return true;
     } catch (error) {
       console.error('Error resetting all documents:', error);
@@ -657,7 +740,7 @@ class HistoryManager {
 
       if (!data.tags.aiSet.length && !data.tags.external.length) {
         tagsEl.innerHTML =
-          '<span class="text-gray-400 text-sm">No tags set by AI</span>';
+          '<span class="zr-sm zr-faint">No tags set by AI</span>';
       }
 
       data.tags.aiSet.forEach((tag) => {
@@ -678,7 +761,7 @@ class HistoryManager {
 
       if (data.tags.external.length) {
         const label = document.createElement('div');
-        label.className = 'w-full text-xs text-gray-400 mt-1 mb-1';
+        label.className = 'zr-xs zr-faint';
         label.textContent = 'Tags in Paperless not set by AI:';
         extTagsEl.appendChild(label);
         data.tags.external.forEach((tag) => {
@@ -716,7 +799,7 @@ class HistoryManager {
           Object.keys(cf).length === 0)
       ) {
         cfEl.innerHTML =
-          '<span class="text-gray-400 text-sm">No custom fields were detected or applied for this document</span>';
+          '<span class="zr-sm zr-faint">No custom fields were detected or applied for this document</span>';
       } else {
         const items = Array.isArray(cf) ? cf : Object.values(cf);
         cfEl.innerHTML = items
@@ -725,9 +808,9 @@ class HistoryManager {
               item.field_name || item.name || 'Unknown field'
             );
             const value = this._esc(String(item.value ?? ''));
-            return `<div class="flex gap-2 py-1 border-b border-gray-100">
-                        <span class="font-medium text-gray-700 min-w-[140px]">${name}</span>
-                        <span class="text-gray-600">${value}</span>
+            return `<div class="zr-kv">
+                        <span class="zr-strong zr-detail-label">${name}</span>
+                        <span class="zr-muted">${value}</span>
                     </div>`;
           })
           .join('');
@@ -751,8 +834,8 @@ class HistoryManager {
         ]
           .map(
             ([label, val]) =>
-              `<span class="px-3 py-1 rounded bg-gray-100 text-gray-700">
-                        <span class="font-medium">${label}:</span> ${(val ?? 0).toLocaleString()}
+              `<span class="zr-badge">
+                        <span class="zr-strong">${label}:</span> ${(val ?? 0).toLocaleString()}
                     </span>`
           )
           .join('');
@@ -771,28 +854,28 @@ class HistoryManager {
           ? data.original.tags.length
           : 0;
         origContent.innerHTML = [
-          `<div class="flex gap-2 py-1 border-b border-gray-100">
-                        <span class="font-medium text-gray-700 min-w-[140px]">Title</span>
-                        <span class="text-gray-600">${this._esc(data.original.title || '\u2013')}</span>
+          `<div class="zr-kv">
+                        <span class="zr-strong zr-detail-label">Title</span>
+                        <span class="zr-muted">${this._esc(data.original.title || '\u2013')}</span>
                     </div>`,
-          `<div class="flex gap-2 py-1 border-b border-gray-100">
-                        <span class="font-medium text-gray-700 min-w-[140px]">Correspondent</span>
-                        <span class="text-gray-600">${data.original.correspondent ? `ID ${data.original.correspondent}` : 'None'}</span>
+          `<div class="zr-kv">
+                        <span class="zr-strong zr-detail-label">Correspondent</span>
+                        <span class="zr-muted">${data.original.correspondent ? `ID ${data.original.correspondent}` : 'None'}</span>
                     </div>`,
-          `<div class="flex gap-2 py-1 border-b border-gray-100">
-                        <span class="font-medium text-gray-700 min-w-[140px]">Tags</span>
-                        <span class="text-gray-600">${tagCount} tag${tagCount !== 1 ? 's' : ''} (IDs: ${this._esc(data.original.tags.join(', ') || 'none')})</span>
+          `<div class="zr-kv">
+                        <span class="zr-strong zr-detail-label">Tags</span>
+                        <span class="zr-muted">${tagCount} tag${tagCount !== 1 ? 's' : ''} (IDs: ${this._esc(data.original.tags.join(', ') || 'none')})</span>
                     </div>`,
           data.original.documentType != null
-            ? `<div class="flex gap-2 py-1 border-b border-gray-100">
-                        <span class="font-medium text-gray-700 min-w-[140px]">Document Type</span>
-                        <span class="text-gray-600">ID ${data.original.documentType}</span>
+            ? `<div class="zr-kv">
+                        <span class="zr-strong zr-detail-label">Document Type</span>
+                        <span class="zr-muted">ID ${data.original.documentType}</span>
                     </div>`
             : '',
           data.original.language
-            ? `<div class="flex gap-2 py-1">
-                        <span class="font-medium text-gray-700 min-w-[140px]">Language</span>
-                        <span class="text-gray-600">${this._esc(data.original.language)}</span>
+            ? `<div class="zr-row">
+                        <span class="zr-strong zr-detail-label">Language</span>
+                        <span class="zr-muted">${this._esc(data.original.language)}</span>
                     </div>`
             : '',
         ]
@@ -807,8 +890,8 @@ class HistoryManager {
       body.style.display = 'block';
     } catch (err) {
       console.error('Error loading info modal:', err);
-      loading.innerHTML = `<div class="text-red-500 py-4">
-                <i class="fas fa-exclamation-triangle text-3xl mb-2"></i>
+      loading.innerHTML = `<div class="zr-empty zr-danger-text">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
                 <div>Failed to load details: ${this._esc(err.message)}</div>
             </div>`;
     }
@@ -847,7 +930,7 @@ class HistoryManager {
     if (btn) {
       btn.disabled = true;
       btn.innerHTML =
-        '<i class="fas fa-spinner fa-spin mr-1"></i> Restoring...';
+        '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Restoring...';
     }
     try {
       const res = await fetch(`/api/history/${documentId}/restore`, {
@@ -882,7 +965,8 @@ class HistoryManager {
     const origHtml = btn?.innerHTML;
     if (btn) {
       btn.disabled = true;
-      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Rescanning...';
+      btn.innerHTML =
+        '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Rescanning...';
     }
 
     try {
@@ -895,7 +979,7 @@ class HistoryManager {
       });
       if (!response.ok) throw new Error('Rescan request failed');
 
-      await this.table.ajax.reload();
+      await this.table.reload();
       this.showToast(
         `${ids.length} document(s) sent for rescan. It might take a few moments to process.`,
         'success'
@@ -917,7 +1001,7 @@ class HistoryManager {
     if (btn) {
       btn.disabled = true;
       btn.innerHTML =
-        '<i class="fas fa-spinner fa-spin mr-1"></i> Rescanning...';
+        '<svg class="zr-icon zr-icon--sm zr-icon--spin" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg> Rescanning...';
     }
 
     try {
@@ -949,19 +1033,14 @@ class HistoryManager {
     }
   }
 
+  // Adapter only: the toast DOM lives in the module kernel (public/js/zr.js).
+  // This classic script runs before that module, so the lookup is deferred to
+  // call time — toasts only fire on user interaction, never during load.
   showToast(message, type = 'success') {
-    const toast = document.getElementById('toastNotification');
-    const inner = document.getElementById('toastInner');
-    const icon = document.getElementById('toastIcon');
-    const msgEl = document.getElementById('toastMessage');
-
-    msgEl.textContent = message;
-    icon.className =
-      type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle';
-    inner.className = `${type === 'success' ? 'bg-green-500' : 'bg-red-500'} text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-3`;
-
-    toast.classList.remove('hidden');
-    setTimeout(() => toast.classList.add('hidden'), 4000);
+    if (typeof window.__zrToast !== 'function') return null;
+    return window.__zrToast(message, {
+      tone: type === 'error' ? 'danger' : 'ok',
+    });
   }
 
   // ────────────────────────────────────────────────────────────────────────────
