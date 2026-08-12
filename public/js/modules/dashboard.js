@@ -398,7 +398,19 @@ export default function dashboard(root, { toast }) {
       }
     } finally {
       statsInFlight = false;
+      settleLoading('stats');
     }
+  }
+
+  /* The page is loading until both fetches have reported back once: the figures
+     come from the stats call, the runner line from the status poll. Reporting
+     back counts either way — a failure is told by the stale banner, not by a
+     page that keeps pretending to load. Only the first pass matters; the
+     background refreshes must not blank the page out again. */
+  const firstPass = { stats: false, status: false };
+  function settleLoading(source) {
+    firstPass[source] = true;
+    if (firstPass.stats && firstPass.status) delete root.dataset.loading;
   }
 
   /* --- runner status ---------------------------------------------------- */
@@ -412,6 +424,12 @@ export default function dashboard(root, { toast }) {
     const scanButton = byId('scanButton');
     const stopButton = byId('stopScanButton');
     if (!scanButton || !stopButton) return;
+
+    // The runner card shows the seal sorting documents while a scan is on. It
+    // hangs off the same state the buttons read, so the animation can never
+    // disagree with what the buttons say.
+    const card = scanButton.closest('[data-widget="task-runner"]');
+    if (card) card.classList.toggle('is-scanning', Boolean(isScanning));
 
     // While the start request is in flight the scan button stays put and says
     // so. Swapping straight to "Stop" would claim a scan is running before the
@@ -502,6 +520,8 @@ export default function dashboard(root, { toast }) {
     } catch (error) {
       console.error('[dashboard] processing status failed', error);
       markStale('status', 'Live status lost');
+    } finally {
+      settleLoading('status');
     }
   }
 

@@ -4,7 +4,10 @@
 <%- include('partials/shell/head-end') %>
 <%- include('partials/shell/body-open', { pageTitle: 'Dashboard', version: typeof version !== 'undefined' ? version : '' }) %>
 
-<div data-module="dashboard" data-paperless-url="<%= typeof paperlessUrl !== 'undefined' ? paperlessUrl : '' %>">
+<!-- data-loading ships with the page so the placeholders are there from the
+     first paint, before the module has even been imported. The module drops it
+     once both the stats call and the status poll have reported back. -->
+<div data-module="dashboard" data-loading data-paperless-url="<%= typeof paperlessUrl !== 'undefined' ? paperlessUrl : '' %>">
 
     <!-- A persistent health banner is a status, not an alert. role="alert" plus
          aria-live="assertive" made the three-second poll interrupt the screen
@@ -90,6 +93,7 @@
                         <span class="zr-sm zr-faint zr-truncate" id="runnerDetail">Waiting for new documents</span>
                     </div>
                     <span class="zr-badge zr-badge--info hidden" id="currentDocId"></span>
+                    <%- include('partials/runner-seal') %>
                 </div>
 
                 <div class="zr-row zr-row--wrap zr-sm zr-muted" style="gap: var(--zr-4)">

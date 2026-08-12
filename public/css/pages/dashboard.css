@@ -14,6 +14,266 @@
     margin-bottom: var(--zr-4);
   }
 
+  /* --- loading state ------------------------------------------------------
+     Every figure on this page arrives from one fetch, so until it lands the
+     page is a grid of em dashes and empty boxes — which reads as "no data",
+     not as "still loading". The module carries data-loading until the stats
+     land (and drops it on failure too, where the stale banner takes over), and
+     these rules turn the slots that are about to be filled into placeholders
+     of the right shape. Selecting by the value classes rather than by id keeps
+     a new card covered without another rule. */
+  /* A width, not a min-width: these slots sit in flex rows that would otherwise
+     stretch the bar across the whole card, and a placeholder the size of a
+     paragraph does not read as "a number is coming". */
+  [data-module='dashboard'][data-loading] :is(.zr-stat__value, .zr-kv__v) {
+    display: inline-block;
+    width: 4ch;
+    color: transparent;
+    user-select: none;
+  }
+  [data-module='dashboard'][data-loading] .zr-entitybtn strong {
+    display: inline-block;
+    width: 3ch;
+    color: transparent;
+  }
+
+  /* The chart bodies are empty elements until their module draws into them, so
+     they need a height of their own to stand in for. */
+  [data-module='dashboard'][data-loading] .zr-donut {
+    width: var(--zr-donut-size, 112px);
+    height: var(--zr-donut-size, 112px);
+    border-radius: 50%;
+  }
+  [data-module='dashboard'][data-loading] .zr-spark {
+    height: 48px;
+  }
+  [data-module='dashboard'][data-loading] :is(.zr-barlist, .zr-list) {
+    min-height: 96px;
+  }
+  [data-module='dashboard'][data-loading] .zr-module__foot + .zr-list {
+    min-height: 132px;
+  }
+
+  /* The sheen itself comes from the same token the .zr-skeleton component
+     paints with, so there is one definition of what a placeholder looks like. */
+  [data-module='dashboard'][data-loading]
+    :is(
+      .zr-stat__value,
+      .zr-kv__v,
+      .zr-entitybtn strong,
+      .zr-donut,
+      .zr-spark,
+      .zr-barlist,
+      .zr-list
+    ) {
+    background: var(--zr-skeleton-bg) 0 0 / 200% 100%;
+    border-radius: var(--zr-r-sm);
+    animation: zr-shimmer 1.4s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    [data-module='dashboard'][data-loading] * {
+      animation: none;
+    }
+  }
+
+  /* --- the runner seal ----------------------------------------------------
+     While a scan is on, the card shows the seal working through the pile: a
+     sheet lifts off the left stack, arcs over her, and lands on the sorted one
+     as the tick fires. Everything below only runs under .is-scanning, which
+     the module sets from the same state the scan buttons read — an idle card
+     paints nothing and animates nothing. */
+  .runner-seal {
+    display: none;
+    /* Shrinks with the card instead of disappearing from it: the scene stays
+       legible down to about a third of its size, and the status line beside it
+       keeps the room it needs because the seal never takes more than its
+       share. */
+    flex: 0 1 200px;
+    max-width: 42%;
+    min-width: 0;
+    margin: calc(var(--zr-2) * -1) 0;
+  }
+  .zr-module.is-scanning .runner-seal {
+    display: block;
+  }
+  .runner-seal svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .runner-seal__body {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: seal-breathe 2.4s ease-in-out infinite;
+  }
+  .runner-seal__head {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    /* Her head follows the sheet across, then comes back for the next one. */
+    animation: seal-watch 2.4s ease-in-out infinite;
+  }
+  .runner-seal__eyes {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    animation: seal-blink 5.6s infinite;
+  }
+  .runner-seal__flipper {
+    transform-box: fill-box;
+    transform-origin: 90% 20%;
+    animation: seal-toss 2.4s ease-in-out infinite;
+  }
+  .runner-seal__tail {
+    transform-box: fill-box;
+    transform-origin: 10% 50%;
+    animation: seal-wag 2.4s ease-in-out infinite;
+  }
+  .runner-seal__sheet {
+    transform-box: view-box;
+    animation: seal-sheet 2.4s ease-in-out infinite;
+  }
+  .runner-seal__tick {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    animation: seal-tick 2.4s ease-in-out infinite;
+  }
+  .runner-seal__inbox {
+    animation: seal-pile-shrink 2.4s ease-in-out infinite;
+  }
+  .runner-seal__outbox rect:last-of-type {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: seal-pile-grow 2.4s ease-in-out infinite;
+  }
+
+  @keyframes seal-breathe {
+    0%,
+    100% {
+      transform: translateY(0) scale(1, 1);
+    }
+    50% {
+      transform: translateY(-1.5px) scale(1.01, 0.99);
+    }
+  }
+  @keyframes seal-watch {
+    0%,
+    100% {
+      transform: rotate(-6deg);
+    }
+    45% {
+      transform: rotate(7deg);
+    }
+    70% {
+      transform: rotate(2deg);
+    }
+  }
+  @keyframes seal-blink {
+    0%,
+    92%,
+    97%,
+    100% {
+      transform: scaleY(1);
+    }
+    94% {
+      transform: scaleY(0.08);
+    }
+  }
+  @keyframes seal-toss {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    18% {
+      transform: rotate(-24deg);
+    }
+    40% {
+      transform: rotate(6deg);
+    }
+  }
+  @keyframes seal-wag {
+    0%,
+    100% {
+      transform: rotate(0deg);
+    }
+    50% {
+      transform: rotate(-8deg);
+    }
+  }
+  /* The sheet starts on the left pile, rises over the seal and drops onto the
+     right one, tilting as it goes. Held out of sight either side of the throw
+     so the loop does not read as a sheet flying backwards. */
+  @keyframes seal-sheet {
+    0%,
+    8% {
+      transform: translate(38px, 58px) rotate(-6deg) scale(0.9);
+      opacity: 0;
+    }
+    14% {
+      transform: translate(44px, 52px) rotate(-4deg) scale(0.95);
+      opacity: 1;
+    }
+    46% {
+      transform: translate(100px, 18px) rotate(9deg) scale(1);
+      opacity: 1;
+    }
+    76% {
+      transform: translate(176px, 52px) rotate(3deg) scale(0.95);
+      opacity: 1;
+    }
+    84%,
+    100% {
+      transform: translate(176px, 58px) rotate(0deg) scale(0.9);
+      opacity: 0;
+    }
+  }
+  @keyframes seal-tick {
+    0%,
+    74%,
+    100% {
+      opacity: 0;
+      transform: scale(0.6);
+    }
+    80% {
+      opacity: 1;
+      transform: scale(1.1);
+    }
+    92% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+  @keyframes seal-pile-shrink {
+    0%,
+    10% {
+      opacity: 1;
+    }
+    16%,
+    100% {
+      opacity: 0.85;
+    }
+  }
+  @keyframes seal-pile-grow {
+    0%,
+    74% {
+      transform: scaleY(0.94);
+    }
+    82%,
+    100% {
+      transform: scaleY(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .runner-seal :is(g, rect) {
+      animation: none;
+    }
+    /* Without the throw the sheet would sit mid-air at its start position. */
+    .runner-seal__sheet,
+    .runner-seal__tick {
+      display: none;
+    }
+  }
+
   /* --- editable grid ------------------------------------------------------
      The layout module lets the user drag a card by its head and resize it from
      the corner grip. Everything below is scoped to .is-editable, which the

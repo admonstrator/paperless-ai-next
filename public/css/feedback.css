@@ -8,6 +8,12 @@
   }
 }
 
+@keyframes zr-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
 @layer components {
   /* meter / progress */
   .zr-meter {
@@ -158,9 +164,28 @@
     border-width: 3px;
   }
 
+  /* skeleton — a placeholder shaped like the thing it stands in for. A spinner
+     says "something is happening"; this says "a number goes here", which is
+     what a page full of figures needs while they are in flight. The sheen
+     itself is --zr-skeleton-bg in tokens.css, so the dashboard's loading state
+     can paint existing value slots with the same one. */
+  .zr-skeleton {
+    background: var(--zr-skeleton-bg) 0 0 / 200% 100%;
+    border-radius: var(--zr-r-sm);
+    animation: zr-shimmer 1.4s linear infinite;
+    /* Text inside stays as the accessible label but stops being drawn, so the
+       bar takes the width the real value will need. */
+    color: transparent;
+    user-select: none;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .zr-spinner {
       animation-duration: 2s;
+    }
+    /* The sheen is decoration; the placeholder shape carries the meaning. */
+    .zr-skeleton {
+      animation: none;
     }
   }
 

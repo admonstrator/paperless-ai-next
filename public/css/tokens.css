@@ -142,6 +142,17 @@
     --zr-shadow-sm: 0 1px 2px rgba(13, 27, 38, 0.06);
     --zr-shadow-md: 0 4px 12px -4px rgba(13, 27, 38, 0.14);
     --zr-shadow-lg: 0 16px 40px -12px rgba(13, 27, 38, 0.26);
+
+    /* The placeholder sheen, stated once. Both callers — the .zr-skeleton
+       component and the dashboard's loading state, which turns existing value
+       slots into placeholders — paint with this. The var()s inside resolve
+       against the element using it, so the dark theme needs no second copy. */
+    --zr-skeleton-bg: linear-gradient(
+      90deg,
+      var(--zr-surface-sunken) 25%,
+      color-mix(in srgb, var(--zr-line) 60%, var(--zr-surface-sunken)) 50%,
+      var(--zr-surface-sunken) 75%
+    );
   }
 
   :root[data-theme='dark'] {
