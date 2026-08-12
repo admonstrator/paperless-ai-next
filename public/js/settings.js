@@ -2660,6 +2660,8 @@ function initializeRuntimeOverridePills() {
     return;
   }
 
+  // Kept local because classic scripts cannot import ES modules; keep in sync
+  // with modules/text-utils.js.
   const escapeHtml = (value) =>
     String(value)
       .replace(/&/g, '&amp;')

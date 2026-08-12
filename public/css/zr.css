@@ -179,6 +179,12 @@ h4 {
   --zr-cat-8: #6b7280;
 
   --zr-focus: #12776d;
+  /* Scrims. One tone for everything that sits behind a modal layer, a lighter
+     one for the mobile drawer. Deliberately identical in both themes: a scrim
+     darkens whatever is under it, and a light one over a dark page would
+     brighten the content it is supposed to push back. */
+  --zr-scrim: rgba(6, 16, 24, 0.55);
+  --zr-scrim-soft: rgba(6, 16, 24, 0.45);
   --zr-shadow-sm: 0 1px 2px rgba(13, 27, 38, 0.06);
   --zr-shadow-md: 0 4px 12px -4px rgba(13, 27, 38, 0.14);
   --zr-shadow-lg: 0 16px 40px -12px rgba(13, 27, 38, 0.26);
@@ -227,6 +233,8 @@ h4 {
   --zr-cat-8: #9aa7b2;
 
   --zr-focus: #3fbfb2;
+  --zr-scrim: rgba(6, 16, 24, 0.55);
+  --zr-scrim-soft: rgba(6, 16, 24, 0.45);
   --zr-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --zr-shadow-md: 0 4px 12px -4px rgba(0, 0, 0, 0.5);
   --zr-shadow-lg: 0 16px 40px -12px rgba(0, 0, 0, 0.7);
@@ -278,17 +286,9 @@ body {
   height: 26px;
   flex: none;
 }
-.zr-rail__wordmark {
-  font-family: var(--zr-font-brand);
-  font-weight: 700;
-  font-size: var(--zr-fs-lg);
-  letter-spacing: -0.01em;
-  background: linear-gradient(92deg, var(--zr-brand), var(--zr-ink));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-  white-space: nowrap;
-}
+/* The wordmark itself is .zr-wordmark in layer 5 — the auth pages show it
+   without a rail. .zr-rail__wordmark is only the hook the collapse rule below
+   needs, so it carries no declarations of its own. */
 .zr-rail__nav {
   flex: 1;
   overflow-y: auto;
@@ -424,56 +424,6 @@ body {
   display: none;
 }
 
-/* standalone page shell — setup wizard, login, error pages */
-.zr-setup {
-  min-height: 100vh;
-  min-height: 100dvh;
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: var(--zr-4);
-  display: flex;
-  flex-direction: column;
-  gap: var(--zr-4);
-  background:
-    radial-gradient(
-      900px 400px at 15% -10%,
-      color-mix(in srgb, var(--zr-brand) 10%, transparent),
-      transparent
-    ),
-    radial-gradient(
-      700px 400px at 100% 0%,
-      color-mix(in srgb, var(--zr-info) 8%, transparent),
-      transparent
-    );
-}
-.zr-setup__head {
-  display: flex;
-  align-items: center;
-  gap: var(--zr-2);
-  padding-bottom: var(--zr-2);
-}
-.zr-setup__body {
-  display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
-  gap: var(--zr-4);
-  align-items: start;
-}
-.zr-setup__aside {
-  position: sticky;
-  top: var(--zr-4);
-}
-.zr-setup__panel {
-  min-height: 460px;
-  display: flex;
-  flex-direction: column;
-}
-.zr-setup__panel > [data-panel] {
-  flex: 1;
-}
-.zr-setup__panel > .zr-module__foot {
-  margin-top: auto;
-}
-
 /* settings layout: section list + stacked section modules */
 .zr-settings {
   display: grid;
@@ -565,6 +515,12 @@ body {
 }
 .zr-module__body--tight {
   padding: 0;
+}
+/* A chart next to its legend: the two keep more air between them than a plain
+   row, and the legend starts at the top rather than centring on the chart. */
+.zr-module__body--chart {
+  gap: var(--zr-4);
+  align-items: flex-start;
 }
 .zr-module__foot {
   padding: var(--zr-2) var(--zr-3);
@@ -788,8 +744,10 @@ body {
   background: var(--zr-brand-soft);
   color: var(--zr-brand-text);
 }
+/* Every nav badge links somewhere — the queue counts jump to their page. */
 .zr-badge--nav {
   margin-left: auto;
+  cursor: pointer;
 }
 
 /* status dot */
@@ -808,6 +766,42 @@ body {
 }
 .zr-dot--danger {
   background: var(--zr-danger);
+}
+/* Chart legends name their tone and the dot class follows mechanically, so
+   every tone the donut and bar list can hand out needs a class here — even
+   text-faint, which repeats the default. */
+.zr-dot--brand {
+  background: var(--zr-brand);
+}
+.zr-dot--info {
+  background: var(--zr-info);
+}
+.zr-dot--text-faint {
+  background: var(--zr-text-faint);
+}
+.zr-dot--cat-1 {
+  background: var(--zr-cat-1);
+}
+.zr-dot--cat-2 {
+  background: var(--zr-cat-2);
+}
+.zr-dot--cat-3 {
+  background: var(--zr-cat-3);
+}
+.zr-dot--cat-4 {
+  background: var(--zr-cat-4);
+}
+.zr-dot--cat-5 {
+  background: var(--zr-cat-5);
+}
+.zr-dot--cat-6 {
+  background: var(--zr-cat-6);
+}
+.zr-dot--cat-7 {
+  background: var(--zr-cat-7);
+}
+.zr-dot--cat-8 {
+  background: var(--zr-cat-8);
 }
 .zr-dot--live {
   background: var(--zr-brand);
@@ -1054,21 +1048,11 @@ a.zr-list__item:hover {
   /* A lone button in a field keeps its natural size instead of stretching. */
   align-self: flex-start;
 }
-.zr-field--stacked .zr-field__name {
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
 .zr-field--stacked .zr-input,
 .zr-field--stacked .zr-select,
 .zr-field--stacked .zr-textarea,
 .zr-field--stacked .zr-inputgroup {
   max-width: 560px;
-}
-.zr-field--stacked .zr-field__hint {
-  font-size: var(--zr-fs-sm);
-  color: var(--zr-text-muted);
 }
 
 /* Two-column form grid for short, related fields. Fixed columns rather than
@@ -1796,10 +1780,16 @@ a.zr-list__item:hover {
   overflow: auto;
 }
 .zr-dialog::backdrop {
-  background: rgba(6, 16, 24, 0.55);
+  background: var(--zr-scrim);
   backdrop-filter: blur(2px);
 }
+/* The head lays its own contents out — a title, sometimes a badge or a close
+   button beside it — so it does not need .zr-row on top. The three flex
+   declarations are exactly what that utility contributes. */
 .zr-dialog__head {
+  display: flex;
+  align-items: center;
+  gap: var(--zr-2);
   padding: var(--zr-3);
   border-bottom: 1px solid var(--zr-line);
   font-weight: 600;
@@ -2039,10 +2029,19 @@ a.zr-list__item:hover {
   fill: none;
   stroke-width: 12;
 }
+/* The two labels in the hole. SVG text takes neither the page font nor the
+   page colour, so both have to be named here. */
+.zr-donut__total {
+  font: 700 15px var(--zr-font);
+  fill: var(--zr-text);
+}
+.zr-donut__caption {
+  font: 400 8px var(--zr-font);
+  fill: var(--zr-text-faint);
+}
 
 /* entity button — a full-width row that behaves like a link */
 .zr-entitybtn {
-  width: 100%;
   text-align: left;
   padding: var(--zr-2);
   margin: 0 calc(-1 * var(--zr-2));
@@ -2081,6 +2080,11 @@ a.zr-list__item:hover {
 .zr-link:hover {
   text-decoration: underline;
 }
+/* A link inside a paragraph has no other cue that it is one, so it is
+   underlined at rest rather than only on hover. */
+.zr-link--underline {
+  text-decoration: underline;
+}
 
 /* recessed panel — for read-only blocks inside a module */
 .zr-panel {
@@ -2097,6 +2101,21 @@ a.zr-list__item:hover {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   color: var(--zr-text-faint);
+}
+
+/* brand wordmark — the rail, the setup header and the login card all show it,
+   so it is a component rather than a piece of the rail. Callers that need it
+   larger override the size; the base is what the rail and the wizard use. */
+.zr-wordmark {
+  font-family: var(--zr-font-brand);
+  font-weight: 700;
+  font-size: var(--zr-fs-lg);
+  letter-spacing: -0.01em;
+  background: linear-gradient(92deg, var(--zr-brand), var(--zr-ink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  white-space: nowrap;
 }
 
 /* --- 6. utilities (deliberately few) ------------------------------------- */
@@ -2136,6 +2155,8 @@ a.zr-list__item:hover {
 .zr-muted {
   color: var(--zr-text-muted);
 }
+/* These sit after .zr-field__hint on purpose: a hint carries its own colour at
+   the same specificity, and validation feedback has to win over it. */
 .zr-danger-text {
   color: var(--zr-danger);
 }
@@ -2143,18 +2164,6 @@ a.zr-list__item:hover {
   color: var(--zr-ok);
 }
 .zr-warn-text {
-  color: var(--zr-warn);
-}
-/* A field hint carries its own colour through `.zr-field--stacked
-   .zr-field__hint`, which outranks the plain state utilities above. Match that
-   specificity so validation feedback on a hint actually shows its state. */
-.zr-field__hint.zr-ok-text {
-  color: var(--zr-ok);
-}
-.zr-field__hint.zr-danger-text {
-  color: var(--zr-danger);
-}
-.zr-field__hint.zr-warn-text {
   color: var(--zr-warn);
 }
 .zr-faint {
@@ -2179,9 +2188,6 @@ a.zr-list__item:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-.zr-hidden {
-  display: none !important;
 }
 /* Plain `hidden` is kept as a class because the app's JS toggles it at runtime in
    ~100 places. It is a generic utility here, not a leftover of any CSS framework. */
@@ -2252,7 +2258,7 @@ a.zr-list__item:hover {
     position: fixed;
     inset: 0;
     z-index: 40;
-    background: rgba(6, 16, 24, 0.45);
+    background: var(--zr-scrim-soft);
     opacity: 0;
     pointer-events: none;
     transition: opacity 200ms var(--zr-ease);
@@ -2378,20 +2384,6 @@ a.zr-list__item:hover {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--zr-3);
   }
-  .zr-setup {
-    padding: var(--zr-3);
-    gap: var(--zr-3);
-  }
-  .zr-setup__body {
-    grid-template-columns: minmax(0, 1fr);
-    gap: var(--zr-3);
-  }
-  .zr-setup__aside {
-    position: static;
-  }
-  .zr-setup__panel {
-    min-height: 0;
-  }
   /* Tables become card lists rather than scrolling sideways — but only where a
      card list actually exists. Only data-table.js builds one; the OCR, failed
      and ignored pages render their rows by hand, and hiding the table for them
@@ -2414,33 +2406,58 @@ a.zr-list__item:hover {
   .zr-table--stack thead {
     display: none;
   }
-  .zr-table--stack tr {
-    margin-bottom: var(--zr-2);
+  .zr-table--stack td {
+    border: 0;
+  }
+  .zr-table-cards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--zr-2);
+    padding: var(--zr-3);
+  }
+
+  /* Both mechanisms draw the same card from here on: a stacked <tr> and a
+     generated .zr-table-card are the same box, and so are their label/value
+     rows. Only what genuinely differs stays in a rule of its own. */
+  .zr-table--stack tr,
+  .zr-table-card {
     border: 1px solid var(--zr-line);
     border-radius: var(--zr-r-md);
     padding: var(--zr-2) var(--zr-3);
     background: var(--zr-surface);
   }
-  .zr-table--stack td {
-    border: 0;
+  /* Rows sit in a table, which has no gap of its own; the card list has one. */
+  .zr-table--stack tr {
+    margin-bottom: var(--zr-2);
   }
   /* Cells with no label — the empty and loading states — keep the full width. */
-  .zr-table--stack td[data-label] {
+  .zr-table--stack td[data-label],
+  .zr-table-card__row {
     display: flex;
     gap: var(--zr-3);
     padding: 3px 0;
     align-items: baseline;
   }
-  .zr-table--stack td[data-label]::before {
-    content: attr(data-label);
+  .zr-table--stack td[data-label]::before,
+  .zr-table-card__label {
     flex: none;
     width: 96px;
     font-size: var(--zr-fs-sm);
     color: var(--zr-text-faint);
   }
-  /* An empty label — the actions row — yields its 96px to the content. */
-  .zr-table--stack td[data-label='']::before {
+  /* The stacked label has no element of its own — it is drawn from the cell. */
+  .zr-table--stack td[data-label]::before {
+    content: attr(data-label);
+  }
+  /* An empty label — the actions row — yields its 96px to the content. Both
+     selectors match the pair above at equal specificity, so they come after. */
+  .zr-table--stack td[data-label='']::before,
+  .zr-table-card__label:empty {
     display: none;
+  }
+  .zr-table-card__value {
+    flex: 1;
+    min-width: 0;
   }
   /* The actions cell shrinks to its buttons on a wide screen; stacked it is a
      row like any other. */
@@ -2460,38 +2477,6 @@ a.zr-list__item:hover {
        collapse the row to nothing. */
     width: auto;
     max-width: none;
-  }
-  .zr-table-cards {
-    display: flex;
-    flex-direction: column;
-    gap: var(--zr-2);
-    padding: var(--zr-3);
-  }
-  .zr-table-card {
-    border: 1px solid var(--zr-line);
-    border-radius: var(--zr-r-md);
-    padding: var(--zr-2) var(--zr-3);
-    background: var(--zr-surface);
-  }
-  .zr-table-card__row {
-    display: flex;
-    gap: var(--zr-3);
-    padding: 3px 0;
-    align-items: baseline;
-  }
-  .zr-table-card__label {
-    flex: none;
-    width: 96px;
-    font-size: var(--zr-fs-sm);
-    color: var(--zr-text-faint);
-  }
-  /* An empty label — the actions row — yields its 96px to the content. */
-  .zr-table-card__label:empty {
-    display: none;
-  }
-  .zr-table-card__value {
-    flex: 1;
-    min-width: 0;
   }
   .zr-sectionnav {
     position: static;

@@ -5,13 +5,7 @@
  * and need no canvas. Used for token distribution and the language mix.
  */
 
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
+import { escapeHtml } from './text-utils.js';
 
 /**
  * @param {Element} el

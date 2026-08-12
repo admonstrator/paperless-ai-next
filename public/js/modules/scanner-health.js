@@ -21,9 +21,17 @@ export function describeElapsed(seconds) {
   return `${days} day${days > 1 ? 's' : ''} ago`;
 }
 
-/** Health timestamps are full ISO strings that already carry a timezone. */
-export function formatIsoTimeAgo(value, now = Date.now()) {
-  const date = new Date(value);
+/**
+ * Health timestamps are full ISO strings that already carry a timezone, so the
+ * default parses `value` as-is. Database timestamps arrive without a timezone
+ * marker and are UTC — those callers pass `assumeUtc` to have the marker
+ * appended, otherwise the browser reads them as local time.
+ */
+export function formatTimeAgo(
+  value,
+  { assumeUtc = false, now = Date.now() } = {}
+) {
+  const date = new Date(assumeUtc ? `${value}Z` : value);
   if (Number.isNaN(date.getTime())) return 'unknown';
   return describeElapsed(Math.floor((now - date.getTime()) / 1000));
 }
@@ -35,7 +43,7 @@ export function formatIsoTimeAgo(value, now = Date.now()) {
 export function describePaperlessProblem(paperless) {
   const detail = paperless.error ? ` (${paperless.error})` : '';
   const checked = paperless.lastCheckedAt
-    ? ` Last checked ${formatIsoTimeAgo(paperless.lastCheckedAt)}.`
+    ? ` Last checked ${formatTimeAgo(paperless.lastCheckedAt)}.`
     : '';
 
   if (paperless.reachable && paperless.authorized === false) {
@@ -75,7 +83,7 @@ export function buildScannerHealthMessage(scanner, paperless, paperlessDown) {
   );
   parts.push(
     scanner.lastSuccessfulRunAt
-      ? `Last successful scan: ${formatIsoTimeAgo(scanner.lastSuccessfulRunAt)}.`
+      ? `Last successful scan: ${formatTimeAgo(scanner.lastSuccessfulRunAt)}.`
       : 'No successful scan yet.'
   );
 

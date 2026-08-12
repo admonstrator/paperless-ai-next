@@ -5,6 +5,8 @@
  * Imperative use:   import { renderSpark } from '/js/modules/spark.js'
  */
 
+import { escapeHtml } from './text-utils.js';
+
 /**
  * @param {SVGElement} el
  * @param {number[]} values
@@ -49,13 +51,14 @@ export function renderSpark(el, values, labels = []) {
   el.setAttribute('role', 'img');
 
   const title = labels.length
-    ? `<title>${labels
-        .map(
-          (label, index) => `${label}: ${(points[index] ?? 0).toLocaleString()}`
-        )
-        .join(', ')
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')}</title>`
+    ? `<title>${escapeHtml(
+        labels
+          .map(
+            (label, index) =>
+              `${label}: ${(points[index] ?? 0).toLocaleString()}`
+          )
+          .join(', ')
+      )}</title>`
     : '';
 
   el.innerHTML = `${title}<path class="zr-spark__area" d="${area}"/><path d="M ${line}"/>`;

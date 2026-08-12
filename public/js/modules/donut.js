@@ -5,14 +5,9 @@
  * Imperative use:   import { renderDonut } from '/js/modules/donut.js'
  */
 
-const TONES = ['brand', 'info', 'ok', 'warn', 'danger', 'text-faint'];
+import { escapeHtml } from './text-utils.js';
 
-function escapeText(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
+const TONES = ['brand', 'info', 'ok', 'warn', 'danger', 'text-faint'];
 
 /**
  * @param {SVGElement} el
@@ -49,7 +44,7 @@ export function renderDonut(el, series, caption = '') {
       const arc =
         `<circle cx="50" cy="50" r="${radius}" stroke="var(--zr-${slice.tone})" ` +
         `stroke-dasharray="${length} ${circumference - length}" stroke-dashoffset="${-offset}" ` +
-        `transform="rotate(-90 50 50)"><title>${escapeText(slice.label)}: ${slice.value.toLocaleString()}</title></circle>`;
+        `transform="rotate(-90 50 50)"><title>${escapeHtml(slice.label)}: ${slice.value.toLocaleString()}</title></circle>`;
       offset += length;
       return arc;
     })
@@ -59,7 +54,7 @@ export function renderDonut(el, series, caption = '') {
     `<circle cx="50" cy="50" r="${radius}" stroke="var(--zr-surface-sunken)"/>${arcs}` +
     `<text x="50" y="49" text-anchor="middle" dominant-baseline="central" style="font:700 15px var(--zr-font);fill:var(--zr-text)">${total.toLocaleString()}</text>` +
     (caption
-      ? `<text x="50" y="62" text-anchor="middle" style="font:400 8px var(--zr-font);fill:var(--zr-text-faint)">${escapeText(caption)}</text>`
+      ? `<text x="50" y="62" text-anchor="middle" style="font:400 8px var(--zr-font);fill:var(--zr-text-faint)">${escapeHtml(caption)}</text>`
       : '');
 }
 

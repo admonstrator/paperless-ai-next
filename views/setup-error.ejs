@@ -1,14 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="<%= theme || 'light' %>">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title || 'System Error' %></title>
-    <%- include('partials/shell/theme-init-head') %>
-    <link rel="stylesheet" href="/css/zr.css">
-    <link rel="stylesheet" href="/css/zr-pages.css">
-    <script src="/js/csrf.js"></script>
-</head>
+<%- include('partials/shell/head-start', { pageTitle: title || 'System Error' }) %>
+<%- include('partials/shell/head-end') %>
 <body class="zr-errorpage">
     <div class="error-container">
         <div class="error-icon">⚠️</div>

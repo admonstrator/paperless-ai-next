@@ -1,28 +1,16 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="<%= theme || 'light' %>">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-    <title>Initial Setup - Zettelrobbe</title>
-    <link rel="icon" type="image/webp" href="/favicon.webp">
-    <%- include('partials/shell/theme-init-head') %>
-    <script src="/js/dialogs.js"></script>
-    <link rel="stylesheet" href="/css/zr.css">
-    <link rel="stylesheet" href="/css/zr-pages.css">
-    <script src="/js/csrf.js"></script>
-</head>
+<%- include('partials/shell/head-start', { pageTitle: 'Initial Setup - Zettelrobbe' }) %>
+<script src="/js/dialogs.js"></script>
+<%- include('partials/shell/head-end') %>
 <body>
     <div class="zr-setup">
         <header class="zr-setup__head">
             <img src="/logo.png" class="zr-rail__logo" alt="">
-            <span class="zr-rail__wordmark">Zettelrobbe</span>
+            <span class="zr-wordmark">Zettelrobbe</span>
             <span class="zr-badge">Initial setup</span>
             <span class="zr-topbar__spacer"></span>
-            <button id="themeToggle" class="zr-btn zr-btn--ghost zr-btn--icon" type="button" data-action="theme"
-                aria-label="Toggle theme">
-                <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-moon"/></svg>
-            </button>
+            <%- include('partials/shell/theme-toggle') %>
         </header>
 
         <% if (typeof success === 'string' && success) { %>

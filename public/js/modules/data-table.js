@@ -19,16 +19,9 @@
  * page never scrolls sideways on a phone.
  */
 
-const PAGE_SIZES = [10, 25, 50, 100];
+import { escapeHtml } from './text-utils.js';
 
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
+const PAGE_SIZES = [10, 25, 50, 100];
 
 export function createTable(root, options) {
   const {

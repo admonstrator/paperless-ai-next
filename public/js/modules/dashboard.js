@@ -9,7 +9,8 @@
 import { renderDonut } from './donut.js';
 import { renderSpark } from './spark.js';
 import { renderBarList } from './bar-list.js';
-import { updateScannerHealthBanner } from './scanner-health.js';
+import { formatTimeAgo, updateScannerHealthBanner } from './scanner-health.js';
+import { escapeHtml } from './text-utils.js';
 
 const STATS_URL = '/api/dashboard/stats';
 const STATUS_URL = '/api/processing-status';
@@ -58,37 +59,6 @@ function formatDocumentCount(value) {
   return `${formatNumber(numeric)} ${Math.abs(numeric) === 1 ? 'doc' : 'docs'}`;
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-function describeElapsed(seconds) {
-  if (seconds < 5) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
-  if (seconds < 3600) {
-    const minutes = Math.floor(seconds / 60);
-    return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
-  }
-  if (seconds < 86400) {
-    const hours = Math.floor(seconds / 3600);
-    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  }
-  const days = Math.floor(seconds / 86400);
-  return `${days} day${days > 1 ? 's' : ''} ago`;
-}
-
-// Database timestamps arrive without a timezone marker and are UTC.
-function formatTimeAgo(value) {
-  const date = new Date(`${value}Z`);
-  if (Number.isNaN(date.getTime())) return 'unknown';
-  return describeElapsed(Math.floor((Date.now() - date.getTime()) / 1000));
-}
-
 function formatDate(value) {
   if (!value) return 'unknown date';
   const normalized = String(value).includes(' ')
@@ -99,11 +69,14 @@ function formatDate(value) {
   return parsed.toLocaleDateString();
 }
 
-async function fetchJson(url) {
+async function fetchJson(url, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
   try {
-    const response = await fetch(url, { signal: controller.signal });
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
     if (!response.ok) throw new Error(`${url} responded ${response.status}`);
     return await response.json();
   } finally {
@@ -424,10 +397,10 @@ export default function dashboard(root, { toast }) {
 
   /* --- runner status ---------------------------------------------------- */
 
-  let scanActionPending = false;
-  let stopActionPending = false;
   let lastSeenProcessedDocId = null;
   let statsRetryCountdown = STATS_RETRY_POLLS;
+  // Which of the two scan requests is in flight; both are read by setScanButtons.
+  const pending = { scan: false, stop: false };
 
   function setScanButtons(isScanning, stopRequested) {
     const scanButton = byId('scanButton');
@@ -437,16 +410,16 @@ export default function dashboard(root, { toast }) {
     // While the start request is in flight the scan button stays put and says
     // so. Swapping straight to "Stop" would claim a scan is running before the
     // server has agreed, and hide the "Starting…" label on the way out.
-    scanButton.classList.toggle('hidden', isScanning && !scanActionPending);
-    scanButton.disabled = isScanning || scanActionPending;
-    scanButton.querySelector('span').textContent = scanActionPending
+    scanButton.classList.toggle('hidden', isScanning && !pending.scan);
+    scanButton.disabled = isScanning || pending.scan;
+    scanButton.querySelector('span').textContent = pending.scan
       ? 'Starting…'
       : 'Scan now';
 
-    stopButton.classList.toggle('hidden', !isScanning || scanActionPending);
-    stopButton.disabled = !isScanning || stopRequested || stopActionPending;
+    stopButton.classList.toggle('hidden', !isScanning || pending.scan);
+    stopButton.disabled = !isScanning || stopRequested || pending.stop;
     stopButton.querySelector('span').textContent =
-      stopRequested || stopActionPending ? 'Stopping…' : 'Stop';
+      stopRequested || pending.stop ? 'Stopping…' : 'Stop';
   }
 
   async function pollStatus() {
@@ -498,7 +471,10 @@ export default function dashboard(root, { toast }) {
         setText(
           'lastProcessed',
           data.lastProcessed
-            ? formatTimeAgo(data.lastProcessed.processed_at)
+            ? // Database timestamps carry no timezone marker and are UTC.
+              formatTimeAgo(data.lastProcessed.processed_at, {
+                assumeUtc: true,
+              })
             : 'no data'
         );
       }
@@ -523,51 +499,61 @@ export default function dashboard(root, { toast }) {
     }
   }
 
-  byId('scanButton')?.addEventListener('click', async () => {
-    const button = byId('scanButton');
-    if (button.disabled) return;
+  // Start and stop differ only in wording and in which pending flag they hold,
+  // so they share one request path — which is also how they get the request
+  // timeout every other call on this page already has.
+  async function runScanAction({
+    action,
+    buttonId,
+    url,
+    stopRequested,
+    success,
+    successTone,
+    failure,
+  }) {
+    const button = byId(buttonId);
+    if (!button || button.disabled) return;
 
-    scanActionPending = true;
-    setScanButtons(true, false);
+    pending[action] = true;
+    setScanButtons(true, stopRequested);
     try {
-      const response = await fetch('/api/scan/now', {
+      await fetchJson(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
       });
-      if (!response.ok) throw new Error('Scan request failed');
-      toast('Scan started', { tone: 'ok' });
+      toast(success, { tone: successTone });
     } catch (error) {
-      console.error('[dashboard] scan failed', error);
-      toast('Scan could not be started', { tone: 'danger' });
+      console.error(`[dashboard] ${action} failed`, error);
+      toast(failure, { tone: 'danger' });
     } finally {
-      scanActionPending = false;
+      pending[action] = false;
       pollStatus();
     }
-  });
+  }
 
-  byId('stopScanButton')?.addEventListener('click', async () => {
-    const button = byId('stopScanButton');
-    if (button.disabled) return;
+  byId('scanButton')?.addEventListener('click', () =>
+    runScanAction({
+      action: 'scan',
+      buttonId: 'scanButton',
+      url: '/api/scan/now',
+      stopRequested: false,
+      success: 'Scan started',
+      successTone: 'ok',
+      failure: 'Scan could not be started',
+    })
+  );
 
-    stopActionPending = true;
-    setScanButtons(true, true);
-    try {
-      const response = await fetch('/api/scan/stop', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!response.ok) throw new Error('Stop request failed');
-      toast('Stop requested — the current document is finished first', {
-        tone: 'info',
-      });
-    } catch (error) {
-      console.error('[dashboard] stop failed', error);
-      toast('Stop request failed', { tone: 'danger' });
-    } finally {
-      stopActionPending = false;
-      pollStatus();
-    }
-  });
+  byId('stopScanButton')?.addEventListener('click', () =>
+    runScanAction({
+      action: 'stop',
+      buttonId: 'stopScanButton',
+      url: '/api/scan/stop',
+      stopRequested: true,
+      success: 'Stop requested — the current document is finished first',
+      successTone: 'info',
+      failure: 'Stop request failed',
+    })
+  );
 
   /* --- entity details dialog -------------------------------------------- */
 

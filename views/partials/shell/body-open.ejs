@@ -17,7 +17,7 @@
         <aside class="zr-rail" id="appSidebar">
             <div class="zr-rail__brand">
                 <img class="zr-rail__logo" src="/logo.png" alt="">
-                <span class="zr-rail__wordmark">Zettelrobbe</span>
+                <span class="zr-rail__wordmark zr-wordmark">Zettelrobbe</span>
                 <button class="zr-btn zr-btn--ghost zr-btn--icon zr-only-mobile" type="button" data-action="drawer-close"
                     style="margin-left:auto" aria-label="Close navigation">
                     <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
@@ -59,10 +59,7 @@
                     <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-download"/></svg>
                     <span id="latestVersion"></span>
                 </a>
-                <button class="zr-btn zr-btn--ghost zr-btn--icon" type="button" data-action="theme"
-                    aria-label="Toggle theme">
-                    <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-moon"/></svg>
-                </button>
+                <%- include('theme-toggle') %>
             </header>
 
             <main class="zr-view">

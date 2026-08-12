@@ -1,29 +1,17 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="<%= theme || 'light' %>">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-    <title>Login - Zettelrobbe</title>
-    <link rel="icon" type="image/webp" href="/favicon.webp">
-    <%- include('partials/shell/theme-init-head') %>
-    <link rel="stylesheet" href="/css/zr.css">
-    <link rel="stylesheet" href="/css/zr-pages.css">
-    <script src="/js/csrf.js"></script>
-</head>
+<%- include('partials/shell/head-start', { pageTitle: 'Login - Zettelrobbe' }) %>
+<%- include('partials/shell/head-end') %>
 <body>
     <div class="zr-authpage">
         <div class="zr-authpage__glow" aria-hidden="true"></div>
 
-        <button id="themeToggle" class="zr-btn zr-btn--ghost zr-btn--icon zr-authpage__theme"
-            type="button" data-action="theme" aria-label="Toggle theme">
-            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-moon"/></svg>
-        </button>
+        <%- include('partials/shell/theme-toggle', { extraClass: 'zr-authpage__theme' }) %>
 
         <section class="zr-authcard" aria-labelledby="loginTitle">
             <header class="zr-authcard__head">
                 <img src="/mascot-animated.svg" class="zr-authcard__mascot" alt="">
-                <span class="zr-rail__wordmark" style="font-size: var(--zr-fs-xl)">Zettelrobbe</span>
+                <span class="zr-wordmark">Zettelrobbe</span>
                 <h1 id="loginTitle" class="zr-authcard__title">
                     <%= mfaRequired ? 'Verify your identity' : 'Welcome back' %>
                 </h1>
@@ -42,7 +30,7 @@
                         <p class="zr-sm"><%= loginCookieSecurityWarning %></p>
                         <p class="zr-sm">
                             <a href="https://zettelrob.be/getting-started/configuration/#cookie-and-proxy-flags-all-supported-values"
-                                target="_blank" rel="noopener noreferrer" style="text-decoration: underline">Cookie and proxy flags documentation</a>
+                                target="_blank" rel="noopener noreferrer" class="zr-link zr-link--underline">Cookie and proxy flags documentation</a>
                         </p>
                     </div>
                 </div>
@@ -95,13 +83,13 @@
                             <% if (typeof error === 'string' && error.includes('Invalid CSRF token')) { %>
                                 <p class="zr-sm">
                                     <a href="https://zettelrob.be/getting-started/configuration/#cookie-and-proxy-flags-all-supported-values"
-                                        target="_blank" rel="noopener noreferrer" style="text-decoration: underline">Cookie and proxy flags documentation</a>
+                                        target="_blank" rel="noopener noreferrer" class="zr-link zr-link--underline">Cookie and proxy flags documentation</a>
                                 </p>
                             <% } %>
                             <% if (mfaRequired) { %>
                                 <p class="zr-sm">
                                     <a href="https://zettelrob.be/getting-started/troubleshooting/#mfa-lockout-recovery"
-                                        target="_blank" rel="noopener noreferrer" style="text-decoration: underline">MFA troubleshooting guide</a>
+                                        target="_blank" rel="noopener noreferrer" class="zr-link zr-link--underline">MFA troubleshooting guide</a>
                                 </p>
                             <% } %>
                         </div>
