@@ -34,7 +34,7 @@ jobs:
           cache: npm
 
       # --ignore-scripts skips the better-sqlite3 native build, which
-      # eslint/prettier do not need.
+      # eslint/prettier/stylelint do not need.
       - name: Install dependencies (no native builds)
         run: npm ci --ignore-scripts
 
@@ -43,13 +43,19 @@ jobs:
         run: |
           git diff --name-only --diff-filter=ACMR "origin/${{ github.base_ref }}...HEAD" > /tmp/changed-files.txt
           grep -E '\.(js|mjs|cjs)$' /tmp/changed-files.txt > /tmp/changed-js.txt || true
+          grep -E '\.css$' /tmp/changed-files.txt > /tmp/changed-css.txt || true
           echo "Changed files:" && cat /tmp/changed-files.txt
           echo "any=$([ -s /tmp/changed-files.txt ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
           echo "js=$([ -s /tmp/changed-js.txt ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+          echo "css=$([ -s /tmp/changed-css.txt ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
 
       - name: ESLint (changed files)
         if: steps.changed.outputs.js == 'true'
         run: xargs -a /tmp/changed-js.txt -d '\n' npx eslint --no-warn-ignored
+
+      - name: Stylelint (changed files)
+        if: steps.changed.outputs.css == 'true'
+        run: xargs -a /tmp/changed-css.txt -d '\n' npx stylelint --allow-empty-input
 
       - name: Prettier (changed files)
         if: steps.changed.outputs.any == 'true'
