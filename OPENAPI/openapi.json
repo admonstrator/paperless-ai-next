@@ -5356,6 +5356,31 @@
         }
       }
     },
+    "/api/settings/env-file": {
+      "get": {
+        "summary": "Export the running configuration as a .env file",
+        "description": "Returns the instance's configuration as .env lines, grouped by topic and covering only variables that are actually set. Intended for moving an instance or pinning its settings into docker-compose. The body contains API tokens and keys in clear text; JWT_SECRET is deliberately excluded, since a fresh instance generates its own.\n",
+        "tags": [
+          "System"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The configuration as .env text"
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        }
+      }
+    },
     "/api/dashboard/layout": {
       "get": {
         "summary": "Read the authenticated user's dashboard grid layout",
