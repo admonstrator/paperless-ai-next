@@ -115,13 +115,24 @@
     .zr-shell[data-rail='collapsed'] .zr-rail__wordmark,
     .zr-shell[data-rail='collapsed'] .zr-navitem__label,
     .zr-shell[data-rail='collapsed'] .zr-rail__grouplabel,
-    .zr-shell[data-rail='collapsed'] .zr-rail__version,
-    .zr-shell[data-rail='collapsed'] .zr-badge--nav {
+    .zr-shell[data-rail='collapsed'] .zr-rail__version {
       display: none;
     }
     .zr-shell[data-rail='collapsed'] .zr-navitem {
       justify-content: center;
+      position: relative;
     }
+
+    /* Three 30px buttons need 106px of row; the collapsed rail is 56px wide and
+       clips its overflow, so the GitHub and bug-report buttons used to sit
+       outside it and could not be clicked. Stack them instead. */
+    .zr-shell[data-rail='collapsed'] .zr-rail__foot {
+      flex-direction: column;
+    }
+
+    /* The queue counts shrink to a dot here — see badges.css, which owns that
+       rule: `components` outranks `shell`, so the padding and background of the
+       .zr-badge base would win over anything written in this file. */
   }
 
   /* main column */

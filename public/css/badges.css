@@ -50,6 +50,26 @@
     margin-left: auto;
     cursor: pointer;
   }
+  /* A collapsed rail has no room for the number beside a centred icon, and the
+     shell used to hide the badge outright — which removed the only sign that
+     anything was queued. Shrink it to a dot instead; `currentColor` is the tone
+     the badge already carries, so warn stays amber and danger stays red. The
+     rule lives here rather than in shell.css because `components` outranks
+     `shell`: the .zr-badge padding and background would win there. */
+  @media (min-width: 861px) {
+    .zr-shell[data-rail='collapsed'] .zr-badge--nav {
+      position: absolute;
+      top: 5px;
+      right: 11px;
+      width: 8px;
+      height: 8px;
+      padding: 0;
+      border-radius: 50%;
+      background: currentcolor;
+      font-size: 0;
+      overflow: hidden;
+    }
+  }
 
   /* status dot */
   .zr-dot {
