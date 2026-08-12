@@ -67,7 +67,7 @@
          here is simply skipped. -->
     <section class="zr-grid" data-module="dashboard-layout">
         <!-- task runner -->
-        <article class="zr-module" data-widget="task-runner" data-span="8">
+        <article class="zr-module" data-widget="task-runner" data-span="12">
             <div class="zr-module__head">
                 <span class="zr-dot zr-dot--ok" id="runnerDot"></span>
                 <h2 class="zr-module__title">Task runner</h2>
@@ -109,7 +109,16 @@
             </div>
             <div class="zr-list" id="recentActivityList"></div>
         </article>
-
+        <!-- document types -->
+        <article class="zr-module" data-widget="document-types" data-span="4">
+            <div class="zr-module__head">
+                <h2 class="zr-module__title">Document types</h2>
+            </div>
+            <div class="zr-module__body zr-row zr-module__body--chart">
+                <svg class="zr-donut" id="documentTypesDonut" aria-hidden="true"></svg>
+                <div class="zr-grow zr-col zr-col--tight zr-sm" id="documentTypesLegend"></div>
+            </div>
+        </article>
         <!-- entities and rates -->
         <article class="zr-module" data-widget="entities" data-span="4">
             <div class="zr-module__head">
@@ -147,7 +156,6 @@
                 </div>
             </div>
         </article>
-
         <!-- token usage -->
         <article class="zr-module" data-widget="token-usage" data-span="4">
             <div class="zr-module__head">
@@ -168,7 +176,6 @@
                 </div>
             </div>
         </article>
-
         <!-- token distribution -->
         <article class="zr-module" data-widget="token-distribution" data-span="4">
             <div class="zr-module__head">
@@ -179,36 +186,23 @@
                 <div class="zr-barlist" id="tokenDistributionList"></div>
             </div>
         </article>
-
-        <!-- document types -->
-        <article class="zr-module" data-widget="document-types" data-span="4">
+        <!-- language mix -->
+        <article class="zr-module" data-widget="language-mix" data-span="4">
             <div class="zr-module__head">
-                <h2 class="zr-module__title">Document types</h2>
+                <h2 class="zr-module__title">Language mix</h2>
             </div>
-            <div class="zr-module__body zr-row zr-module__body--chart">
-                <svg class="zr-donut" id="documentTypesDonut" aria-hidden="true"></svg>
-                <div class="zr-grow zr-col zr-col--tight zr-sm" id="documentTypesLegend"></div>
+            <div class="zr-module__body">
+                <div class="zr-barlist" id="languageDistributionList"></div>
             </div>
         </article>
-
         <!-- processing split -->
-        <article class="zr-module" data-widget="processing-status" data-span="6">
+        <article class="zr-module" data-widget="processing-status" data-span="4">
             <div class="zr-module__head">
                 <h2 class="zr-module__title">Processing status</h2>
             </div>
             <div class="zr-module__body zr-row zr-module__body--chart">
                 <svg class="zr-donut" id="processingDonut" aria-hidden="true"></svg>
                 <div class="zr-grow zr-col zr-col--tight zr-sm" id="processingLegend"></div>
-            </div>
-        </article>
-
-        <!-- language mix -->
-        <article class="zr-module" data-widget="language-mix" data-span="6">
-            <div class="zr-module__head">
-                <h2 class="zr-module__title">Language mix</h2>
-            </div>
-            <div class="zr-module__body">
-                <div class="zr-barlist" id="languageDistributionList"></div>
             </div>
         </article>
     </section>

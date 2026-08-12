@@ -102,6 +102,13 @@
   .zr-grid {
     --zr-tile-row: 40px;
   }
+  /* Cards in a row end on the same line. The framework grid lets each card stop
+     at its own content, which is right for a page that mixes one-off panels;
+     a dashboard of peers reads better squared off. Scoped to this grid so the
+     styleguide's example grids keep the framework behaviour. */
+  .zr-grid[data-module='dashboard-layout'] {
+    align-items: stretch;
+  }
   .zr-module[data-rows] {
     display: flex;
     flex-direction: column;
