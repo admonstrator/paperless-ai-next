@@ -1,0 +1,131 @@
+/* ==========================================================================
+   Buttons — the .zr-btn family, the segmented control built from buttons, and
+   the page-level button bar that becomes a grid on a phone.
+   ========================================================================== */
+
+@layer components {
+  /* button */
+  .zr-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 30px;
+    padding: 0 var(--zr-3);
+    border-radius: var(--zr-r-md);
+    border: 1px solid var(--zr-line-strong);
+    background: var(--zr-surface);
+    color: var(--zr-text);
+    font-size: var(--zr-fs-base);
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background var(--zr-dur) var(--zr-ease),
+      border-color var(--zr-dur) var(--zr-ease);
+  }
+  .zr-btn:hover {
+    background: var(--zr-surface-2);
+    border-color: var(--zr-text-faint);
+  }
+  .zr-btn--primary {
+    background: var(--zr-brand);
+    border-color: var(--zr-brand);
+    color: var(--zr-on-brand);
+    font-weight: 600;
+  }
+  .zr-btn--primary:hover {
+    background: var(--zr-brand-hover);
+    border-color: var(--zr-brand-hover);
+  }
+  .zr-btn--ghost {
+    border-color: transparent;
+    background: transparent;
+    color: var(--zr-text-muted);
+  }
+  .zr-btn--ghost:hover {
+    background: var(--zr-surface-2);
+    color: var(--zr-text);
+    border-color: transparent;
+  }
+  .zr-btn--danger {
+    color: var(--zr-danger);
+    border-color: color-mix(in srgb, var(--zr-danger) 40%, transparent);
+  }
+  .zr-btn--danger:hover {
+    background: var(--zr-danger-soft);
+  }
+  .zr-btn--icon {
+    width: 30px;
+    padding: 0;
+    flex: none;
+  }
+  .zr-btn--lg {
+    height: 36px;
+    padding: 0 var(--zr-4);
+    font-size: var(--zr-fs-md);
+  }
+  .zr-btn--block {
+    width: 100%;
+  }
+  .zr-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* segmented control / tabs */
+  .zr-segment {
+    display: inline-flex;
+    padding: 2px;
+    gap: 2px;
+    background: var(--zr-surface-sunken);
+    border-radius: var(--zr-r-md);
+  }
+  .zr-segment button {
+    padding: 3px var(--zr-3);
+    border-radius: var(--zr-r-sm);
+    font-size: var(--zr-fs-sm);
+    font-weight: 500;
+    color: var(--zr-text-muted);
+  }
+  .zr-segment button[aria-selected='true'] {
+    background: var(--zr-surface);
+    color: var(--zr-text);
+    box-shadow: var(--zr-shadow-sm);
+  }
+
+  @media (max-width: 860px) {
+    .zr-btn--icon {
+      width: 38px;
+    }
+
+    /* A bar of page-level buttons wraps into ragged rows on a phone: five labels
+       of five different lengths, no two lines ending in the same place. A grid
+       lines them up instead — two columns at 390px, more on a tablet, and never
+       narrower than the longest label the bar carries today. Where the
+       toolbar-menu module is in play this is what shows until it has mounted, and
+       what stays if its import fails. */
+    .zr-btnbar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    }
+    /* The spacer that pushes the destructive buttons to the far side on a wide
+       screen keeps that meaning here, as the break onto their own row. It must
+       come after the rule above, which hides it at the same specificity. */
+    .zr-btnbar > :is(span, div).zr-grow:empty {
+      display: block;
+      grid-column: 1 / -1;
+      height: 0;
+    }
+    /* Unless the toolbar-menu module has folded the bar into a single trigger.
+       That wants its own width rather than a full grid column, and the spacer has
+       nothing left to hold apart — left in place it would push the trigger to the
+       far edge on its own. Both rules match the ones above at equal specificity,
+       so they have to come after them. */
+    .zr-btnbar--collapsed {
+      display: flex;
+    }
+    .zr-btnbar--collapsed > :is(span, div).zr-grow:empty {
+      display: none;
+    }
+  }
+}

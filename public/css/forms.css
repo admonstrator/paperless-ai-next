@@ -1,0 +1,436 @@
+/* ==========================================================================
+   Forms — fields and their layouts, text controls, the tick and the switch,
+   the masked key field and the small caps group label.
+   ========================================================================== */
+
+@layer components {
+  /* form */
+  .zr-field {
+    display: grid;
+    grid-template-columns: minmax(180px, 260px) minmax(0, 1fr);
+    gap: var(--zr-2) var(--zr-5);
+    padding: var(--zr-3) 0;
+    border-bottom: 1px solid var(--zr-line);
+    align-items: start;
+  }
+  .zr-field:last-child {
+    border-bottom: 0;
+  }
+  /* an edited field is marked until it is saved */
+  .zr-field[data-dirty] {
+    position: relative;
+  }
+  .zr-field[data-dirty]::before {
+    content: '';
+    position: absolute;
+    left: calc(-1 * var(--zr-3));
+    top: var(--zr-2);
+    bottom: var(--zr-2);
+    width: 2px;
+    border-radius: 2px;
+    background: var(--zr-brand);
+  }
+  .zr-field__label {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 5px;
+  }
+  .zr-field__name {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .zr-field__hint {
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-muted);
+  }
+  .zr-field__env {
+    font-family: var(--zr-font-mono);
+    font-size: var(--zr-fs-xs);
+    color: var(--zr-text-faint);
+    background: var(--zr-surface-sunken);
+    border-radius: var(--zr-r-sm);
+    padding: 1px 5px;
+    align-self: start;
+    margin-top: 2px;
+  }
+  .zr-field__control {
+    display: flex;
+    flex-direction: column;
+    gap: var(--zr-2);
+    min-width: 0;
+  }
+
+  /* Stacked variant: label above control. Used by the long configuration forms,
+     where a label column would push the inputs into a narrow strip.
+     No divider — stacked fields are separated by their own rhythm, and a rule
+     under every one of them reads as noise. */
+  .zr-field--stacked {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 0;
+    border-bottom: 0;
+    /* Children fill the column again: the label-column grid of .zr-field sets
+       align-items: start, which this display: flex inherits — and a width:auto
+       child (an inputgroup, a nested field) then shrinks to its content, so
+       every field came out a different width. The 560px cap below still limits
+       the controls. */
+    align-items: stretch;
+  }
+  .zr-field--stacked > .zr-btn {
+    /* A lone button in a field keeps its natural size instead of stretching. */
+    align-self: flex-start;
+  }
+  .zr-field--stacked .zr-input,
+  .zr-field--stacked .zr-select,
+  .zr-field--stacked .zr-textarea,
+  .zr-field--stacked .zr-inputgroup {
+    max-width: 560px;
+  }
+
+  /* Two-column form grid for short, related fields. Fixed columns rather than
+     auto-fit, so a wide panel does not silently become three or four columns. */
+  .zr-formgrid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--zr-3) var(--zr-5);
+    align-items: start;
+  }
+  .zr-formgrid--3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  /* a field that needs the whole row */
+  .zr-formgrid__wide {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 720px) {
+    .zr-formgrid,
+    .zr-formgrid--3 {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  /* password reveal button sitting inside an input group */
+  .zr-input__reveal {
+    flex: none;
+  }
+
+  .zr-input,
+  .zr-select,
+  .zr-textarea {
+    width: 100%;
+    max-width: 460px;
+    height: 30px;
+    /* The reset hands these `font: inherit`, so a control inside a .zr-sm row
+       used to come out a size smaller than the same control elsewhere. The
+       family still comes from the page; the size belongs to the component. */
+    font-size: var(--zr-fs-base);
+    padding: 0 var(--zr-2);
+    border: 1px solid var(--zr-line-strong);
+    border-radius: var(--zr-r-md);
+    background: var(--zr-surface);
+    transition:
+      border-color var(--zr-dur) var(--zr-ease),
+      box-shadow var(--zr-dur) var(--zr-ease);
+  }
+  .zr-textarea {
+    height: auto;
+    min-height: 76px;
+    padding: var(--zr-2);
+    max-width: 640px;
+    font-family: var(--zr-font-mono);
+    font-size: var(--zr-fs-sm);
+  }
+  .zr-input--mono {
+    font-family: var(--zr-font-mono);
+  }
+  .zr-input--wide {
+    max-width: 640px;
+  }
+  .zr-input:focus,
+  .zr-select:focus,
+  .zr-textarea:focus {
+    outline: none;
+    border-color: var(--zr-brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--zr-brand) 18%, transparent);
+  }
+  .zr-input::placeholder {
+    color: var(--zr-text-faint);
+  }
+  /* Validation states. The settings form used to toggle border-red-500 and
+     border-green-500 on these, which the framework never defined, so a rejected
+     API token looked exactly like an untouched field. The colour is paired with
+     the hint text below the field — it never carries the meaning on its own. */
+  .zr-input--invalid,
+  .zr-select--invalid,
+  .zr-textarea--invalid {
+    border-color: var(--zr-danger);
+  }
+  .zr-input--invalid:focus,
+  .zr-select--invalid:focus,
+  .zr-textarea--invalid:focus {
+    border-color: var(--zr-danger);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--zr-danger) 18%, transparent);
+  }
+  .zr-input--valid,
+  .zr-select--valid,
+  .zr-textarea--valid {
+    border-color: var(--zr-ok);
+  }
+  .zr-input--valid:focus,
+  .zr-select--valid:focus,
+  .zr-textarea--valid:focus {
+    border-color: var(--zr-ok);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--zr-ok) 18%, transparent);
+  }
+  /* Fields the operator pinned through an environment variable are disabled by
+     the settings form; without this they were indistinguishable from editable
+     ones once the utility classes that used to mark them disappeared. */
+  .zr-input:disabled,
+  .zr-select:disabled,
+  .zr-textarea:disabled {
+    background: var(--zr-surface-2);
+    color: var(--zr-text-faint);
+    cursor: not-allowed;
+  }
+  .zr-inputgroup {
+    display: flex;
+    gap: var(--zr-2);
+    align-items: center;
+    max-width: 460px;
+  }
+  .zr-inputgroup .zr-input {
+    flex: 1;
+  }
+
+  /* switch with a label block next to it, as used throughout the settings form */
+  .zr-switchrow {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--zr-3);
+    padding: var(--zr-2) var(--zr-3);
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-md);
+    background: var(--zr-surface-2);
+  }
+  .zr-switchrow .zr-toggle {
+    margin-top: 2px;
+  }
+  .zr-switchrow .zr-field__name {
+    cursor: pointer;
+    display: block;
+  }
+
+  /* bordered checkbox tile */
+  .zr-checktile {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+    padding: var(--zr-2) var(--zr-3);
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-md);
+    cursor: pointer;
+    transition: border-color var(--zr-dur) var(--zr-ease);
+  }
+  .zr-checktile:hover {
+    border-color: var(--zr-line-strong);
+  }
+  .zr-checktile:has(input:checked) {
+    border-color: var(--zr-brand);
+    background: var(--zr-brand-soft);
+    color: var(--zr-brand-text);
+  }
+  /* A tile holding a toggle follows the iOS/Android list pattern: label on the
+     leading edge, switch on the trailing one. */
+  .zr-checktile:has(.zr-toggle) {
+    justify-content: space-between;
+  }
+  .zr-checktile > .zr-toggle {
+    order: 2;
+  }
+  /* Selection tick. Rows are picked, not switched on, so this stays a checkbox
+     rather than becoming a .zr-toggle — but it is drawn here instead of by the
+     operating system, which was the last place a native widget showed through. */
+  .zr-check {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    width: 16px;
+    height: 16px;
+    flex: none;
+    margin: 0;
+    vertical-align: middle;
+    /* An empty box is nothing but its outline, so the border carries the whole
+       control and needs the 3:1 of WCAG 1.4.11 on its own. --zr-line-strong, which
+       borders the text inputs, only reaches 1.5:1 against the surface. */
+    border: 1px solid var(--zr-text-faint);
+    /* Not --zr-r-sm: 6px on a 16px box rounds it into a circle, and a round box
+       reads as a radio button, i.e. as one choice out of several. */
+    border-radius: 4px;
+    background: var(--zr-surface);
+    cursor: pointer;
+    transition:
+      background var(--zr-dur) var(--zr-ease),
+      border-color var(--zr-dur) var(--zr-ease);
+  }
+  .zr-check:hover {
+    border-color: var(--zr-brand);
+  }
+  .zr-check:checked,
+  .zr-check:indeterminate {
+    background: var(--zr-brand);
+    border-color: var(--zr-brand);
+  }
+  /* Tick and dash are two borders on one pseudo-element, so the control stays a
+     single element with no icon to load. --zr-on-brand rather than white: the dark
+     theme's brand is a bright teal that a white tick only reaches 2.3:1 against. */
+  .zr-check::after {
+    content: '';
+    position: absolute;
+    /* The ink is the right and bottom border of this box, so after the rotation it
+       sits left of and above the box it was drawn from — 1px and 1.29px, measured
+       off the rotated corners. The offsets centre the tick, not the box. */
+    left: 5px;
+    top: 2.3px;
+    width: 4px;
+    height: 8px;
+    border: solid var(--zr-on-brand);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    opacity: 0;
+    transition: opacity var(--zr-dur) var(--zr-ease);
+  }
+  .zr-check:checked::after {
+    opacity: 1;
+  }
+  /* Some rows selected: a dash, the same shape the native control uses. */
+  .zr-check:indeterminate::after {
+    left: 2px;
+    /* height: 0 puts the whole bar in the bottom border, below `top`. */
+    top: 6px;
+    width: 10px;
+    height: 0;
+    border-width: 0 0 2px 0;
+    transform: none;
+    opacity: 1;
+  }
+  .zr-check:focus-visible {
+    outline: 2px solid var(--zr-focus);
+    outline-offset: 2px;
+  }
+  .zr-check:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* The switch: a checkbox drawn as a track with a knob, all on the input itself.
+     It replaced a .zr-switch component built from a label, a hidden input and two
+     nested spans — where the knob was an inline span, so width and height never
+     applied to it and it painted nothing at all. Used for settings that turn
+     something on or off; checkboxes that select rows keep .zr-check, where a tick
+     is the expected control. */
+  .zr-toggle {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    width: 34px;
+    height: 19px;
+    flex: none;
+    margin: 0;
+    border: 0;
+    border-radius: var(--zr-r-full);
+    background: var(--zr-toggle-off);
+    cursor: pointer;
+    transition: background var(--zr-dur) var(--zr-ease);
+  }
+  .zr-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: var(--zr-shadow-sm);
+    transition: transform var(--zr-dur) var(--zr-ease);
+  }
+  .zr-toggle:checked {
+    background: var(--zr-brand);
+  }
+  .zr-toggle:checked::after {
+    transform: translateX(15px);
+    background: var(--zr-on-brand);
+  }
+  .zr-toggle:focus-visible {
+    outline: 2px solid var(--zr-focus);
+    outline-offset: 2px;
+  }
+  .zr-toggle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* masked API key field */
+  .zr-apikey {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    filter: blur(4px);
+    transition: filter var(--zr-dur) var(--zr-ease);
+    user-select: none;
+  }
+  .zr-apikey:hover,
+  .zr-apikey:focus {
+    filter: none;
+  }
+
+  /* small caps label above a group */
+  .zr-label {
+    font-size: var(--zr-fs-xs);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--zr-text-faint);
+  }
+
+  @container (max-width: 420px) {
+    .zr-field {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--zr-1);
+    }
+    .zr-field__label {
+      padding-top: 0;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .zr-field {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--zr-1);
+    }
+    .zr-field__label {
+      padding-top: 0;
+    }
+    .zr-input,
+    .zr-select,
+    .zr-inputgroup {
+      max-width: none;
+    }
+    /* A field sharing a wrapping row with other controls gets the row to itself.
+       Three of them side by side on a 390px screen left the free-text one 75px
+       wide, showing "Reason (" and nothing more. */
+    .zr-row--wrap > :is(.zr-input, .zr-select) {
+      flex-basis: 100%;
+    }
+    .zr-input,
+    .zr-select,
+    .zr-btn {
+      height: 38px; /* touch target */
+    }
+  }
+}

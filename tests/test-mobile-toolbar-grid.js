@@ -42,7 +42,9 @@ function test(name, fn) {
 }
 
 const root = process.cwd();
-const css = fs.readFileSync(path.join(root, 'public', 'css', 'zr.css'), 'utf8');
+const { readFrameworkCss } = require('./framework-css');
+
+const css = readFrameworkCss(path.join(root, 'public', 'css'));
 
 test('The button bar becomes a grid', () => {
   const start = css.indexOf('\n  .zr-btnbar {');

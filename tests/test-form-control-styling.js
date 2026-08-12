@@ -35,7 +35,9 @@ function test(name, fn) {
 }
 
 const root = process.cwd();
-const css = fs.readFileSync(path.join(root, 'public', 'css', 'zr.css'), 'utf8');
+const { readFrameworkCss } = require('./framework-css');
+
+const css = readFrameworkCss(path.join(root, 'public', 'css'));
 
 /** @returns {string[]} every file below `dir` whose name ends in `ext` */
 function collect(dir, ext, found = []) {
@@ -54,7 +56,11 @@ function collect(dir, ext, found = []) {
  */
 function ruleBody(head) {
   const start = css.indexOf(`\n${head}`);
-  assert.notStrictEqual(start, -1, `The rule "${head}" is gone from zr.css`);
+  assert.notStrictEqual(
+    start,
+    -1,
+    `The rule "${head}" is gone from the framework css`
+  );
   const open = css.indexOf('{', start);
   return css.slice(open + 1, css.indexOf('}', open));
 }

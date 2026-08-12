@@ -1,0 +1,701 @@
+/* ==========================================================================
+   Grid and modules — the docking unit and the page-layout building blocks that
+   live inside one: stats, lists, charts, the settings frame and the wizard.
+   ========================================================================== */
+
+@layer modules {
+  /* settings layout: section list + stacked section modules */
+  .zr-settings {
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr);
+    gap: var(--zr-5);
+    align-items: start;
+  }
+  /* The nav inside is sticky, and a sticky element can only travel inside its own
+     containing block. With `align-items: start` the column was as tall as the nav
+     itself, so it scrolled away after 190px instead of following the page. */
+  .zr-settings > aside {
+    align-self: stretch;
+  }
+
+  .zr-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: var(--zr-3);
+    align-items: start;
+  }
+  .zr-grid > [data-span='3'] {
+    grid-column: span 3;
+  }
+  .zr-grid > [data-span='4'] {
+    grid-column: span 4;
+  }
+  .zr-grid > [data-span='5'] {
+    grid-column: span 5;
+  }
+  .zr-grid > [data-span='6'] {
+    grid-column: span 6;
+  }
+  .zr-grid > [data-span='7'] {
+    grid-column: span 7;
+  }
+  .zr-grid > [data-span='8'] {
+    grid-column: span 8;
+  }
+  .zr-grid > [data-span='12'] {
+    grid-column: span 12;
+  }
+
+  /* a module is the docking unit: same head, same states, any content */
+  .zr-module {
+    container-type: inline-size;
+    background: var(--zr-surface);
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-lg);
+    box-shadow: var(--zr-shadow-sm);
+    overflow: hidden;
+    min-width: 0;
+  }
+  .zr-module--flat {
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+  }
+  .zr-module__head {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+    padding: var(--zr-2) var(--zr-3);
+    border-bottom: 1px solid var(--zr-line);
+    min-height: 38px;
+  }
+  .zr-module__title {
+    font-size: var(--zr-fs-md);
+    font-weight: 600;
+    letter-spacing: -0.005em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .zr-module__meta {
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-faint);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  .zr-module__actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--zr-1);
+  }
+  .zr-module__body {
+    padding: var(--zr-3);
+  }
+  .zr-module__body--tight {
+    padding: 0;
+  }
+  /* A chart next to its legend: the two keep more air between them than a plain
+     row, and the legend starts at the top rather than centring on the chart.
+     The markup pairs this with .zr-row, and a single class is enough to beat
+     it: .zr-row lives in the base layer, this one in modules, and a later
+     layer wins whatever the selectors weigh. */
+  .zr-module__body--chart {
+    gap: var(--zr-4);
+    align-items: flex-start;
+  }
+  .zr-module__foot {
+    padding: var(--zr-2) var(--zr-3);
+    border-top: 1px solid var(--zr-line);
+    background: var(--zr-surface-2);
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-muted);
+  }
+
+  /* A bare title directly inside a module reads as its header, so it gets the
+     same treatment as .zr-module__head without needing the wrapper. */
+  .zr-module > .zr-module__title {
+    display: block;
+    padding: var(--zr-2) var(--zr-3);
+    border-bottom: 1px solid var(--zr-line);
+    margin-bottom: var(--zr-3);
+  }
+  .zr-module > .zr-module__title:only-child {
+    border-bottom: 0;
+    margin-bottom: 0;
+  }
+
+  /* Fallback padding: a module whose content is not wrapped in __body still needs
+     breathing room. Structural children bring their own padding and opt out. */
+  .zr-module
+    > *:not(.zr-module__head):not(.zr-module__body):not(.zr-module__foot):not(
+      .zr-list
+    ):not(.zr-table-wrap):not(.zr-table-cards):not(.zr-table-toolbar):not(
+      .zr-table-foot
+    ):not(table):not(script):not(style) {
+    padding-left: var(--zr-3);
+    padding-right: var(--zr-3);
+  }
+  .zr-module
+    > *:not(.zr-module__head):not(.zr-module__body):not(.zr-module__foot):not(
+      .zr-list
+    ):not(.zr-table-wrap):not(.zr-table-cards):not(.zr-table-toolbar):not(
+      .zr-table-foot
+    ):not(table):not(script):not(style):first-child {
+    padding-top: var(--zr-3);
+  }
+  .zr-module
+    > *:not(.zr-module__head):not(.zr-module__body):not(.zr-module__foot):not(
+      .zr-list
+    ):not(.zr-table-wrap):not(.zr-table-cards):not(.zr-table-toolbar):not(
+      .zr-table-foot
+    ):not(table):not(script):not(style):last-child {
+    padding-bottom: var(--zr-3);
+  }
+  /* Stacked modules need air between them; the grid handles its own gaps. */
+  .zr-module + .zr-module,
+  .zr-module + .zr-alert,
+  .zr-alert + .zr-module {
+    margin-top: var(--zr-3);
+  }
+  /* …which is why the grid has to opt out again: the margin lands on every card
+     but the first, so the cards sharing a row no longer start at the same height
+     and every row gap ends up doubled. */
+  .zr-grid > .zr-module,
+  .zr-grid > .zr-alert {
+    margin-top: 0;
+  }
+
+  .zr-empty {
+    text-align: center;
+    padding: var(--zr-6) var(--zr-4);
+    color: var(--zr-text-muted);
+  }
+  .zr-empty > .zr-icon {
+    margin-right: var(--zr-1);
+  }
+  /* `.zr-table td` is more specific than `.zr-empty`, so an empty state used as
+     a table cell would otherwise fall back to the tight generic cell padding. */
+  .zr-table td.zr-empty {
+    padding: var(--zr-6) var(--zr-4);
+  }
+  .zr-empty__icon {
+    color: var(--zr-text-faint);
+    margin: 0 auto var(--zr-2);
+  }
+  .zr-empty__title {
+    font-weight: 600;
+    color: var(--zr-text);
+    margin-bottom: 2px;
+  }
+
+  /* stat — the KPI unit */
+  .zr-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--zr-3);
+  }
+  .zr-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--zr-3);
+    background: var(--zr-surface);
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-lg);
+    box-shadow: var(--zr-shadow-sm);
+    min-width: 0;
+    transition: border-color var(--zr-dur) var(--zr-ease);
+  }
+  a.zr-stat:hover {
+    border-color: var(--zr-brand);
+  }
+  .zr-stat__label {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-muted);
+    font-weight: 500;
+  }
+  .zr-stat__value {
+    font-size: var(--zr-fs-2xl);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  /* Muted rather than faint: these three carry information (a date, a
+     correspondent, a coverage figure). Faint is for decorative labels. */
+  .zr-stat__delta {
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-muted);
+  }
+  .zr-stat__delta--up {
+    color: var(--zr-ok);
+  }
+  .zr-stat__delta--down {
+    color: var(--zr-danger);
+  }
+
+  /* bar list — replaces most small charts */
+  .zr-barlist {
+    display: flex;
+    flex-direction: column;
+    gap: var(--zr-2);
+  }
+  .zr-barrow {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2px var(--zr-2);
+    align-items: center;
+  }
+  .zr-barrow__label {
+    font-size: var(--zr-fs-base);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .zr-barrow__value {
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .zr-barrow__track {
+    grid-column: 1 / -1;
+  }
+
+  /* list */
+  .zr-list {
+    display: flex;
+    flex-direction: column;
+  }
+  .zr-list__item {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-3);
+    padding: var(--zr-2) var(--zr-3);
+    border-bottom: 1px solid var(--zr-line);
+    min-width: 0;
+  }
+  .zr-list__item:last-child {
+    border-bottom: 0;
+  }
+  a.zr-list__item:hover {
+    background: var(--zr-surface-2);
+  }
+  .zr-list__main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    flex: 1;
+  }
+  .zr-list__title {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .zr-list__sub {
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .zr-list__time {
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-muted);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  /* section nav (settings) */
+  .zr-sectionnav {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    position: sticky;
+    top: calc(var(--zr-topbar-h) + var(--zr-4));
+    /* A longer list on a short window scrolls inside the nav rather than reaching
+       past the bottom of the screen where it could not be clicked. */
+    max-height: calc(100dvh - var(--zr-topbar-h) - var(--zr-6));
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+  .zr-sectionnav a {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+    padding: 6px var(--zr-2);
+    border-radius: var(--zr-r-md);
+    color: var(--zr-text-muted);
+    font-weight: 500;
+  }
+  .zr-sectionnav a:hover {
+    background: var(--zr-surface-2);
+    color: var(--zr-text);
+  }
+  .zr-sectionnav a[aria-current='true'] {
+    background: var(--zr-brand-soft);
+    color: var(--zr-brand-text);
+    font-weight: 600;
+  }
+
+  /* stepper (setup) */
+  .zr-stepper {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .zr-step {
+    display: grid;
+    grid-template-columns: 22px minmax(0, 1fr);
+    gap: var(--zr-2);
+    padding: var(--zr-2);
+    border-radius: var(--zr-r-md);
+    color: var(--zr-text-muted);
+    text-align: left;
+    width: 100%;
+    align-items: center;
+  }
+  .zr-step:hover {
+    background: var(--zr-surface-2);
+  }
+  .zr-step__marker {
+    /* anchors the connector line drawn for finished steps */
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1.5px solid var(--zr-line-strong);
+    font-size: var(--zr-fs-xs);
+    font-weight: 700;
+    color: var(--zr-text-faint);
+    background: var(--zr-surface);
+    flex: none;
+  }
+  .zr-step__name {
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .zr-step__hint {
+    font-size: var(--zr-fs-xs);
+    color: var(--zr-text-faint);
+  }
+  /* A finished step used to differ from a pending one by the fill of a 22px
+     circle and nothing else. Give the whole row the state: full-strength text,
+     a check mark, and a connector line running down to the next step. */
+  .zr-step[data-status='done'] .zr-step__marker {
+    background: var(--zr-ok);
+    border-color: var(--zr-ok);
+    color: #fff;
+  }
+  .zr-step[data-status='done'] {
+    color: var(--zr-text);
+  }
+  .zr-step[data-status='done'] .zr-step__name {
+    font-weight: 600;
+  }
+  .zr-step[data-status='done'] .zr-step__hint {
+    color: var(--zr-ok);
+  }
+  /* Connector between consecutive markers, drawn only below a finished step so
+     the rail reads as a filled-in trail. */
+  .zr-step[data-status='done'] .zr-step__marker::after {
+    content: '';
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    width: 1.5px;
+    height: calc(100% + 1px);
+    transform: translateX(-50%);
+    background: var(--zr-ok);
+  }
+  .zr-step:last-child .zr-step__marker::after {
+    display: none;
+  }
+  .zr-step[data-status='active'] {
+    background: var(--zr-brand-soft);
+    color: var(--zr-brand-text);
+  }
+  .zr-step[data-status='active'] .zr-step__marker {
+    background: var(--zr-brand);
+    border-color: var(--zr-brand);
+    color: var(--zr-on-brand);
+  }
+  .zr-step[data-status='active'] .zr-step__name {
+    font-weight: 600;
+  }
+  /* Steps not yet reached are genuinely inert, so stop advertising a click. */
+  .zr-step[data-status='todo'] {
+    cursor: default;
+  }
+  .zr-step[data-status='todo']:hover {
+    background: transparent;
+  }
+
+  /* sticky action bar */
+  .zr-actionbar {
+    position: sticky;
+    bottom: 0;
+    z-index: 15;
+    display: flex;
+    align-items: center;
+    gap: var(--zr-3);
+    margin-top: var(--zr-4);
+    padding: var(--zr-2) var(--zr-3);
+    background: color-mix(in srgb, var(--zr-surface) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-lg);
+    box-shadow: var(--zr-shadow-md);
+  }
+  .zr-actionbar__status {
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-muted);
+    margin-right: auto;
+  }
+  .zr-actionbar[data-dirty='true'] {
+    border-color: var(--zr-brand);
+  }
+  .zr-actionbar[data-dirty='true'] .zr-actionbar__status {
+    color: var(--zr-brand-text);
+    font-weight: 600;
+  }
+
+  /* view header — page-level title row with actions, inside the content area */
+  .zr-viewhead {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+    flex-wrap: wrap;
+    margin-bottom: var(--zr-4);
+  }
+  .zr-viewhead__title {
+    font-family: var(--zr-font-brand);
+    font-size: var(--zr-fs-xl);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+  .zr-viewhead__sub {
+    font-size: var(--zr-fs-sm);
+    color: var(--zr-text-muted);
+    flex-basis: 100%;
+    margin-top: -4px;
+  }
+  .zr-viewhead__actions {
+    margin-left: auto;
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+    flex-wrap: wrap;
+  }
+
+  /* sparkline */
+  .zr-spark {
+    width: 100%;
+    height: 40px;
+    overflow: visible;
+  }
+  .zr-spark path {
+    fill: none;
+    stroke: var(--zr-brand);
+    stroke-width: 1.5;
+    vector-effect: non-scaling-stroke;
+  }
+  .zr-spark .zr-spark__area {
+    fill: color-mix(in srgb, var(--zr-brand) 14%, transparent);
+    stroke: none;
+  }
+  .zr-spark .zr-spark__baseline {
+    stroke: var(--zr-line-strong);
+    stroke-dasharray: 3 3;
+  }
+
+  /* donut */
+  .zr-donut {
+    --zr-donut-size: 116px;
+    width: var(--zr-donut-size);
+    height: var(--zr-donut-size);
+    flex: none;
+  }
+  .zr-donut circle {
+    fill: none;
+    stroke-width: 12;
+  }
+  /* The two labels in the hole. SVG text takes neither the page font nor the
+     page colour, so both have to be named here. */
+  .zr-donut__total {
+    font: 700 15px var(--zr-font);
+    fill: var(--zr-text);
+  }
+  .zr-donut__caption {
+    font: 400 8px var(--zr-font);
+    fill: var(--zr-text-faint);
+  }
+
+  /* entity button — a full-width row that behaves like a link */
+  .zr-entitybtn {
+    text-align: left;
+    padding: var(--zr-2);
+    margin: 0 calc(-1 * var(--zr-2));
+    width: calc(100% + var(--zr-4));
+    border-radius: var(--zr-r-md);
+    color: inherit;
+  }
+  .zr-entitybtn:hover {
+    background: var(--zr-surface-2);
+  }
+
+  /* key-value */
+  .zr-kv {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--zr-3);
+    padding: 5px 0;
+    border-bottom: 1px dashed var(--zr-line);
+  }
+  .zr-kv:last-child {
+    border-bottom: 0;
+  }
+  .zr-kv__k {
+    color: var(--zr-text-muted);
+  }
+  .zr-kv__v {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* recessed panel — for read-only blocks inside a module */
+  .zr-panel {
+    padding: var(--zr-3);
+    border-radius: var(--zr-r-md);
+    background: var(--zr-surface-2);
+    border: 1px solid var(--zr-line);
+  }
+
+  @container (max-width: 420px) {
+    .zr-donut {
+      --zr-donut-size: 92px;
+    }
+  }
+
+  @media (max-width: 1180px) {
+    .zr-grid > [data-span='3'],
+    .zr-grid > [data-span='4'] {
+      grid-column: span 6;
+    }
+    .zr-grid > [data-span='5'],
+    .zr-grid > [data-span='7'],
+    .zr-grid > [data-span='8'] {
+      grid-column: span 12;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .zr-grid > * {
+      grid-column: span 12 !important;
+    }
+    .zr-stats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: var(--zr-2);
+    }
+    /* an odd last tile takes the full row instead of leaving a hole */
+    .zr-stats > :last-child:nth-child(odd) {
+      grid-column: span 2;
+    }
+
+    /* Docked onto the tab bar instead of floating above it: the floating island
+       left a strip of scrolling content visible between its bottom edge and the
+       tabs, which read as a rendering glitch. */
+    .zr-actionbar {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: var(--zr-tabbar-h);
+      z-index: 25;
+      margin: 0;
+      gap: var(--zr-2);
+      padding: var(--zr-2) var(--zr-3);
+      border-radius: 0;
+      border-left: 0;
+      border-right: 0;
+      border-bottom: 0;
+      box-shadow: none;
+    }
+    /* The docked bar covers content the sticky island used to push away. */
+    .zr-view:has(.zr-actionbar) {
+      padding-bottom: calc(var(--zr-tabbar-h) + 72px);
+    }
+    .zr-actionbar__status {
+      font-size: var(--zr-fs-xs);
+      white-space: nowrap;
+    }
+
+    .zr-settings {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--zr-3);
+    }
+
+    .zr-sectionnav {
+      position: static;
+      flex-direction: row;
+      /* The desktop cap would squash the single row this becomes. */
+      max-height: none;
+      overflow-x: auto;
+      gap: var(--zr-1);
+      padding-bottom: var(--zr-1);
+      scrollbar-width: none;
+    }
+
+    /* Filters stack rather than leaving a different amount of the row unused on
+       every line — but only where the group holds a control. The OCR head uses
+       the same box for three status badges, and those belong side by side. */
+    .zr-viewhead__actions:has(.zr-select, .zr-input) {
+      width: 100%;
+      flex-direction: column;
+      align-items: stretch;
+    }
+    .zr-sectionnav a {
+      white-space: nowrap;
+    }
+  }
+
+  @media (max-width: 860px) {
+    /* An "updated 14:32" note is desktop chrome and stays out of the way here,
+       but "the data stopped refreshing" has to reach the phone as well. */
+    .zr-freshness:not(.zr-danger-text) {
+      display: none;
+    }
+
+    /* The setup rail used to be desktop-only, leaving phones with just a line of
+       text. Keep it, but collapse it to a row of markers — the step name is
+       already spelled out above in "Step N of 7: …". */
+    .zr-stepper {
+      flex-direction: row;
+      justify-content: space-between;
+      gap: var(--zr-1);
+    }
+    .zr-step {
+      grid-template-columns: auto;
+      justify-items: center;
+      padding: var(--zr-1);
+    }
+    .zr-step > .zr-col {
+      display: none;
+    }
+    /* horizontal connector instead of the vertical one */
+    .zr-step[data-status='done'] .zr-step__marker::after {
+      top: 50%;
+      left: 22px;
+      width: calc(100% + 1px);
+      height: 1.5px;
+      transform: translateY(-50%);
+    }
+  }
+}

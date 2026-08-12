@@ -16,7 +16,6 @@
 'use strict';
 
 const assert = require('assert');
-const fs = require('fs');
 const path = require('path');
 
 let passed = 0;
@@ -34,10 +33,9 @@ function test(name, fn) {
   }
 }
 
-const css = fs.readFileSync(
-  path.join(process.cwd(), 'public', 'css', 'zr.css'),
-  'utf8'
-);
+const { readFrameworkCss } = require('./framework-css');
+
+const css = readFrameworkCss(path.join(process.cwd(), 'public', 'css'));
 
 /**
  * @returns {string} the body of the rule whose selector list matches `head`.

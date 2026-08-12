@@ -1,0 +1,279 @@
+/* ==========================================================================
+   Shell — rail, top bar, main column, drawer scrim and bottom tab bar, plus
+   the brand wordmark the rail and the auth pages share.
+   ========================================================================== */
+
+@layer shell {
+  .zr-shell {
+    display: grid;
+    grid-template-columns: var(--zr-rail-w) minmax(0, 1fr);
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  .zr-shell[data-rail='collapsed'] {
+    grid-template-columns: var(--zr-rail-w-collapsed) minmax(0, 1fr);
+  }
+
+  /* rail (desktop sidebar) */
+  .zr-rail {
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100vh;
+    height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    background: var(--zr-rail-bg);
+    border-right: 1px solid var(--zr-line);
+    overflow: hidden;
+  }
+  .zr-rail__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+    height: var(--zr-topbar-h);
+    padding: 0 var(--zr-3);
+    border-bottom: 1px solid var(--zr-line);
+    flex: none;
+  }
+  .zr-rail__logo {
+    width: 26px;
+    height: 26px;
+    flex: none;
+  }
+  /* The wordmark itself is .zr-wordmark in layer 5 — the auth pages show it
+     without a rail. .zr-rail__wordmark is only the hook the collapse rule below
+     needs, so it carries no declarations of its own. */
+  .zr-rail__nav {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--zr-2) var(--zr-2) var(--zr-4);
+  }
+  .zr-rail__group {
+    margin-top: var(--zr-3);
+  }
+  .zr-rail__grouplabel {
+    font-size: var(--zr-fs-xs);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--zr-text-faint);
+    padding: var(--zr-2) var(--zr-2) var(--zr-1);
+    white-space: nowrap;
+  }
+  .zr-navitem {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+    padding: 7px var(--zr-2);
+    border-radius: var(--zr-r-md);
+    color: var(--zr-text-muted);
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background var(--zr-dur) var(--zr-ease),
+      color var(--zr-dur) var(--zr-ease);
+  }
+  .zr-navitem:hover {
+    background: var(--zr-surface-2);
+    color: var(--zr-text);
+  }
+  .zr-navitem[aria-current='page'] {
+    background: var(--zr-brand-soft);
+    color: var(--zr-brand-text);
+    font-weight: 600;
+  }
+  .zr-navitem .zr-icon {
+    flex: none;
+    color: currentColor;
+  }
+  .zr-navitem__label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .zr-rail__foot {
+    flex: none;
+    border-top: 1px solid var(--zr-line);
+    padding: var(--zr-2);
+    display: flex;
+    align-items: center;
+    gap: var(--zr-1);
+  }
+  .zr-rail__version {
+    font-size: var(--zr-fs-xs);
+    color: var(--zr-text-faint);
+    margin-left: auto;
+    padding-right: var(--zr-1);
+    white-space: nowrap;
+  }
+
+  /* collapsed rail: icons only. Desktop-scoped: the collapse state lives in a
+     cookie, and on a phone the same .zr-rail is the drawer — a drawer without
+     labels is unusable, so the cookie must not reach it. */
+  @media (min-width: 861px) {
+    .zr-shell[data-rail='collapsed'] .zr-rail__wordmark,
+    .zr-shell[data-rail='collapsed'] .zr-navitem__label,
+    .zr-shell[data-rail='collapsed'] .zr-rail__grouplabel,
+    .zr-shell[data-rail='collapsed'] .zr-rail__version,
+    .zr-shell[data-rail='collapsed'] .zr-badge--nav {
+      display: none;
+    }
+    .zr-shell[data-rail='collapsed'] .zr-navitem {
+      justify-content: center;
+    }
+  }
+
+  /* main column */
+  .zr-main {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .zr-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+    height: var(--zr-topbar-h);
+    padding: 0 var(--zr-4);
+    background: color-mix(in srgb, var(--zr-surface) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--zr-line);
+  }
+  .zr-topbar__title {
+    font-family: var(--zr-font-brand);
+    font-size: var(--zr-fs-lg);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .zr-topbar__crumb {
+    color: var(--zr-text-faint);
+    font-size: var(--zr-fs-sm);
+    white-space: nowrap;
+  }
+  .zr-topbar__spacer {
+    flex: 1;
+  }
+  .zr-topbar__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+  }
+  .zr-view {
+    flex: 1;
+    width: 100%;
+    max-width: var(--zr-view-max);
+    padding: var(--zr-4);
+    padding-bottom: var(--zr-8);
+  }
+  .zr-drawer-scrim {
+    display: none;
+  }
+  .zr-tabbar {
+    display: none;
+  }
+
+  /* brand wordmark — the rail, the setup header and the login card all show it,
+     so it is a component rather than a piece of the rail. Callers that need it
+     larger override the size; the base is what the rail and the wizard use. */
+  .zr-wordmark {
+    font-family: var(--zr-font-brand);
+    font-weight: 700;
+    font-size: var(--zr-fs-lg);
+    letter-spacing: -0.01em;
+    background: linear-gradient(92deg, var(--zr-brand), var(--zr-ink));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    white-space: nowrap;
+  }
+
+  @media (max-width: 860px) {
+    .zr-shell,
+    .zr-shell[data-rail='collapsed'] {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    /* rail becomes an off-canvas drawer */
+    .zr-rail {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: 264px;
+      z-index: 50;
+      transform: translateX(-100%);
+      transition: transform 200ms var(--zr-ease);
+      box-shadow: var(--zr-shadow-lg);
+    }
+    .zr-shell[data-drawer='open'] .zr-rail {
+      transform: none;
+    }
+    .zr-drawer-scrim {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: var(--zr-scrim-soft);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 200ms var(--zr-ease);
+    }
+    .zr-shell[data-drawer='open'] .zr-drawer-scrim {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .zr-view {
+      padding: var(--zr-3);
+      padding-bottom: calc(var(--zr-tabbar-h) + var(--zr-6));
+    }
+
+    /* bottom tab bar. Below the drawer scrim (40): with the drawer open the
+       scrim has to cover the tabs, not float beneath them. */
+    .zr-tabbar {
+      position: fixed;
+      inset: auto 0 0 0;
+      z-index: 30;
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      height: var(--zr-tabbar-h);
+      padding-bottom: env(safe-area-inset-bottom);
+      background: color-mix(in srgb, var(--zr-surface) 94%, transparent);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--zr-line);
+    }
+    .zr-tab {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      color: var(--zr-text-faint);
+      font-size: var(--zr-fs-xs);
+      font-weight: 500;
+      position: relative;
+    }
+    .zr-tab[aria-current='page'] {
+      color: var(--zr-brand);
+    }
+    .zr-tab__dot {
+      position: absolute;
+      top: 6px;
+      left: 50%;
+      margin-left: 5px;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--zr-danger);
+    }
+
+    .zr-topbar {
+      padding: 0 var(--zr-3);
+    }
+  }
+}

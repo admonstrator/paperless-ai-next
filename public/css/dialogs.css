@@ -1,0 +1,121 @@
+/* ==========================================================================
+   Dialogs — the native <dialog>, the prose and changelog blocks that only
+   appear inside one, and the full-screen blocking overlay.
+   ========================================================================== */
+
+@layer components {
+  /* dialog (native <dialog>, replaces SweetAlert2) */
+  .zr-dialog {
+    /* `margin: auto` is what centres a modal <dialog>; the reset in layer 1
+       zeroes every margin, so it has to be restored explicitly here. */
+    margin: auto;
+    width: min(440px, calc(100vw - 32px));
+    max-height: calc(100vh - 2 * var(--zr-6));
+    padding: 0;
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-lg);
+    background: var(--zr-surface);
+    color: var(--zr-text);
+    box-shadow: var(--zr-shadow-lg);
+    overflow: auto;
+  }
+  .zr-dialog::backdrop {
+    background: var(--zr-scrim);
+    backdrop-filter: blur(2px);
+  }
+  /* The head lays its own contents out — a title, sometimes a badge or a close
+     button beside it — so it does not need .zr-row on top. The three flex
+     declarations are exactly what that utility contributes. */
+  .zr-dialog__head {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+    padding: var(--zr-3);
+    border-bottom: 1px solid var(--zr-line);
+    font-weight: 600;
+  }
+  .zr-dialog__body {
+    padding: var(--zr-3);
+    color: var(--zr-text-muted);
+  }
+  /* Prose inside a dialog — help texts and the like. The reset zeroes every
+     margin, so the spacing has to be handed back here. */
+  .zr-prose > * + * {
+    margin-top: var(--zr-2);
+  }
+  .zr-prose strong {
+    color: var(--zr-text);
+  }
+  .zr-prose ul {
+    padding-left: var(--zr-4);
+  }
+  .zr-prose li + li {
+    margin-top: 2px;
+  }
+  .zr-prose code {
+    font-family: var(--zr-font-mono);
+    font-size: var(--zr-fs-sm);
+    padding: 1px 4px;
+    border-radius: var(--zr-r-sm);
+    background: var(--zr-surface-sunken);
+    color: var(--zr-text);
+  }
+  .zr-dialog__foot {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--zr-2);
+    padding: var(--zr-3);
+    border-top: 1px solid var(--zr-line);
+    background: var(--zr-surface-2);
+  }
+
+  .zr-dialog__foot--split {
+    justify-content: space-between;
+  }
+  .zr-changelog-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--zr-2);
+  }
+  .zr-changelog-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--zr-2);
+    color: var(--zr-text);
+  }
+  .zr-changelog-list li .zr-icon {
+    color: var(--zr-brand);
+    flex: none;
+    margin-top: 3px;
+  }
+
+  /* full-screen blocking overlay — restart and model-test flows */
+  .zr-fullscreen {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--zr-4);
+    background: color-mix(in srgb, var(--zr-canvas) 82%, transparent);
+    backdrop-filter: blur(4px);
+  }
+  .zr-fullscreen__card {
+    width: 100%;
+    max-width: 520px;
+    padding: var(--zr-6);
+    background: var(--zr-surface);
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-lg);
+    box-shadow: var(--zr-shadow-lg);
+  }
+  .zr-fullscreen__seal {
+    font-size: 34px;
+    line-height: 1;
+    flex: none;
+  }
+}

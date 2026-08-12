@@ -1,0 +1,267 @@
+/* ==========================================================================
+   Tables — the data table, its row menu and toolbar, and the card stack both
+   mechanisms fall back to on a phone.
+   ========================================================================== */
+
+@layer modules {
+  /* table */
+  .zr-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+  }
+  .zr-table th {
+    text-align: left;
+    font-size: var(--zr-fs-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--zr-text-faint);
+    font-weight: 600;
+    padding: var(--zr-2) var(--zr-3);
+    border-bottom: 1px solid var(--zr-line);
+    white-space: nowrap;
+  }
+  .zr-table td {
+    padding: var(--zr-2) var(--zr-3);
+    border-bottom: 1px solid var(--zr-line);
+  }
+  /* A truncating cell must not size the table: in an auto-layout table a nowrap
+     cell takes its full content width and text-overflow never fires. width:100%
+     hands the column the leftover space, max-width:0 lets it shrink below the
+     content so the ellipsis can appear. */
+  .zr-table td.zr-truncate {
+    width: 100%;
+    max-width: 0;
+  }
+  .zr-table tr:last-child td {
+    border-bottom: 0;
+  }
+  /* Row actions. The column is sized to its buttons and never wraps them: a
+     wrapping action cell gave every row a different height depending on which
+     buttons its state happened to offer. */
+  .zr-table__actions {
+    width: 1%;
+    white-space: nowrap;
+  }
+  .zr-table__actions > .zr-row {
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+  }
+  .zr-table tbody tr:hover {
+    background: var(--zr-surface-2);
+  }
+
+  /* Row menu — the overflow behind the "…" button in an actions cell.
+     It is a popover, so it renders in the top layer and the scrolling table
+     wrapper cannot clip it, and Escape plus click-outside come for free.
+     js/modules/row-menu.js places it against its button. */
+  .zr-menu {
+    position: fixed;
+    margin: 0;
+    padding: var(--zr-1);
+    min-width: 190px;
+    max-width: 280px;
+    border: 1px solid var(--zr-line);
+    border-radius: var(--zr-r-md);
+    background: var(--zr-surface);
+    box-shadow: var(--zr-shadow-md);
+    color: var(--zr-text);
+  }
+  .zr-menu:not(:popover-open) {
+    display: none;
+  }
+  .zr-menu__item {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-2);
+    width: 100%;
+    padding: 6px var(--zr-2);
+    border-radius: var(--zr-r-sm);
+    font-size: var(--zr-fs-base);
+    text-align: left;
+    color: inherit;
+  }
+  .zr-menu__item:hover,
+  .zr-menu__item:focus-visible {
+    background: var(--zr-surface-2);
+  }
+  .zr-menu__item--danger {
+    color: var(--zr-danger);
+  }
+  .zr-menu__item--danger:hover,
+  .zr-menu__item--danger:focus-visible {
+    background: var(--zr-danger-soft);
+  }
+  .zr-menu__sep {
+    height: 1px;
+    margin: var(--zr-1) 0;
+    background: var(--zr-line);
+  }
+
+  /* server-paginated table (see js/modules/data-table.js) */
+  .zr-table-toolbar {
+    display: flex;
+    align-items: center;
+    gap: var(--zr-3);
+    padding: var(--zr-2) var(--zr-3);
+    border-bottom: 1px solid var(--zr-line);
+    flex-wrap: wrap;
+  }
+  .zr-table-search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1;
+    min-width: 180px;
+    max-width: 360px;
+  }
+  .zr-table-search .zr-icon {
+    position: absolute;
+    left: 8px;
+    color: var(--zr-text-faint);
+    pointer-events: none;
+  }
+  .zr-table-search .zr-input {
+    padding-left: 28px;
+  }
+  .zr-table-wrap {
+    overflow-x: auto;
+  }
+  .zr-table-cards {
+    display: none;
+  }
+  .zr-table-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--zr-3);
+    padding: var(--zr-2) var(--zr-3);
+    border-top: 1px solid var(--zr-line);
+    flex-wrap: wrap;
+  }
+  .zr-th-sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .zr-th-sortable:hover {
+    color: var(--zr-text);
+  }
+  .zr-th-arrow::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 5px;
+    vertical-align: middle;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+  }
+  .zr-th-sortable[data-dir='asc'] .zr-th-arrow::after {
+    border-bottom: 4px solid currentColor;
+  }
+  .zr-th-sortable[data-dir='desc'] .zr-th-arrow::after {
+    border-top: 4px solid currentColor;
+  }
+  .zr-table-host[data-state='loading'] .zr-table-wrap,
+  .zr-table-host[data-state='loading'] .zr-table-cards {
+    opacity: 0.55;
+  }
+
+  @media (max-width: 860px) {
+    /* Tables become card lists rather than scrolling sideways — but only where a
+       card list actually exists. Only data-table.js builds one; the OCR, failed
+       and ignored pages render their rows by hand, and hiding the table for them
+       left a pager sitting above an empty page on every phone. Those stack their
+       own rows instead, see .zr-table--stack below. */
+    .zr-table-host:has(> .zr-table-cards) .zr-table-wrap {
+      display: none;
+    }
+
+    /* A table whose cells carry their column name stacks into the same cards
+       without a second copy of the rows in the DOM. The page scripts that render
+       rows by hand opt in with .zr-table--stack and a data-label per cell; six
+       columns in a 364px viewport otherwise put the actions 750px off screen. */
+    .zr-table--stack,
+    .zr-table--stack tbody,
+    .zr-table--stack tr,
+    .zr-table--stack td {
+      display: block;
+    }
+    .zr-table--stack thead {
+      display: none;
+    }
+    .zr-table--stack td {
+      border: 0;
+    }
+    .zr-table-cards {
+      display: flex;
+      flex-direction: column;
+      gap: var(--zr-2);
+      padding: var(--zr-3);
+    }
+
+    /* Both mechanisms draw the same card from here on: a stacked <tr> and a
+       generated .zr-table-card are the same box, and so are their label/value
+       rows. Only what genuinely differs stays in a rule of its own. */
+    .zr-table--stack tr,
+    .zr-table-card {
+      border: 1px solid var(--zr-line);
+      border-radius: var(--zr-r-md);
+      padding: var(--zr-2) var(--zr-3);
+      background: var(--zr-surface);
+    }
+    /* Rows sit in a table, which has no gap of its own; the card list has one. */
+    .zr-table--stack tr {
+      margin-bottom: var(--zr-2);
+    }
+    /* Cells with no label — the empty and loading states — keep the full width. */
+    .zr-table--stack td[data-label],
+    .zr-table-card__row {
+      display: flex;
+      gap: var(--zr-3);
+      padding: 3px 0;
+      align-items: baseline;
+    }
+    .zr-table--stack td[data-label]::before,
+    .zr-table-card__label {
+      flex: none;
+      width: 96px;
+      font-size: var(--zr-fs-sm);
+      color: var(--zr-text-faint);
+    }
+    /* The stacked label has no element of its own — it is drawn from the cell. */
+    .zr-table--stack td[data-label]::before {
+      content: attr(data-label);
+    }
+    /* An empty label — the actions row — yields its 96px to the content. Both
+       selectors match the pair above at equal specificity, so they come after. */
+    .zr-table--stack td[data-label='']::before,
+    .zr-table-card__label:empty {
+      display: none;
+    }
+    .zr-table-card__value {
+      flex: 1;
+      min-width: 0;
+    }
+    /* The actions cell shrinks to its buttons on a wide screen; stacked it is a
+       row like any other. */
+    .zr-table--stack td.zr-table__actions {
+      width: auto;
+      white-space: normal;
+    }
+    /* A cell that cuts its text off in a column has room to wrap in a card, and
+       the ellipsis would not appear anyway: the text is an anonymous item of the
+       flex row, and text-overflow does not reach it. */
+    .zr-table--stack td.zr-truncate {
+      overflow: visible;
+      text-overflow: clip;
+      white-space: normal;
+      overflow-wrap: anywhere;
+      /* Undo the table-sizing hack: as a stacked block, max-width: 0 would
+         collapse the row to nothing. */
+      width: auto;
+      max-width: none;
+    }
+  }
+}

@@ -1,0 +1,142 @@
+/* ==========================================================================
+   Badges, status dots and chips — the small standalone markers.
+   ========================================================================== */
+
+@keyframes zr-pulse {
+  70% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+
+@layer components {
+  /* pill / badge */
+  .zr-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 1px 7px;
+    border-radius: var(--zr-r-full);
+    font-size: var(--zr-fs-xs);
+    font-weight: 600;
+    background: var(--zr-surface-sunken);
+    color: var(--zr-text-muted);
+    white-space: nowrap;
+  }
+  .zr-badge--ok {
+    background: var(--zr-ok-soft);
+    color: var(--zr-ok);
+  }
+  .zr-badge--warn {
+    background: var(--zr-warn-soft);
+    color: var(--zr-warn);
+  }
+  .zr-badge--danger {
+    background: var(--zr-danger-soft);
+    color: var(--zr-danger);
+  }
+  .zr-badge--info {
+    background: var(--zr-info-soft);
+    color: var(--zr-info);
+  }
+  .zr-badge--brand {
+    background: var(--zr-brand-soft);
+    color: var(--zr-brand-text);
+  }
+  /* Every nav badge links somewhere — the queue counts jump to their page. */
+  .zr-badge--nav {
+    margin-left: auto;
+    cursor: pointer;
+  }
+
+  /* status dot */
+  .zr-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex: none;
+    background: var(--zr-text-faint);
+  }
+  .zr-dot--ok {
+    background: var(--zr-ok);
+  }
+  .zr-dot--warn {
+    background: var(--zr-warn);
+  }
+  .zr-dot--danger {
+    background: var(--zr-danger);
+  }
+  /* Chart legends name their tone and the dot class follows mechanically, so
+     every tone the donut and bar list can hand out needs a class here — even
+     text-faint, which repeats the default. */
+  .zr-dot--brand {
+    background: var(--zr-brand);
+  }
+  .zr-dot--info {
+    background: var(--zr-info);
+  }
+  .zr-dot--text-faint {
+    background: var(--zr-text-faint);
+  }
+  .zr-dot--cat-1 {
+    background: var(--zr-cat-1);
+  }
+  .zr-dot--cat-2 {
+    background: var(--zr-cat-2);
+  }
+  .zr-dot--cat-3 {
+    background: var(--zr-cat-3);
+  }
+  .zr-dot--cat-4 {
+    background: var(--zr-cat-4);
+  }
+  .zr-dot--cat-5 {
+    background: var(--zr-cat-5);
+  }
+  .zr-dot--cat-6 {
+    background: var(--zr-cat-6);
+  }
+  .zr-dot--cat-7 {
+    background: var(--zr-cat-7);
+  }
+  .zr-dot--cat-8 {
+    background: var(--zr-cat-8);
+  }
+  .zr-dot--live {
+    background: var(--zr-brand);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--zr-brand) 60%, transparent);
+    animation: zr-pulse 1.8s ease-out infinite;
+  }
+
+  .zr-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .zr-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 4px 2px 8px;
+    border-radius: var(--zr-r-full);
+    background: var(--zr-brand-soft);
+    color: var(--zr-brand-text);
+    font-size: var(--zr-fs-sm);
+    font-weight: 500;
+  }
+  .zr-chip button {
+    display: grid;
+    place-items: center;
+    width: 15px;
+    height: 15px;
+    border-radius: 50%;
+    color: inherit;
+    opacity: 0.65;
+  }
+  .zr-chip button:hover {
+    opacity: 1;
+    background: color-mix(in srgb, var(--zr-brand) 18%, transparent);
+  }
+}

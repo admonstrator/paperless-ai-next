@@ -35,15 +35,16 @@ function test(name, fn) {
   }
 }
 
-const cssPath = path.join(process.cwd(), 'public', 'css', 'zr.css');
-const css = fs.readFileSync(cssPath, 'utf8');
+const { readFrameworkCss } = require('./framework-css');
+
+const css = readFrameworkCss(path.join(process.cwd(), 'public', 'css'));
 
 test('The mobile rule only hides tables that have a card list beside them', () => {
   // Anything that hides .zr-table-wrap must qualify it with the presence of a
   // card list; a bare `.zr-table-wrap { display: none }` blanks the hand-rolled
   // pages again.
   const hideRules = [
-    ...css.matchAll(/([^{}]+)\{([^}]*display:\s*none[^}]*)\}/g),
+    ...css.matchAll(/([^{}]+)\{([^{}]*display:\s*none[^{}]*)\}/g),
   ]
     .map((m) => m[1].trim())
     .filter((sel) => /\.zr-table-wrap\s*$/.test(sel));
