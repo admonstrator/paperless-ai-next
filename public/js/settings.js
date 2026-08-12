@@ -259,16 +259,21 @@ class FormManager {
 
   togglePassword(inputId) {
     const input = document.getElementById(inputId);
-    const icon = input.nextElementSibling.querySelector('i');
+    if (!input) return;
 
-    if (input.type === 'password') {
-      input.type = 'text';
-      icon.classList.remove('fa-eye');
-      icon.classList.add('fa-eye-slash');
-    } else {
-      input.type = 'password';
-      icon.classList.remove('fa-eye-slash');
-      icon.classList.add('fa-eye');
+    const revealed = input.type === 'password';
+    input.type = revealed ? 'text' : 'password';
+
+    // The reveal button carries an SVG sprite, not a font icon: swapping the
+    // symbol is what changes the eye. The old code toggled FontAwesome classes
+    // on a querySelector('i') that returns null since the UI migration, so it
+    // threw on every click and the icon never changed.
+    const use = input.nextElementSibling?.querySelector('use');
+    if (use) {
+      use.setAttribute(
+        'href',
+        revealed ? '/icons.svg#i-eye-off' : '/icons.svg#i-eye'
+      );
     }
   }
 }

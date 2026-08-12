@@ -1,15 +1,23 @@
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         const apiKeyContainer = document.getElementById('apiKeyContainer');
-        const copyNotification = document.getElementById('copyNotification');
         const regenerateBtn = document.getElementById('regenerateBtn');
         const regenerateIcon = document.getElementById('regenerateIcon');
 
-        if (!apiKeyContainer || !copyNotification || !regenerateBtn || !regenerateIcon) {
+        if (!apiKeyContainer || !regenerateBtn || !regenerateIcon) {
             return;
         }
 
-        let timeoutId;
+        /* The kernel owns the toast. This file used to build its own
+           notification box and drive it through an <i> element the UI
+           migration had already removed, so every call threw before showing
+           anything — including the one in loadCurrentApiKey()'s catch. */
+        function showToast(message, type = 'success') {
+            if (typeof window.__zrToast !== 'function') return null;
+            return window.__zrToast(message, {
+                tone: type === 'error' ? 'danger' : 'ok',
+            });
+        }
 
         async function loadCurrentApiKey() {
             try {
@@ -42,62 +50,42 @@
                 apiKeyContainer.textContent = 'Unavailable';
                 apiKeyContainer.dataset.apiKey = '';
                 apiKeyContainer.title = 'Failed to load API key';
-                showNotification('Failed to load API key!', true);
+                showToast('Failed to load API key!', 'error');
             }
         }
 
-        function showNotification(message, isError = false) {
-            const notificationBox = copyNotification;
-            const icon = notificationBox.querySelector('i');
-            const text = notificationBox.querySelector('span');
-
-            notificationBox.className = 'absolute right-0 top-0 mt-12 w-64 rounded-lg p-3 border';
-            icon.className = 'mr-2 fas';
-
-            if (isError) {
-                notificationBox.classList.add('theme-alert-error');
-                icon.classList.add('fa-exclamation-circle');
-            } else {
-                notificationBox.classList.add('theme-alert-success');
-                icon.classList.add('fa-check-circle');
-            }
-
-            text.textContent = message;
-            notificationBox.classList.remove('hidden');
-            notificationBox.classList.add('flex');
-
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                notificationBox.classList.add('hidden');
-                notificationBox.classList.remove('flex');
-            }, 2000);
-        }
-
-        apiKeyContainer.addEventListener('click', async function() {
-            if (!this.dataset.apiKey) {
-                showNotification('No API key available to copy', true);
+        async function copyApiKey() {
+            if (!apiKeyContainer.dataset.apiKey) {
+                showToast('No API key available to copy', 'error');
                 return;
             }
 
             try {
-                await navigator.clipboard.writeText(this.dataset.apiKey);
-                showNotification('API key copied to clipboard!');
+                await navigator.clipboard.writeText(apiKeyContainer.dataset.apiKey);
+                showToast('API key copied to clipboard!');
             } catch (err) {
-                showNotification('Failed to copy API key!', true);
+                showToast('Failed to copy API key!', 'error');
             }
+        }
+
+        apiKeyContainer.addEventListener('click', copyApiKey);
+
+        /* The container is a role="button" with tabindex, so it has to answer
+           the keys a button answers — it looked focusable but did nothing. */
+        apiKeyContainer.addEventListener('keydown', function(event) {
+            if (event.key !== 'Enter' && event.key !== ' ') {
+                return;
+            }
+            event.preventDefault();
+            copyApiKey();
         });
 
-        apiKeyContainer.addEventListener('mouseleave', function() {
-            this.classList.add('blur-sm');
-        });
-
-        apiKeyContainer.addEventListener('mouseenter', function() {
-            this.classList.remove('blur-sm');
-        });
+        /* The key is blurred until it is hovered or focused — that is .zr-apikey
+           in forms.css, not something this script has to toggle. */
 
         regenerateBtn.addEventListener('click', async function() {
             this.disabled = true;
-            regenerateIcon.classList.add('animate-spin');
+            regenerateIcon.classList.add('zr-icon--spin');
 
             try {
                 const response = await fetch('/api/key-regenerate', {
@@ -116,16 +104,16 @@
                     apiKeyContainer.dataset.apiKey = data.newKey;
                     apiKeyContainer.title = data.newKey;
 
-                    showNotification('New API key generated!');
+                    showToast('New API key generated!');
                 } else {
                     throw new Error('Failed to regenerate key');
                 }
             } catch (error) {
                 console.error('Error:', error);
-                showNotification('Failed to regenerate API key!', true);
+                showToast('Failed to regenerate API key!', 'error');
             } finally {
                 regenerateBtn.disabled = false;
-                regenerateIcon.classList.remove('animate-spin');
+                regenerateIcon.classList.remove('zr-icon--spin');
             }
         });
 
