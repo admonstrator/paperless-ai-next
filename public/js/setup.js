@@ -8,7 +8,7 @@ class SetupWizard {
       ? this.bootstrap.aiProviderPresets
       : [];
 
-    this.steps = Array.from(document.querySelectorAll('.setup-step'));
+    this.steps = Array.from(document.querySelectorAll('.zr-steppane'));
     this.stepLabel = document.getElementById('setupStepLabel');
     this.progressFill = document.getElementById('setupProgressFill');
     this.progressBar = document.getElementById('setupProgressBar');

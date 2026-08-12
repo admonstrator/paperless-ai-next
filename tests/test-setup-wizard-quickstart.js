@@ -254,7 +254,7 @@ global.fetch = mockFetch;
 
 global.document = {
   addEventListener: (_event, callback) => callback(),
-  querySelectorAll: (selector) => (selector === '.setup-step' ? steps : []),
+  querySelectorAll: (selector) => (selector === '.zr-steppane' ? steps : []),
   querySelector: (selector) => {
     if (selector === 'meta[name="csrf-token"]') {
       return { getAttribute: () => '' };

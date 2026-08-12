@@ -120,7 +120,7 @@
 
             <section class="zr-module zr-setup__panel" aria-labelledby="setupStepLabel">
                 <form id="setupWizardForm" class="zr-module__body zr-col zr-col--loose" novalidate>
-                <section class="setup-step is-active" data-step-index="0" data-step-title="Admin account">
+                <section class="zr-steppane is-active" data-step-index="0" data-step-title="Admin account">
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg> Admin account</h3>
                     <p class="zr-sm zr-muted">Create the initial Zettelrobbe administrator account.</p>
 
@@ -141,7 +141,7 @@
                     </div>
                 </section>
 
-                <section class="setup-step" data-step-index="1" data-step-title="Two-factor auth">
+                <section class="zr-steppane" data-step-index="1" data-step-title="Two-factor auth">
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-shield"/></svg> Multi-factor authentication (MFA)</h3>
                     <p class="zr-sm zr-muted">Would you like to enable MFA for the admin account?</p>
 
@@ -183,7 +183,7 @@
                     </div>
                 </section>
 
-                <section class="setup-step" data-step-index="2" data-step-title="Paperless connection">
+                <section class="zr-steppane" data-step-index="2" data-step-title="Paperless connection">
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-link"/></svg> Paperless-ngx connection</h3>
                     <p class="zr-sm zr-muted">Enter your Paperless-ngx API credentials and run a connectivity test.</p>
 
@@ -211,7 +211,7 @@
                     </div>
                 </section>
 
-                <section class="setup-step" data-step-index="3" data-step-title="Document scope">
+                <section class="zr-steppane" data-step-index="3" data-step-title="Document scope">
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-database"/></svg> Paperless metadata</h3>
                     <p class="zr-sm zr-muted">Statistics come straight from your Paperless-ngx instance. Choose which documents Zettelrobbe should work on.</p>
 
@@ -296,7 +296,7 @@
                     <datalist id="paperlessTagsDatalist"></datalist>
                 </section>
 
-                <section class="setup-step" data-step-index="4" data-step-title="AI provider">
+                <section class="zr-steppane" data-step-index="4" data-step-title="AI provider">
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg> AI access credentials</h3>
                     <p class="zr-sm zr-muted">Point Quickstart at a local AI server for automatic configuration, or configure a provider manually.</p>
 
@@ -405,7 +405,7 @@
                     </div>
                 </section>
 
-                <section class="setup-step" data-step-index="5" data-step-title="OCR fallback">
+                <section class="zr-steppane" data-step-index="5" data-step-title="OCR fallback">
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-file"/></svg> OCR fallback</h3>
                     <p class="zr-sm zr-muted">Configure OCR fallback for documents where AI extraction needs OCR assistance.</p>
 
@@ -466,7 +466,7 @@
                     </div>
                 </section>
 
-                <section class="setup-step" data-step-index="6" data-step-title="Review and finish">
+                <section class="zr-steppane" data-step-index="6" data-step-title="Review and finish">
                     <h3 class="zr-module__title zr-row"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check-circle"/></svg> Review and finish</h3>
                     <p class="zr-sm zr-muted">Review generated environment keys, copy if needed, then finalize setup.</p>
 
