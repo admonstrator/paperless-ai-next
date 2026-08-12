@@ -1,0 +1,80 @@
+<%#
+    The seal sorting documents, shown in the task runner while a scan is on.
+
+    Drawn from the same shapes and palette as public/mascot-animated.svg, but
+    flattened into a wide scene and stripped to what still reads at 200px: no
+    speckles, no whiskers, and no belly — at this size the face against the body
+    is the whole silhouette, and a second light shape only muddies it.
+
+    The animation lives in pages/dashboard.css, keyed off .is-scanning on the
+    card, so nothing moves when no scan is running.
+-%>
+<div class="runner-seal" aria-hidden="true">
+    <svg viewBox="0 0 200 96" role="presentation" focusable="false">
+        <!-- the pile still to be read, on the left -->
+        <g class="runner-seal__inbox">
+            <rect x="2" y="70" width="42" height="20" rx="3" fill="#C3D4E2"/>
+            <rect x="5" y="62" width="42" height="20" rx="3" fill="#D9E4EC"/>
+            <rect x="8" y="54" width="42" height="20" rx="3" fill="#FDFBF5"/>
+            <rect x="16" y="61" width="18" height="4" rx="2" fill="#C3D4E2"/>
+        </g>
+
+        <!-- the sheet in flight: it lifts off the left pile, arcs over the seal
+             and lands on the right one, carrying its fresh tag -->
+        <g class="runner-seal__sheet">
+            <rect x="-21" y="-13" width="42" height="26" rx="3" fill="#FDFBF5"/>
+            <rect x="-13" y="-6" width="19" height="5" rx="2.5" fill="#27A69A"/>
+            <rect x="-13" y="3" width="25" height="3" rx="1.5" fill="#C3D4E2"/>
+            <rect x="-13" y="9" width="16" height="3" rx="1.5" fill="#C3D4E2"/>
+        </g>
+
+        <!-- the seal -->
+        <g class="runner-seal__body">
+            <ellipse cx="100" cy="91" rx="30" ry="4" fill="#12314E" opacity="0.08"/>
+
+            <!-- tail flippers, behind the body -->
+            <g class="runner-seal__tail">
+                <path d="M 124 80 C 136 74 154 72 166 78 C 170 80 169 84 165 85
+                         C 151 87 135 85 126 82 Z" fill="#6486A6"/>
+            </g>
+
+            <path d="M 100 24 C 79 24 68 40 68 60 C 68 79 80 90 100 90
+                     C 120 90 132 79 132 60 C 132 40 121 24 100 24 Z" fill="#8FADC8"/>
+            <path d="M 100 24 C 121 24 132 40 132 60 C 132 79 120 90 100 90 Z"
+                  fill="#7495B4" opacity="0.35"/>
+
+            <!-- the flipper that does the tossing -->
+            <g class="runner-seal__flipper">
+                <path d="M 72 58 C 60 62 50 74 47 84 C 45 89 51 92 56 88
+                         C 65 80 72 68 76 60 Z" fill="#7495B4"/>
+            </g>
+
+            <g class="runner-seal__head">
+                <ellipse cx="100" cy="54" rx="21" ry="16" fill="#EAF2F8"/>
+                <g class="runner-seal__eyes">
+                    <circle cx="90" cy="46" r="5.2" fill="#12314E"/>
+                    <circle cx="110" cy="46" r="5.2" fill="#12314E"/>
+                    <circle cx="91.8" cy="43.8" r="1.9" fill="#FFFFFF"/>
+                    <circle cx="111.8" cy="43.8" r="1.9" fill="#FFFFFF"/>
+                </g>
+                <path d="M 95.5 55 Q 100 51.5 104.5 55 Q 102.5 61 100 62 Q 97.5 61 95.5 55 Z"
+                      fill="#12314E"/>
+                <ellipse cx="80" cy="57" rx="6" ry="3.4" fill="#F49B86" opacity="0.55"/>
+                <ellipse cx="120" cy="57" rx="6" ry="3.4" fill="#F49B86" opacity="0.55"/>
+            </g>
+        </g>
+
+        <!-- the sorted pile, on the right, with the tick that fires as a sheet lands -->
+        <g class="runner-seal__outbox">
+            <rect x="152" y="70" width="42" height="20" rx="3" fill="#C3D4E2"/>
+            <rect x="155" y="62" width="42" height="20" rx="3" fill="#D9E4EC"/>
+            <rect x="158" y="54" width="42" height="20" rx="3" fill="#FDFBF5"/>
+            <rect x="166" y="61" width="18" height="4" rx="2" fill="#27A69A"/>
+            <g class="runner-seal__tick">
+                <circle cx="186" cy="42" r="9" fill="#27A69A"/>
+                <path d="M 182 42 L 185 45.5 L 190.5 38.5" fill="none" stroke="#FFFFFF"
+                    stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+            </g>
+        </g>
+    </svg>
+</div>
