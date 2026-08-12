@@ -21,6 +21,11 @@
   }
   body {
     -webkit-font-smoothing: antialiased;
+    font-family: var(--zr-font);
+    font-size: var(--zr-fs-base);
+    line-height: 1.45;
+    color: var(--zr-text);
+    background: var(--zr-canvas);
   }
   img,
   svg {
@@ -55,14 +60,6 @@
     outline: 2px solid var(--zr-focus);
     outline-offset: 2px;
     border-radius: var(--zr-r-sm);
-  }
-
-  body {
-    font-family: var(--zr-font);
-    font-size: var(--zr-fs-base);
-    line-height: 1.45;
-    color: var(--zr-text);
-    background: var(--zr-canvas);
   }
 
   /* icon */
