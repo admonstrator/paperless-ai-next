@@ -304,6 +304,21 @@ const MIGRATIONS = [
       `);
     },
   },
+  {
+    version: 9,
+    description: 'Add dashboard_layout column to users table',
+    up: (database) => {
+      const userColumns = database.prepare("PRAGMA table_info('users')").all();
+      const hasColumn = userColumns.some(
+        (col) => col.name === 'dashboard_layout'
+      );
+      if (!hasColumn) {
+        database.exec(
+          'ALTER TABLE users ADD COLUMN dashboard_layout TEXT DEFAULT NULL'
+        );
+      }
+    },
+  },
 ];
 
 function runMigrations(database) {
@@ -853,6 +868,37 @@ module.exports = {
       return result.changes > 0;
     } catch (error) {
       console.error('[ERROR] setting last seen changelog version:', error);
+      return false;
+    }
+  },
+
+  /* The dashboard grid the user arranged, stored as the JSON string the route
+     validated. Malformed rows return null so the dashboard falls back to the
+     order the markup ships with. */
+  async getDashboardLayout(username) {
+    try {
+      const row = db
+        .prepare('SELECT dashboard_layout FROM users WHERE username = ?')
+        .get(username);
+      if (!row || !row.dashboard_layout) {
+        return null;
+      }
+      return JSON.parse(row.dashboard_layout);
+    } catch (error) {
+      console.error('[ERROR] getting dashboard layout:', error);
+      return null;
+    }
+  },
+
+  /* Passing null clears the layout, which is how "reset to default" works. */
+  async setDashboardLayout(username, layout) {
+    try {
+      const result = db
+        .prepare('UPDATE users SET dashboard_layout = ? WHERE username = ?')
+        .run(layout === null ? null : JSON.stringify(layout), username);
+      return result.changes > 0;
+    } catch (error) {
+      console.error('[ERROR] setting dashboard layout:', error);
       return false;
     }
   },

@@ -1047,10 +1047,12 @@ class HistoryManager {
 
   async forceReloadFilters() {
     const btn = document.getElementById('forceReloadBtn');
-    const icon = btn.querySelector('i');
+    // The button holds an SVG, not a font icon; querySelector('i') has returned
+    // null since the UI migration, and adding a class to it threw before the
+    // cache was ever cleared — the button did nothing at all.
+    const icon = btn.querySelector('.zr-icon');
 
-    // Add spinning animation
-    icon.classList.add('fa-spin');
+    icon?.classList.add('zr-icon--spin');
     btn.disabled = true;
 
     try {
@@ -1068,8 +1070,8 @@ class HistoryManager {
       window.location.reload();
     } catch (error) {
       console.error('[ERROR] Force reload failed:', error);
-      alert('Failed to reload filters. Please try again.');
-      icon.classList.remove('fa-spin');
+      this.showToast('Failed to reload filters. Please try again.', 'error');
+      icon?.classList.remove('zr-icon--spin');
       btn.disabled = false;
     }
   }

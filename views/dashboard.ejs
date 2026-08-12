@@ -62,9 +62,12 @@
         </div>
     </section>
 
-    <section class="zr-grid">
+    <!-- Every card carries a data-widget id: the layout module reorders and
+         resizes them from the user's stored grid, and an id that is no longer
+         here is simply skipped. -->
+    <section class="zr-grid" data-module="dashboard-layout">
         <!-- task runner -->
-        <article class="zr-module" data-span="8">
+        <article class="zr-module" data-widget="task-runner" data-span="8">
             <div class="zr-module__head">
                 <span class="zr-dot zr-dot--ok" id="runnerDot"></span>
                 <h2 class="zr-module__title">Task runner</h2>
@@ -108,7 +111,7 @@
         </article>
 
         <!-- entities and rates -->
-        <article class="zr-module" data-span="4">
+        <article class="zr-module" data-widget="entities" data-span="4">
             <div class="zr-module__head">
                 <h2 class="zr-module__title">Entities</h2>
             </div>
@@ -146,7 +149,7 @@
         </article>
 
         <!-- token usage -->
-        <article class="zr-module" data-span="4">
+        <article class="zr-module" data-widget="token-usage" data-span="4">
             <div class="zr-module__head">
                 <h2 class="zr-module__title">Token usage</h2>
                 <span class="zr-module__meta">last 7 days</span>
@@ -167,7 +170,7 @@
         </article>
 
         <!-- token distribution -->
-        <article class="zr-module" data-span="4">
+        <article class="zr-module" data-widget="token-distribution" data-span="4">
             <div class="zr-module__head">
                 <h2 class="zr-module__title">Token distribution</h2>
                 <span class="zr-module__meta">documents per range</span>
@@ -178,7 +181,7 @@
         </article>
 
         <!-- document types -->
-        <article class="zr-module" data-span="4">
+        <article class="zr-module" data-widget="document-types" data-span="4">
             <div class="zr-module__head">
                 <h2 class="zr-module__title">Document types</h2>
             </div>
@@ -189,7 +192,7 @@
         </article>
 
         <!-- processing split -->
-        <article class="zr-module" data-span="6">
+        <article class="zr-module" data-widget="processing-status" data-span="6">
             <div class="zr-module__head">
                 <h2 class="zr-module__title">Processing status</h2>
             </div>
@@ -200,7 +203,7 @@
         </article>
 
         <!-- language mix -->
-        <article class="zr-module" data-span="6">
+        <article class="zr-module" data-widget="language-mix" data-span="6">
             <div class="zr-module__head">
                 <h2 class="zr-module__title">Language mix</h2>
             </div>
@@ -220,5 +223,10 @@
         <div class="zr-dialog__body" id="detailsModalBody"></div>
     </dialog>
 </div>
+
+<!-- Drag ordering for the grid. Deferred, so it is ready before the kernel
+     imports the layout module; the module works without it and only loses the
+     mouse drag. -->
+<script src="/vendor/sortable/Sortable.min.js" defer></script>
 
 <%- include('partials/shell/body-close') %>

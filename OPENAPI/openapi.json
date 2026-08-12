@@ -2867,6 +2867,7 @@
     "/api/setup/complete": {
       "post": {
         "summary": "Finalize initial setup, persist env config, and trigger restart",
+        "description": "Validates the Paperless, AI and OCR connections before writing the configuration. The boolean body flags paperlessTestPassed, aiTestPassed and ocrTestPassed let a caller that has just verified a connection with these exact values skip the matching probe; anything not flagged is validated here. allowFailedPaperlessTest and allowFailedAiTest still accept a connection whose validation failed.\n",
         "tags": [
           "Setup"
         ],
@@ -5348,6 +5349,76 @@
         "responses": {
           "200": {
             "description": "Marked as seen"
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        }
+      }
+    },
+    "/api/settings/env-file": {
+      "get": {
+        "summary": "Export the running configuration as a .env file",
+        "description": "Returns the instance's configuration as .env lines, grouped by topic and covering only variables that are actually set. Intended for moving an instance or pinning its settings into docker-compose. The body contains API tokens and keys in clear text; JWT_SECRET is deliberately excluded, since a fresh instance generates its own.\n",
+        "tags": [
+          "System"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The configuration as .env text"
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        }
+      }
+    },
+    "/api/dashboard/layout": {
+      "get": {
+        "summary": "Read the authenticated user's dashboard grid layout",
+        "description": "Returns the widget order, column spans and tile-row heights the user arranged. widgets is empty when the user has not customised anything, which means the dashboard renders in its default order.\n",
+        "tags": [
+          "Dashboard"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stored layout"
+          },
+          "401": {
+            "description": "Not authenticated"
+          }
+        }
+      },
+      "put": {
+        "summary": "Store or reset the authenticated user's dashboard grid layout",
+        "description": "Accepts a widgets array of {id, span, rows} in display order. Spans are 3 to 12 grid columns; rows are 3 to 24 tile rows, or 0 for a card that is as tall as its content. Sending an empty widgets array clears the layout, so the dashboard returns to its default order.\n",
+        "tags": [
+          "Dashboard"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Layout stored"
+          },
+          "400": {
+            "description": "Malformed layout"
           },
           "401": {
             "description": "Not authenticated"

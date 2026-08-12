@@ -190,9 +190,24 @@ export function scan(root = document) {
 /* --- shell --------------------------------------------------------------- */
 const RAIL_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
+/* A collapsed rail hides the labels, and since the icon is aria-hidden that
+   also leaves every nav link without an accessible name. The title restores
+   both the name and a hover hint. Expanded it would only repeat what is already
+   on screen, so it is removed again. */
+function syncRailTooltips(root) {
+  const collapsed = Boolean(root) && root.dataset.rail === 'collapsed';
+  document.querySelectorAll('.zr-navitem').forEach((item) => {
+    const label = item.querySelector('.zr-navitem__label');
+    if (!label) return;
+    if (collapsed) item.setAttribute('title', label.textContent.trim());
+    else item.removeAttribute('title');
+  });
+}
+
 function shell() {
   const root = document.querySelector('.zr-shell');
   syncThemeIcon(theme.get());
+  syncRailTooltips(root);
 
   document.addEventListener('click', (event) => {
     const trigger = event.target.closest('[data-action]');
@@ -212,6 +227,7 @@ function shell() {
         if (!root) break;
         const collapsed = root.dataset.rail === 'collapsed';
         root.dataset.rail = collapsed ? 'expanded' : 'collapsed';
+        syncRailTooltips(root);
         try {
           let cookie = `railState=${root.dataset.rail}; Path=/; Max-Age=${RAIL_COOKIE_MAX_AGE}; SameSite=Lax`;
           if (window.location.protocol === 'https:') {

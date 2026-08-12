@@ -3659,6 +3659,167 @@ async function ensureSetupOpenOrRespond(res) {
   return true;
 }
 
+/* The running configuration as a .env file, grouped the way the settings page
+   is. Separate from toEnvPreviewLines() below on purpose: that one previews the
+   handful of values the setup wizard just collected, this one exports
+   everything an operator needs to reproduce the instance elsewhere.
+
+   The list is curated rather than a dump of process.env: the environment also
+   holds the container's own variables, and JWT_SECRET is deliberately absent —
+   a fresh instance mints its own, and putting it on screen buys nothing. */
+const ENV_EXPORT_GROUPS = [
+  {
+    title: 'Paperless-ngx connection',
+    keys: [
+      'PAPERLESS_API_URL',
+      'PAPERLESS_PUBLIC_URL',
+      'PAPERLESS_API_TOKEN',
+      'PAPERLESS_USERNAME',
+      'PAPERLESS_PROBE_INTERVAL_SECONDS',
+      'STARTUP_PAPERLESS_RETRY_MINUTES',
+    ],
+  },
+  {
+    title: 'Document processing',
+    keys: [
+      'SCAN_INTERVAL',
+      'DISABLE_AUTOMATIC_PROCESSING',
+      'PROCESS_PREDEFINED_DOCUMENTS',
+      'TAGS',
+      'IGNORE_TAGS',
+      'ADD_AI_PROCESSED_TAG',
+      'AI_PROCESSED_TAG_NAME',
+      'MIN_CONTENT_LENGTH',
+      'USE_EXISTING_DATA',
+    ],
+  },
+  {
+    title: 'AI provider',
+    keys: [
+      'AI_PROVIDER',
+      'OPENAI_API_KEY',
+      'OPENAI_MODEL',
+      'OLLAMA_API_URL',
+      'OLLAMA_API_KEY',
+      'OLLAMA_MODEL',
+      'OLLAMA_THINK',
+      'CUSTOM_BASE_URL',
+      'CUSTOM_API_KEY',
+      'CUSTOM_MODEL',
+      'AZURE_ENDPOINT',
+      'AZURE_API_KEY',
+      'AZURE_DEPLOYMENT_NAME',
+      'AZURE_API_VERSION',
+    ],
+  },
+  {
+    title: 'AI behaviour',
+    keys: [
+      'TOKEN_LIMIT',
+      'RESPONSE_TOKENS',
+      'AI_TEMPERATURE_ANALYSIS',
+      'AI_TEMPERATURE_GENERATION',
+      'SYSTEM_PROMPT',
+      'PROMPT_TAGS',
+      'ACTIVATE_TAGGING',
+      'ACTIVATE_CORRESPONDENTS',
+      'ACTIVATE_DOCUMENT_TYPE',
+      'ACTIVATE_TITLE',
+      'ACTIVATE_CUSTOM_FIELDS',
+      'CUSTOM_FIELDS',
+      'RESTRICT_TO_EXISTING_TAGS',
+      'RESTRICT_TO_EXISTING_CORRESPONDENTS',
+      'RESTRICT_TO_EXISTING_DOCUMENT_TYPES',
+    ],
+  },
+  {
+    title: 'External API',
+    keys: [
+      'EXTERNAL_API_ENABLED',
+      'EXTERNAL_API_URL',
+      'EXTERNAL_API_METHOD',
+      'EXTERNAL_API_HEADERS',
+      'EXTERNAL_API_BODY',
+      'EXTERNAL_API_TIMEOUT',
+      'EXTERNAL_API_TRANSFORM',
+    ],
+  },
+  {
+    title: 'OCR fallback',
+    keys: [
+      'MISTRAL_OCR_ENABLED',
+      'OCR_PROVIDER',
+      'OCR_API_URL',
+      'OCR_API_KEY',
+      'MISTRAL_API_KEY',
+      'MISTRAL_OCR_MODEL',
+      'OCR_PDF_RENDER_ENABLED',
+      'OCR_PDF_RENDER_MAX_PAGES',
+      'OCR_PDF_RENDER_DPI',
+      'OCR_AUTO_PROCESS_ENABLED',
+      'OCR_AUTO_PROCESS_INTERVAL',
+      'OCR_AUTO_PROCESS_BATCH_SIZE',
+      'OCR_AUTO_ANALYZE',
+      'SETUP_OCR_VALIDATION_TIMEOUT_MS',
+    ],
+  },
+  {
+    title: 'Server and security',
+    keys: [
+      'PAPERLESS_AI_PORT',
+      'API_KEY',
+      'TRUST_PROXY',
+      'COOKIE_SECURE_MODE',
+      'GLOBAL_RATE_LIMIT_WINDOW_MS',
+      'GLOBAL_RATE_LIMIT_MAX',
+      'EXPOSE_API_DOCS',
+      'CONFIG_SOURCE_MODE',
+    ],
+  },
+  {
+    title: 'Maintenance',
+    keys: [
+      'LOG_LEVEL',
+      'TAG_CACHE_TTL_SECONDS',
+      'RECONCILIATION_ENABLED',
+      'RECONCILIATION_INTERVAL',
+      'UPDATE_CHECK_ENABLED',
+      'HEALTHCHECK_STRICT',
+      'HEALTH_SCAN_FAILURE_THRESHOLD',
+      'ANONYMIZED_TELEMETRY',
+    ],
+  },
+];
+
+/* A value only needs quoting when it carries something a .env parser would
+   otherwise eat — whitespace, a comment marker or a quote of its own. */
+function quoteEnvValue(value) {
+  const text = String(value);
+  if (!/[\s"'#]/.test(text)) return text;
+  return `"${text.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+}
+
+function buildEnvExport(env = process.env) {
+  const lines = [];
+  let count = 0;
+
+  ENV_EXPORT_GROUPS.forEach((group) => {
+    const present = group.keys.filter(
+      (key) => env[key] !== undefined && String(env[key]).length > 0
+    );
+    if (present.length === 0) return;
+
+    if (lines.length > 0) lines.push('');
+    lines.push(`# ${group.title}`);
+    present.forEach((key) => {
+      lines.push(`${key}=${quoteEnvValue(env[key])}`);
+      count += 1;
+    });
+  });
+
+  return { env: lines.join('\n'), count };
+}
+
 function toEnvPreviewLines(config) {
   const previewKeys = [
     'PAPERLESS_API_URL',
@@ -5090,6 +5251,13 @@ router.post(
  * /api/setup/complete:
  *   post:
  *     summary: Finalize initial setup, persist env config, and trigger restart
+ *     description: >
+ *       Validates the Paperless, AI and OCR connections before writing the
+ *       configuration. The boolean body flags paperlessTestPassed, aiTestPassed
+ *       and ocrTestPassed let a caller that has just verified a connection with
+ *       these exact values skip the matching probe; anything not flagged is
+ *       validated here. allowFailedPaperlessTest and allowFailedAiTest still
+ *       accept a connection whose validation failed.
  *     tags:
  *       - Setup
  *     responses:
@@ -5164,6 +5332,19 @@ router.post('/api/setup/complete', express.json(), async (req, res) => {
       false
     );
 
+    // The wizard reports which connections it already proved reachable with
+    // exactly the values being submitted (it drops the flag as soon as one of
+    // them is edited). Honouring that spares the user a second wait — and a
+    // second billed AI call — for probes they just watched succeed. Anything
+    // not reported as passing is still validated below.
+    const paperlessTestPassed = parseBooleanInput(
+      req.body?.paperlessTestPassed,
+      false
+    );
+    const aiTestPassed = parseBooleanInput(req.body?.aiTestPassed, false);
+    const ocrTestPassed = parseBooleanInput(req.body?.ocrTestPassed, false);
+    const alreadyVerified = { success: true, message: 'Verified by setup.' };
+
     const mistralOcrEnabled = parseBooleanInput(
       req.body?.mistralOcrEnabled,
       false
@@ -5234,10 +5415,9 @@ router.post('/api/setup/complete', express.json(), async (req, res) => {
       });
     }
 
-    const paperlessValidation = await validatePaperlessConnectionForSetup(
-      paperlessUrl,
-      paperlessToken
-    );
+    const paperlessValidation = paperlessTestPassed
+      ? alreadyVerified
+      : await validatePaperlessConnectionForSetup(paperlessUrl, paperlessToken);
     if (!paperlessValidation.success && !allowFailedPaperlessTest) {
       return res.status(400).json({
         success: false,
@@ -5245,14 +5425,16 @@ router.post('/api/setup/complete', express.json(), async (req, res) => {
       });
     }
 
-    const aiValidation = await validateAiConnectionForSetup({
-      aiProvider,
-      apiUrl: aiApiUrl,
-      token: aiToken,
-      model: aiModel,
-      azureApiVersion: aiAzureApiVersion,
-      setupValidationTimeoutMs,
-    });
+    const aiValidation = aiTestPassed
+      ? alreadyVerified
+      : await validateAiConnectionForSetup({
+          aiProvider,
+          apiUrl: aiApiUrl,
+          token: aiToken,
+          model: aiModel,
+          azureApiVersion: aiAzureApiVersion,
+          setupValidationTimeoutMs,
+        });
 
     if (!aiValidation.success && !allowFailedAiTest) {
       return res.status(400).json({
@@ -5263,14 +5445,16 @@ router.post('/api/setup/complete', express.json(), async (req, res) => {
 
     const ocrProviderForValidation =
       ocrProvider === 'custom' ? 'ollama' : ocrProvider;
-    const ocrValidation = await validateOcrConnectionForSetup({
-      enabled: mistralOcrEnabled ? 'yes' : 'no',
-      provider: ocrProviderForValidation,
-      apiUrl: ocrApiUrl,
-      apiKey: ocrApiKey,
-      model: mistralOcrModel,
-      setupOcrValidationTimeoutMs,
-    });
+    const ocrValidation = ocrTestPassed
+      ? alreadyVerified
+      : await validateOcrConnectionForSetup({
+          enabled: mistralOcrEnabled ? 'yes' : 'no',
+          provider: ocrProviderForValidation,
+          apiUrl: ocrApiUrl,
+          apiKey: ocrApiKey,
+          model: mistralOcrModel,
+          setupOcrValidationTimeoutMs,
+        });
 
     if (!ocrValidation.success) {
       return res.status(400).json({
@@ -10107,5 +10291,193 @@ router.post('/api/changelog/mark-seen', isAuthenticated, async (req, res) => {
       .json({ success: false, error: 'Failed to mark changelog as seen' });
   }
 });
+
+/**
+ * @swagger
+ * /api/settings/env-file:
+ *   get:
+ *     summary: Export the running configuration as a .env file
+ *     description: >
+ *       Returns the instance's configuration as .env lines, grouped by topic
+ *       and covering only variables that are actually set. Intended for moving
+ *       an instance or pinning its settings into docker-compose. The body
+ *       contains API tokens and keys in clear text; JWT_SECRET is deliberately
+ *       excluded, since a fresh instance generates its own.
+ *     tags:
+ *       - System
+ *     security:
+ *       - BearerAuth: []
+ *       - ApiKeyAuth: []
+ *     responses:
+ *       200:
+ *         description: The configuration as .env text
+ *       401:
+ *         description: Not authenticated
+ */
+router.get('/api/settings/env-file', isAuthenticated, async (req, res) => {
+  try {
+    const { env, count } = buildEnvExport();
+    return res.json({
+      success: true,
+      data: { env, count, generatedAt: new Date().toISOString() },
+    });
+  } catch (error) {
+    console.error('[ERROR] GET /api/settings/env-file:', error);
+    return res
+      .status(500)
+      .json({ success: false, error: 'Failed to build the configuration' });
+  }
+});
+
+/* The dashboard sends back the grid the user arranged. Widget ids are not
+   checked against a list on purpose — the dashboard adds and renames cards, and
+   a stale server list would silently drop a card's placement. The shape, the
+   spans and the count are what needs to be trustworthy; anything the dashboard
+   no longer knows is ignored when the layout is applied. */
+const DASHBOARD_WIDGET_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
+const DASHBOARD_MAX_WIDGETS = 50;
+const DASHBOARD_MIN_SPAN = 3;
+const DASHBOARD_GRID_COLUMNS = 12;
+const DASHBOARD_MIN_ROWS = 3;
+const DASHBOARD_MAX_ROWS = 24;
+
+function normalizeDashboardLayout(input) {
+  if (!input || !Array.isArray(input.widgets)) {
+    return null;
+  }
+  if (input.widgets.length > DASHBOARD_MAX_WIDGETS) {
+    return null;
+  }
+
+  const seen = new Set();
+  const widgets = [];
+  for (const entry of input.widgets) {
+    const id = String(entry?.id || '').trim();
+    if (!DASHBOARD_WIDGET_ID.test(id) || seen.has(id)) {
+      return null;
+    }
+    seen.add(id);
+
+    const span = Number.parseInt(entry?.span, 10);
+    if (
+      !Number.isInteger(span) ||
+      span < DASHBOARD_MIN_SPAN ||
+      span > DASHBOARD_GRID_COLUMNS
+    ) {
+      return null;
+    }
+
+    // Tile rows. 0 means "as tall as the content needs", which is the default
+    // and the only value outside the 3..24 range a card may carry.
+    const rows = Number.parseInt(entry?.rows, 10) || 0;
+    if (
+      rows !== 0 &&
+      (rows < DASHBOARD_MIN_ROWS || rows > DASHBOARD_MAX_ROWS)
+    ) {
+      return null;
+    }
+
+    widgets.push({ id, span, rows });
+  }
+
+  return { widgets };
+}
+
+/**
+ * @swagger
+ * /api/dashboard/layout:
+ *   get:
+ *     summary: Read the authenticated user's dashboard grid layout
+ *     description: >
+ *       Returns the widget order, column spans and tile-row heights the user
+ *       arranged. widgets is empty when the user has not customised anything,
+ *       which means the dashboard renders in its default order.
+ *     tags:
+ *       - Dashboard
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: The stored layout
+ *       401:
+ *         description: Not authenticated
+ */
+router.get('/api/dashboard/layout', isAuthenticated, async (req, res) => {
+  try {
+    const username = req.user && req.user.username;
+    if (!username) {
+      return res.json({ success: true, data: { widgets: [] } });
+    }
+
+    const layout = await documentModel.getDashboardLayout(username);
+    return res.json({ success: true, data: layout || { widgets: [] } });
+  } catch (error) {
+    console.error('[ERROR] GET /api/dashboard/layout:', error);
+    return res
+      .status(500)
+      .json({ success: false, error: 'Failed to load dashboard layout' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/dashboard/layout:
+ *   put:
+ *     summary: Store or reset the authenticated user's dashboard grid layout
+ *     description: >
+ *       Accepts a widgets array of {id, span, rows} in display order. Spans are
+ *       3 to 12 grid columns; rows are 3 to 24 tile rows, or 0 for a card that
+ *       is as tall as its content. Sending an empty widgets array clears the
+ *       layout, so the dashboard returns to its default order.
+ *     tags:
+ *       - Dashboard
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Layout stored
+ *       400:
+ *         description: Malformed layout
+ *       401:
+ *         description: Not authenticated
+ */
+router.put(
+  '/api/dashboard/layout',
+  isAuthenticated,
+  express.json(),
+  async (req, res) => {
+    try {
+      const username = req.user && req.user.username;
+      if (!username) {
+        return res.json({ success: true, message: 'No user to store against' });
+      }
+
+      // An empty list is how the dashboard asks for the default back.
+      if (Array.isArray(req.body?.widgets) && req.body.widgets.length === 0) {
+        await documentModel.setDashboardLayout(username, null);
+        return res.json({ success: true, message: 'Dashboard layout reset' });
+      }
+
+      const layout = normalizeDashboardLayout(req.body);
+      if (!layout) {
+        return res
+          .status(400)
+          .json({ success: false, error: 'Invalid dashboard layout' });
+      }
+
+      await documentModel.setDashboardLayout(username, layout);
+      return res.json({
+        success: true,
+        data: layout,
+        message: 'Dashboard layout saved',
+      });
+    } catch (error) {
+      console.error('[ERROR] PUT /api/dashboard/layout:', error);
+      return res
+        .status(500)
+        .json({ success: false, error: 'Failed to save dashboard layout' });
+    }
+  }
+);
 
 module.exports = router;

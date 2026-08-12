@@ -28,22 +28,28 @@ class SetupWizard {
       setupStarted: false,
     };
 
+    // `signature` records the values a green test actually ran against, so
+    // finalize can tell the server which probes it may skip — see
+    // connectionSignatures() for why a bare success flag is not enough.
     this.paperlessTestState = {
       ran: false,
       success: false,
       allowFailure: false,
+      signature: '',
     };
 
     this.aiTestState = {
       ran: false,
       success: false,
       allowFailure: false,
+      signature: '',
     };
 
     this.ocrTestState = {
       ran: false,
       success: false,
       allowFailure: false,
+      signature: '',
     };
 
     this.metadataState = {
@@ -163,9 +169,13 @@ class SetupWizard {
     this.updateMfaPanelVisibility();
     this.toggleIncludeTagField();
     this.toggleMistralFields();
-    // Fresh installs start in quickstart mode; existing configs open in
-    // manual mode so their loaded values stay visible.
-    this.setAiConfigMode(this.config.AI_PROVIDER ? 'manual' : 'quickstart');
+    // Auto-detection is the default path; manual configuration is a choice the
+    // user makes. This used to read `this.config.AI_PROVIDER ? 'manual' : …`,
+    // which never once picked quickstart: the setup route fills AI_PROVIDER
+    // with 'openai' when the environment has none, so the flag was always set.
+    // Values loaded from an existing config are not lost — they sit in the
+    // manual panel, one click away.
+    this.setAiConfigMode('quickstart');
     this.showStep(0);
   }
 
@@ -871,6 +881,7 @@ class SetupWizard {
       this.setPillState(this.ocrTestStatePill, 'success', 'Disabled (skipped)');
       this.ocrTestState.ran = true;
       this.ocrTestState.success = true;
+      this.ocrTestState.signature = this.connectionSignatures().ocr;
       return;
     }
 
@@ -888,6 +899,9 @@ class SetupWizard {
       if (result.resolvedApiUrl && this.ocrApiUrl) {
         this.ocrApiUrl.value = String(result.resolvedApiUrl).trim();
       }
+      // After the resolved URL is written back, so the signature describes the
+      // endpoint that was actually reached.
+      this.ocrTestState.signature = this.connectionSignatures().ocr;
 
       if (result.success) {
         this.setPillState(this.ocrTestStatePill, 'success', 'Connection valid');
@@ -1087,6 +1101,7 @@ class SetupWizard {
       this.paperlessTestState.ran = true;
       this.paperlessTestState.success = Boolean(result.success);
       this.paperlessTestState.allowFailure = false;
+      this.paperlessTestState.signature = this.connectionSignatures().paperless;
 
       if (result.success) {
         this.setPillState(
@@ -1552,6 +1567,7 @@ class SetupWizard {
       if (result.resolvedApiUrl && this.aiApiUrl) {
         this.aiApiUrl.value = String(result.resolvedApiUrl).trim();
       }
+      this.aiTestState.signature = this.connectionSignatures().ai;
 
       this.setPillState(
         this.aiTestStatePill,
@@ -1600,6 +1616,7 @@ class SetupWizard {
       if (result.resolvedApiUrl && this.ocrApiUrl) {
         this.ocrApiUrl.value = String(result.resolvedApiUrl).trim();
       }
+      this.ocrTestState.signature = this.connectionSignatures().ocr;
 
       this.setPillState(
         this.ocrTestStatePill,
@@ -1929,6 +1946,9 @@ class SetupWizard {
       if (result.resolvedApiUrl && this.aiApiUrl) {
         this.aiApiUrl.value = String(result.resolvedApiUrl).trim();
       }
+      // After the resolved URL is written back, so the signature describes the
+      // endpoint that was actually reached.
+      this.aiTestState.signature = this.connectionSignatures().ai;
 
       if (result.success) {
         this.setPillState(this.aiTestStatePill, 'success', 'Connection valid');
@@ -2320,8 +2340,46 @@ class SetupWizard {
     }
   }
 
+  /* What each test result vouches for. A bare "the AI test was green" flag
+     would survive the user paging back and editing the endpoint, and finalize
+     would then ask the server to trust a connection nobody probed. Comparing
+     these strings keeps the skip honest — change anything that defines the
+     connection and the stored result stops counting. Timeouts stay out: they
+     bound how long a probe may take, not what it talks to. */
+  connectionSignatures() {
+    return {
+      paperless: JSON.stringify([
+        this.paperlessUrl.value.trim(),
+        this.paperlessToken.value.trim(),
+      ]),
+      ai: JSON.stringify([
+        this.aiProvider.value.trim().toLowerCase(),
+        this.aiApiUrl.value.trim(),
+        this.aiToken.value.trim(),
+        this.aiModel.value.trim(),
+      ]),
+      ocr: JSON.stringify([
+        this.mistralOcrEnabled.value === 'yes',
+        (this.ocrProvider.value || 'mistral').toLowerCase(),
+        this.normalizeOcrApiUrlForProvider(
+          this.ocrProvider.value,
+          this.ocrApiUrl.value
+        ),
+        this.ocrApiKey.value.trim(),
+        this.mistralOcrModel.value.trim() || 'mistral-ocr-latest',
+      ]),
+    };
+  }
+
   buildFinalizePayload() {
     const scanAll = this.scanAllDocuments.checked;
+    const signatures = this.connectionSignatures();
+    // Tells the server which connections the wizard already proved reachable
+    // with exactly these values, so it does not repeat the probes — and with
+    // them the billed AI round trip — a few seconds after the user watched
+    // them succeed.
+    const verified = (state, signature) =>
+      state.success && state.signature === signature;
     return {
       adminUsername: this.adminUsername.value.trim(),
       adminPassword: this.adminPassword.value,
@@ -2348,6 +2406,12 @@ class SetupWizard {
       setupOcrValidationTimeoutMs: this.getOcrValidationTimeoutMs(),
       allowFailedPaperlessTest: this.paperlessTestState.allowFailure,
       allowFailedAiTest: this.aiTestState.allowFailure,
+      paperlessTestPassed: verified(
+        this.paperlessTestState,
+        signatures.paperless
+      ),
+      aiTestPassed: verified(this.aiTestState, signatures.ai),
+      ocrTestPassed: verified(this.ocrTestState, signatures.ocr),
       mistralOcrEnabled: this.mistralOcrEnabled.value === 'yes',
       ocrProvider: (this.ocrProvider.value || 'mistral').toLowerCase(),
       ocrApiUrl: this.normalizeOcrApiUrlForProvider(

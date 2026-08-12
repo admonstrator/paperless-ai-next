@@ -18,6 +18,11 @@
   }
   html {
     -webkit-text-size-adjust: 100%;
+    /* Scroll containers exist where they have to — a dialog, a wide table, the
+       rail on a short window — but their bars should not be furniture. Inherits
+       to every scroller in the app, so this is the only place it is stated. */
+    scrollbar-width: thin;
+    scrollbar-color: var(--zr-line) transparent;
   }
   body {
     -webkit-font-smoothing: antialiased;
