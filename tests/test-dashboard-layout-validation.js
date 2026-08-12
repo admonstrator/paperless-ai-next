@@ -31,7 +31,7 @@ const normalizeDashboardLayout = new Function(
   `${source.slice(start, end + 2)}\nreturn normalizeDashboardLayout;`
 )();
 
-const valid = { id: 'task-runner', span: 6, height: 240 };
+const valid = { id: 'task-runner', span: 6, rows: 6 };
 const widget = (overrides) => ({ ...valid, ...overrides });
 
 const accepted = [
@@ -43,32 +43,35 @@ const accepted = [
       assert.deepStrictEqual(result.widgets[0], {
         id: 'task-runner',
         span: 6,
-        height: 240,
+        rows: 6,
       });
     },
   },
   {
-    label: 'height 0 meaning "as tall as the content"',
-    input: { widgets: [widget({ height: 0 })] },
-    expect: (result) => assert.strictEqual(result.widgets[0].height, 0),
+    label: 'rows 0 meaning "as tall as the content"',
+    input: { widgets: [widget({ rows: 0 })] },
+    expect: (result) => assert.strictEqual(result.widgets[0].rows, 0),
   },
   {
-    label: 'a missing height defaulting to 0',
+    label: 'missing rows defaulting to 0',
     input: { widgets: [{ id: 'entities', span: 4 }] },
-    expect: (result) => assert.strictEqual(result.widgets[0].height, 0),
+    expect: (result) => assert.strictEqual(result.widgets[0].rows, 0),
   },
   {
     label: 'numeric strings from a form',
-    input: { widgets: [widget({ span: '6', height: '240' })] },
+    input: { widgets: [widget({ span: '6', rows: '6' })] },
     expect: (result) => {
       assert.strictEqual(result.widgets[0].span, 6);
-      assert.strictEqual(result.widgets[0].height, 240);
+      assert.strictEqual(result.widgets[0].rows, 6);
     },
   },
   {
-    label: 'the full grid width',
-    input: { widgets: [widget({ span: 12, height: 2000 })] },
-    expect: (result) => assert.strictEqual(result.widgets[0].span, 12),
+    label: 'the full grid width and the tallest tile',
+    input: { widgets: [widget({ span: 12, rows: 24 })] },
+    expect: (result) => {
+      assert.strictEqual(result.widgets[0].span, 12);
+      assert.strictEqual(result.widgets[0].rows, 24);
+    },
   },
   {
     label: 'unknown properties being dropped rather than stored',
@@ -79,7 +82,7 @@ const accepted = [
       assert.deepStrictEqual(Object.keys(result.widgets[0]), [
         'id',
         'span',
-        'height',
+        'rows',
       ]),
   },
 ];
@@ -123,12 +126,16 @@ const rejected = [
     input: { widgets: [widget({ span: 'wide' })] },
   },
   {
-    label: 'a height beyond the ceiling',
-    input: { widgets: [widget({ height: 2001 })] },
+    label: 'more rows than a tile may have',
+    input: { widgets: [widget({ rows: 25 })] },
   },
   {
-    label: 'a negative height',
-    input: { widgets: [widget({ height: -50 })] },
+    label: 'fewer rows than a card can show anything in',
+    input: { widgets: [widget({ rows: 2 })] },
+  },
+  {
+    label: 'a negative row count',
+    input: { widgets: [widget({ rows: -4 })] },
   },
   {
     label: 'more widgets than the dashboard could ever hold',

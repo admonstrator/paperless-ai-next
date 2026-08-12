@@ -10140,7 +10140,8 @@ const DASHBOARD_WIDGET_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const DASHBOARD_MAX_WIDGETS = 50;
 const DASHBOARD_MIN_SPAN = 3;
 const DASHBOARD_GRID_COLUMNS = 12;
-const DASHBOARD_MAX_HEIGHT = 2000;
+const DASHBOARD_MIN_ROWS = 3;
+const DASHBOARD_MAX_ROWS = 24;
 
 function normalizeDashboardLayout(input) {
   if (!input || !Array.isArray(input.widgets)) {
@@ -10168,13 +10169,17 @@ function normalizeDashboardLayout(input) {
       return null;
     }
 
-    // 0 means "whatever the content needs", which is also the default.
-    const height = Number.parseInt(entry?.height, 10) || 0;
-    if (height < 0 || height > DASHBOARD_MAX_HEIGHT) {
+    // Tile rows. 0 means "as tall as the content needs", which is the default
+    // and the only value outside the 3..24 range a card may carry.
+    const rows = Number.parseInt(entry?.rows, 10) || 0;
+    if (
+      rows !== 0 &&
+      (rows < DASHBOARD_MIN_ROWS || rows > DASHBOARD_MAX_ROWS)
+    ) {
       return null;
     }
 
-    widgets.push({ id, span, height });
+    widgets.push({ id, span, rows });
   }
 
   return { widgets };
@@ -10186,7 +10191,7 @@ function normalizeDashboardLayout(input) {
  *   get:
  *     summary: Read the authenticated user's dashboard grid layout
  *     description: >
- *       Returns the widget order, column spans and pixel heights the user
+ *       Returns the widget order, column spans and tile-row heights the user
  *       arranged. widgets is empty when the user has not customised anything,
  *       which means the dashboard renders in its default order.
  *     tags:
@@ -10222,10 +10227,10 @@ router.get('/api/dashboard/layout', isAuthenticated, async (req, res) => {
  *   put:
  *     summary: Store or reset the authenticated user's dashboard grid layout
  *     description: >
- *       Accepts a widgets array of {id, span, height} in display order. Spans
- *       are 3 to 12 columns and heights 0 (content height) to 2000 pixels.
- *       Sending an empty widgets array clears the layout, so the dashboard
- *       returns to its default order.
+ *       Accepts a widgets array of {id, span, rows} in display order. Spans are
+ *       3 to 12 grid columns; rows are 3 to 24 tile rows, or 0 for a card that
+ *       is as tall as its content. Sending an empty widgets array clears the
+ *       layout, so the dashboard returns to its default order.
  *     tags:
  *       - Dashboard
  *     security:

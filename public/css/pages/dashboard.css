@@ -92,28 +92,90 @@
     opacity: 0.35;
   }
 
-  /* A card the user gave a height keeps it: its body scrolls instead of
-     pushing the card open again. The trailing list on the task runner is the
-     other growing child, so it scrolls too. */
-  .zr-module[data-user-height] {
+  /* --- tiles --------------------------------------------------------------
+     A card the user sized behaves like a home-screen widget rather than a
+     document: it keeps the size it was given, shows as much as fits, and never
+     scrolls. Heights come in whole rows so neighbouring cards line up, and the
+     content answers for itself how much detail fits — see the container queries
+     below. Cards nobody resized are untouched and still grow with their
+     content. */
+  .zr-grid {
+    --zr-tile-row: 40px;
+  }
+  .zr-module[data-rows] {
     display: flex;
     flex-direction: column;
+    height: calc(
+      var(--zr-rows) * var(--zr-tile-row) + (var(--zr-rows) - 1) * var(--zr-3)
+    );
+    /* A fixed height makes the card a size container, which is what lets the
+       height queries further down apply to exactly these cards. */
+    container-type: size;
   }
-  .zr-module[data-user-height] > .zr-module__body,
-  .zr-module[data-user-height] > .zr-list {
+  .zr-module[data-rows] > * {
     min-height: 0;
-    overflow: auto;
   }
-  .zr-module[data-user-height] > .zr-module__body {
+  .zr-module[data-rows] > .zr-module__body {
     flex: 1;
+    overflow: hidden;
+  }
+  .zr-module[data-rows] > .zr-list {
+    overflow: hidden;
+  }
+  /* Whatever did not fit fades out instead of being cut mid-line. The module
+     sets this only on children that actually overflow, so a card whose content
+     fits exactly keeps its last row crisp. */
+  .zr-module[data-rows] > .is-clipped {
+    mask-image: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 1) calc(100% - 28px),
+      transparent
+    );
+  }
+
+  /* Content that adapts to the tile it sits in. These only ever match inside a
+     card with a fixed height: a height query cannot match an inline-size
+     container, which is what every other module is. */
+  @container (max-height: 220px) {
+    .zr-module__body {
+      padding-block: var(--zr-2);
+    }
+    .zr-donut {
+      --zr-donut-size: 76px;
+    }
+    .zr-spark {
+      height: 34px;
+    }
+  }
+  @container (max-height: 150px) {
+    .zr-module__head {
+      min-height: 32px;
+    }
+    .zr-donut {
+      --zr-donut-size: 60px;
+    }
+    /* At this height the numbers are the widget; the trend line is decoration
+       and the secondary rows no longer earn their space. */
+    .zr-spark,
+    .zr-module__body .zr-kv:nth-child(n + 3) {
+      display: none;
+    }
   }
 
   @media (max-width: 860px) {
-    /* One column, full width: a stored pixel height would only cut content off
-       or leave a gap, so the inline height stands down here. */
-    .zr-module[data-user-height] {
+    /* One column, full width: a stored tile height would only cut content off
+       or leave a gap, so it stands down here. */
+    .zr-module[data-rows] {
       display: block;
-      height: auto !important;
+      height: auto;
+      container-type: inline-size;
+    }
+    .zr-module[data-rows] > .zr-module__body,
+    .zr-module[data-rows] > .zr-list {
+      overflow: visible;
+    }
+    .zr-module[data-rows] > .is-clipped {
+      mask-image: none;
     }
   }
 }

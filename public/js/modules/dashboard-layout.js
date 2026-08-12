@@ -2,10 +2,16 @@
  * Dashboard layout module.
  *
  * Lets the user rearrange the dashboard grid: drag a card by its head to
- * reorder, drag the corner grip to resize. Width snaps to the 12 grid columns
- * the cards already use via data-span, height is free pixels. The result is
- * stored per user through /api/dashboard/layout, so it follows them to another
- * browser.
+ * reorder, drag the corner grip to resize. Both axes snap — width to the 12
+ * grid columns the cards already use via data-span, height to whole tile rows —
+ * so resized cards line up with their neighbours instead of landing at
+ * arbitrary pixel heights. The result is stored per user through
+ * /api/dashboard/layout, so it follows them to another browser.
+ *
+ * A sized card is a tile, not a document: it shows what fits and never scrolls.
+ * What did not fit fades out, and the card's own footer link is the way to the
+ * full list. The content adapts to the tile through the height container
+ * queries in pages/dashboard.css.
  *
  * Below 861px the grid is a single column and every card spans the full width,
  * so editing is switched off there rather than storing a layout nobody can see.
@@ -14,9 +20,10 @@
 const LAYOUT_URL = '/api/dashboard/layout';
 const GRID_COLUMNS = 12;
 const MIN_SPAN = 3;
-// Anything shorter than this hides the card's own head plus a line of content.
-const MIN_HEIGHT = 140;
-const MAX_HEIGHT = 2000;
+// Tile rows. Three rows still fit a card's head plus a line of content; more
+// than 24 is taller than any viewport this grid is used on.
+const MIN_ROWS = 3;
+const MAX_ROWS = 24;
 const SAVE_DEBOUNCE_MS = 600;
 const DESKTOP_QUERY = '(min-width: 861px)';
 const REQUEST_TIMEOUT_MS = 15000;
@@ -66,7 +73,7 @@ export default function dashboardLayout(grid, { toast } = {}) {
       widgets: [...grid.querySelectorAll('[data-widget]')].map((card) => ({
         id: card.dataset.widget,
         span: Number(card.dataset.span) || GRID_COLUMNS,
-        height: Number(card.dataset.userHeight) || 0,
+        rows: Number(card.dataset.rows) || 0,
       })),
     };
   }
@@ -75,16 +82,56 @@ export default function dashboardLayout(grid, { toast } = {}) {
     card.dataset.span = String(clamp(span, MIN_SPAN, GRID_COLUMNS));
   }
 
-  function setHeight(card, height) {
-    if (!height) {
-      delete card.dataset.userHeight;
-      card.style.removeProperty('height');
+  /* Rows, not pixels: the stylesheet turns --zr-rows into a height, so the
+     card can only ever be a whole number of tile rows tall. 0 hands the card
+     back to its content. */
+  function setRows(card, rows) {
+    if (!rows) {
+      delete card.dataset.rows;
+      card.style.removeProperty('--zr-rows');
+      markClipping();
       return;
     }
-    const px = clamp(Math.round(height), MIN_HEIGHT, MAX_HEIGHT);
-    card.dataset.userHeight = String(px);
-    card.style.height = `${px}px`;
+    const value = clamp(Math.round(rows), MIN_ROWS, MAX_ROWS);
+    card.dataset.rows = String(value);
+    card.style.setProperty('--zr-rows', String(value));
+    markClipping();
   }
+
+  /* Only a child that really overflows gets the fade, so a card whose content
+     happens to fit keeps its last line crisp. Batched through one frame: the
+     measurement has to happen after the browser applied the new height, and
+     the observer below can fire many times per update. */
+  let clipFrame = 0;
+  function markClipping() {
+    if (clipFrame) return;
+    clipFrame = requestAnimationFrame(() => {
+      clipFrame = 0;
+      cards.forEach((card) => {
+        const sized = Boolean(card.dataset.rows);
+        card.querySelectorAll(':scope > *').forEach((child) => {
+          // Only the children the stylesheet actually clips can hide content;
+          // a one-line footer reports a few pixels of scrollHeight from its
+          // own padding and would otherwise fade for nothing.
+          const clips = getComputedStyle(child).overflowY === 'hidden';
+          child.classList.toggle(
+            'is-clipped',
+            sized && clips && child.scrollHeight > child.clientHeight + 1
+          );
+        });
+      });
+    });
+  }
+
+  /* The dashboard fills these cards from its own fetch, long after the layout
+     was applied — what fits changes with the data. Attributes are left out on
+     purpose: is-clipped is one, and observing it would feed itself. */
+  const contentObserver = new MutationObserver(markClipping);
+  contentObserver.observe(grid, {
+    childList: true,
+    subtree: true,
+    characterData: true,
+  });
 
   function applyLayout(layout) {
     const widgets = Array.isArray(layout?.widgets) ? layout.widgets : [];
@@ -96,7 +143,7 @@ export default function dashboardLayout(grid, { toast } = {}) {
       // stored layout predates keeps its markup position at the end.
       if (!card) return;
       setSpan(card, Number(entry.span));
-      setHeight(card, Number(entry.height) || 0);
+      setRows(card, Number(entry.rows) || 0);
       grid.appendChild(card);
       known.delete(entry.id);
     });
@@ -109,7 +156,7 @@ export default function dashboardLayout(grid, { toast } = {}) {
   function applyDefaults() {
     defaults.forEach(({ card, span }) => {
       setSpan(card, span);
-      setHeight(card, 0);
+      setRows(card, 0);
       grid.appendChild(card);
     });
     hasStoredLayout = false;
@@ -178,17 +225,35 @@ export default function dashboardLayout(grid, { toast } = {}) {
 
   /* --- resizing ---------------------------------------------------------- */
 
-  // One column plus one gap: the distance the pointer travels per grid step.
-  function columnStep() {
+  /* One cell plus one gap: how far the pointer travels per grid step. Read off
+     the live grid rather than hardcoded, so a token change moves the snapping
+     with it. */
+  function gridMetrics() {
     const styles = getComputedStyle(grid);
     const gap = Number.parseFloat(styles.columnGap) || 0;
-    const width = grid.getBoundingClientRect().width;
-    return { gap, step: (width + gap) / GRID_COLUMNS };
+    const rowGap = Number.parseFloat(styles.rowGap) || gap;
+    const rowHeight =
+      Number.parseFloat(styles.getPropertyValue('--zr-tile-row')) || 40;
+    return {
+      column: (grid.getBoundingClientRect().width + gap) / GRID_COLUMNS,
+      gap,
+      row: rowHeight + rowGap,
+      rowGap,
+    };
   }
 
   function spanForWidth(width) {
-    const { gap, step } = columnStep();
-    return clamp(Math.round((width + gap) / step), MIN_SPAN, GRID_COLUMNS);
+    const { column, gap } = gridMetrics();
+    return clamp(Math.round((width + gap) / column), MIN_SPAN, GRID_COLUMNS);
+  }
+
+  function rowsForHeight(height) {
+    const { row, rowGap } = gridMetrics();
+    return clamp(Math.round((height + rowGap) / row), MIN_ROWS, MAX_ROWS);
+  }
+
+  function currentRows(card) {
+    return Number(card.dataset.rows) || rowsForHeight(card.offsetHeight);
   }
 
   function startResize(card, event) {
@@ -202,7 +267,7 @@ export default function dashboardLayout(grid, { toast } = {}) {
 
     const onMove = (moveEvent) => {
       setSpan(card, spanForWidth(moveEvent.clientX - rect.left));
-      setHeight(card, moveEvent.clientY - rect.top);
+      setRows(card, rowsForHeight(moveEvent.clientY - rect.top));
     };
     const onUp = () => {
       grip.removeEventListener('pointermove', onMove);
@@ -245,20 +310,14 @@ export default function dashboardLayout(grid, { toast } = {}) {
         break;
       }
       case 'ArrowDown':
-        setHeight(
-          card,
-          (Number(card.dataset.userHeight) || card.offsetHeight) + 40
-        );
+        setRows(card, currentRows(card) + 1);
         break;
       case 'ArrowUp':
-        setHeight(
-          card,
-          (Number(card.dataset.userHeight) || card.offsetHeight) - 40
-        );
+        setRows(card, currentRows(card) - 1);
         break;
       case 'Backspace':
       case 'Delete':
-        setHeight(card, 0);
+        setRows(card, 0);
         break;
       default:
         handled = false;
@@ -278,12 +337,13 @@ export default function dashboardLayout(grid, { toast } = {}) {
     grip.className = 'zr-module__grip';
     grip.setAttribute(
       'aria-label',
-      `Resize ${card.querySelector('.zr-module__title')?.textContent?.trim() || 'widget'}: arrow keys resize, shift and arrow keys move, delete restores the height`
+      `Resize ${card.querySelector('.zr-module__title')?.textContent?.trim() || 'widget'}: arrow keys resize, shift and arrow keys move, delete fits the card to its content`
     );
     grip.addEventListener('pointerdown', (event) => startResize(card, event));
-    // A grip nobody dragged yet should still be able to give the height back.
+    // Double-click hands the card back to its content — the way out of a tile
+    // size without hunting for the exact row count.
     grip.addEventListener('dblclick', () => {
-      setHeight(card, 0);
+      setRows(card, 0);
       save();
     });
     grip.addEventListener('keydown', (event) => onGripKey(card, event));
@@ -323,6 +383,7 @@ export default function dashboardLayout(grid, { toast } = {}) {
     }
     grid.classList.toggle('is-editable', desktop.matches);
     syncResetButton();
+    markClipping();
   }
 
   /* --- start ------------------------------------------------------------- */
@@ -343,6 +404,8 @@ export default function dashboardLayout(grid, { toast } = {}) {
   return {
     destroy() {
       clearTimeout(saveTimer);
+      cancelAnimationFrame(clipFrame);
+      contentObserver.disconnect();
       disableSorting();
       desktop.removeEventListener('change', syncMode);
     },
