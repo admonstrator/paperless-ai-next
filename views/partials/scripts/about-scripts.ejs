@@ -17,90 +17,25 @@
 		}
 
 		const browserInfo = `${navigator.userAgent || 'unknown'}`;
-		const osGuess = navigator.platform || 'unknown';
 		const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
 
-		const redactSecrets = (value) => {
-			if (value == null) {
-				return 'unknown';
-			}
+		// Redaction and the issue URL live in /js/bug-report-link.js, so this page
+		// and the sidebar link cannot drift apart. Without that script the button
+		// keeps its static template href and diagnostics stay placeholder-only —
+		// never print a value the shared redaction rules have not seen.
+		const bugReport = window.zrBugReport;
+		if (!bugReport) {
+			console.warn('bug-report-link.js unavailable; issue prefill disabled.');
+		}
 
-			let text = String(value);
-			text = text.replace(
-				/((?:API[_-]?KEY|TOKEN|SECRET|PASSWORD|PASSWD)[A-Z0-9_-]*\s*[:=]\s*)([^\n\r]+)/gi,
-				'$1[REDACTED]'
-			);
+		const redactSecrets = (value) =>
+			bugReport ? bugReport.redactSecrets(value) : 'unavailable';
+		const keyState = (isSet) =>
+			bugReport ? bugReport.keyState(isSet) : 'unknown';
 
-			// Mask credentials in URLs like https://user:pass@example.com
-			text = text.replace(/(https?:\/\/)([^@\s]+)@/gi, '$1[REDACTED]@');
-
-			return text;
-		};
-
-		const keyState = (isSet) => (isSet ? '[REDACTED:SET]' : 'not_set');
-
-		const detectHostOs = () => {
-			const ua = `${navigator.userAgent || ''} ${navigator.platform || ''}`.toLowerCase();
-			if (ua.includes('win')) return 'Windows';
-			if (ua.includes('mac')) return 'macOS';
-			if (ua.includes('linux')) return 'Linux';
-			return 'Other';
-		};
-
-		const issueParams = new URLSearchParams({
-			template: 'bug_report.yml',
-			title: '[Bug]: ',
-			summary: 'Describe the issue in one sentence',
-			steps: '1.\n2.\n3.\n4.',
-			expected: 'Describe expected behavior',
-			actual: 'Describe actual behavior',
-			logs: 'Paste relevant Zettelrobbe logs here.\n\nExample:\n`docker logs zettelrobbe --tail=200`',
-			traceback: 'Paste browser console errors or stack trace here (if applicable).',
-			app_version: supportInfo.appVersion || 'unknown',
-			app_commit: supportInfo.commitSha || 'unknown',
-			paperless_ngx_version: supportInfo.paperlessNgxVersion || 'unknown',
-			deployment: 'Docker Compose',
-			os: detectHostOs(),
-			os_version: `${osGuess}`,
-			browser: browserInfo,
-			config_notes: redactSecrets([
-				`AI_PROVIDER=${supportInfo.aiProvider || 'unknown'}`,
-				`MISTRAL_OCR_ENABLED=${supportInfo.ocrEnabled ? 'yes' : 'no'}`,
-				`PAPERLESS_API_URL=${supportInfo.paperlessApiUrl || 'unknown'}`,
-				`OLLAMA_API_URL=${supportInfo.ollamaApiUrl || 'unknown'}`,
-				`OLLAMA_MODEL=${supportInfo.ollamaModel || 'unknown'}`,
-				`CUSTOM_BASE_URL=${supportInfo.customBaseUrl || 'unknown'}`,
-				`CUSTOM_MODEL=${supportInfo.customModel || 'unknown'}`,
-				`AZURE_ENDPOINT=${supportInfo.azureEndpoint || 'unknown'}`,
-				`AZURE_DEPLOYMENT_NAME=${supportInfo.azureDeploymentName || 'unknown'}`,
-				`AZURE_API_VERSION=${supportInfo.azureApiVersion || 'unknown'}`,
-				`MISTRAL_OCR_MODEL=${supportInfo.mistralOcrModel || 'unknown'}`,
-				`TRUST_PROXY=${supportInfo.trustProxy || 'unknown'}`,
-				`USE_EXISTING_DATA=${supportInfo.useExistingData || 'no'}`,
-				`RESTRICT_TO_EXISTING_TAGS=${supportInfo.restrictToExistingTags || 'no'}`,
-				`RESTRICT_TO_EXISTING_CORRESPONDENTS=${supportInfo.restrictToExistingCorrespondents || 'no'}`,
-				`RESTRICT_TO_EXISTING_DOCUMENT_TYPES=${supportInfo.restrictToExistingDocumentTypes || 'no'}`,
-				`PAPERLESS_API_TOKEN=${keyState(supportInfo.paperlessTokenSet)}`,
-				`OPENAI_API_KEY=${keyState(supportInfo.openAiKeySet)}`,
-				`CUSTOM_API_KEY=${keyState(supportInfo.customKeySet)}`,
-				`AZURE_API_KEY=${keyState(supportInfo.azureKeySet)}`,
-				`MISTRAL_API_KEY=${keyState(supportInfo.mistralKeySet)}`,
-				`API_KEY=${keyState(supportInfo.apiKeySet)}`
-			].join('\n')),
-			extra: redactSecrets([
-				`Node=${supportInfo.nodeVersion || 'unknown'}`,
-				`NodeEnv=${supportInfo.nodeEnv || 'unknown'}`,
-				`Platform=${supportInfo.platform || 'unknown'}`,
-				`Timezone=${timezone}`,
-				`ServerTimeUTC=${supportInfo.serverTimeUtc || 'unknown'}`,
-				`ServerTimezone=${supportInfo.timezone || 'unknown'}`,
-				`ScanInterval=${supportInfo.scanInterval || 'unknown'}`,
-				`TokenLimit=${supportInfo.tokenLimit || 'unknown'}`,
-				`ResponseTokens=${supportInfo.responseTokens || 'unknown'}`
-			].join('\n'))
-		});
-
-		openPrefilledIssueBtn.href = `https://github.com/admonstrator/zettelrobbe/issues/new?${issueParams.toString()}`;
+		if (bugReport) {
+			bugReport.apply(openPrefilledIssueBtn, supportInfo);
+		}
 
 		if (!copyIssueDiagnosticsBtn) {
 			return;
