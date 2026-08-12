@@ -76,9 +76,12 @@
     color: var(--zr-danger);
   }
 
-  /* Add image inversion for dark mode */
+  /* Dark mode inverts images so document thumbnails do not glare as white
+     tiles. Brand art and QR codes carry .no-invert to opt out — a QR code may
+     stop scanning when inverted. invert() takes a number: an earlier rewrite
+     passed a colour token here, which silently disabled the whole rule. */
   [data-theme='dark'] img:not(.no-invert) {
-    filter: invert(var(--zr-text));
+    filter: invert(1);
     transition: filter 0.3s ease;
   }
 
