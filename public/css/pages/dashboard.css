@@ -13,4 +13,107 @@
   [data-module='dashboard'] > .zr-stats {
     margin-bottom: var(--zr-4);
   }
+
+  /* --- editable grid ------------------------------------------------------
+     The layout module lets the user drag a card by its head and resize it from
+     the corner grip. Everything below is scoped to .is-editable, which the
+     module only sets on wide viewports — the phone grid is one column, so
+     there is nothing to arrange there. */
+
+  .zr-layoutbar {
+    justify-content: flex-end;
+    margin-bottom: var(--zr-2);
+  }
+
+  .zr-grid.is-editable > [data-widget] {
+    position: relative;
+  }
+  /* The head doubles as the drag handle, so it has to say so — but only where
+     the pointer can act on it, and never over the buttons it also holds. */
+  .zr-grid.is-sortable > [data-widget] > .zr-module__head {
+    cursor: grab;
+  }
+  .zr-grid.is-sortable > [data-widget] > .zr-module__head :is(button, a) {
+    cursor: pointer;
+  }
+
+  .zr-module__grip {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: 0;
+    background: none;
+    color: var(--zr-text-faint);
+    cursor: nwse-resize;
+    opacity: 0;
+    transition: opacity var(--zr-dur) var(--zr-ease);
+  }
+  /* Two short strokes in the corner, the conventional resize affordance. */
+  .zr-module__grip::after {
+    content: '';
+    position: absolute;
+    right: 3px;
+    bottom: 3px;
+    width: 9px;
+    height: 9px;
+    border-right: 2px solid currentcolor;
+    border-bottom: 2px solid currentcolor;
+    border-bottom-right-radius: 3px;
+  }
+  .zr-grid:not(.is-editable) .zr-module__grip {
+    display: none;
+  }
+  [data-widget]:hover > .zr-module__grip,
+  .zr-module__grip:focus-visible {
+    opacity: 1;
+  }
+  .zr-module__grip:focus-visible {
+    outline: 2px solid var(--zr-brand);
+    outline-offset: 1px;
+  }
+
+  /* While a card is being dragged or resized the pointer owns it; hover states
+     underneath would only flicker. */
+  .zr-module.is-resizing {
+    user-select: none;
+    box-shadow: var(--zr-shadow-lg);
+  }
+  .zr-module.is-resizing .zr-module__grip {
+    opacity: 1;
+  }
+  .zr-module.is-dragging {
+    box-shadow: var(--zr-shadow-lg);
+    cursor: grabbing;
+  }
+  .zr-module.is-dragghost {
+    opacity: 0.35;
+  }
+
+  /* A card the user gave a height keeps it: its body scrolls instead of
+     pushing the card open again. The trailing list on the task runner is the
+     other growing child, so it scrolls too. */
+  .zr-module[data-user-height] {
+    display: flex;
+    flex-direction: column;
+  }
+  .zr-module[data-user-height] > .zr-module__body,
+  .zr-module[data-user-height] > .zr-list {
+    min-height: 0;
+    overflow: auto;
+  }
+  .zr-module[data-user-height] > .zr-module__body {
+    flex: 1;
+  }
+
+  @media (max-width: 860px) {
+    /* One column, full width: a stored pixel height would only cut content off
+       or leave a gap, so the inline height stands down here. */
+    .zr-module[data-user-height] {
+      display: block;
+      height: auto !important;
+    }
+  }
 }

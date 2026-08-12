@@ -42,6 +42,17 @@
   .zr-grid > [data-span='8'] {
     grid-column: span 8;
   }
+  /* 9 to 11 exist for the dashboard's resizable cards; the views themselves
+     only ship the widths above. */
+  .zr-grid > [data-span='9'] {
+    grid-column: span 9;
+  }
+  .zr-grid > [data-span='10'] {
+    grid-column: span 10;
+  }
+  .zr-grid > [data-span='11'] {
+    grid-column: span 11;
+  }
   .zr-grid > [data-span='12'] {
     grid-column: span 12;
   }
@@ -592,7 +603,10 @@
     }
     .zr-grid > [data-span='5'],
     .zr-grid > [data-span='7'],
-    .zr-grid > [data-span='8'] {
+    .zr-grid > [data-span='8'],
+    .zr-grid > [data-span='9'],
+    .zr-grid > [data-span='10'],
+    .zr-grid > [data-span='11'] {
       grid-column: span 12;
     }
   }

@@ -10131,4 +10131,150 @@ router.post('/api/changelog/mark-seen', isAuthenticated, async (req, res) => {
   }
 });
 
+/* The dashboard sends back the grid the user arranged. Widget ids are not
+   checked against a list on purpose — the dashboard adds and renames cards, and
+   a stale server list would silently drop a card's placement. The shape, the
+   spans and the count are what needs to be trustworthy; anything the dashboard
+   no longer knows is ignored when the layout is applied. */
+const DASHBOARD_WIDGET_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
+const DASHBOARD_MAX_WIDGETS = 50;
+const DASHBOARD_MIN_SPAN = 3;
+const DASHBOARD_GRID_COLUMNS = 12;
+const DASHBOARD_MAX_HEIGHT = 2000;
+
+function normalizeDashboardLayout(input) {
+  if (!input || !Array.isArray(input.widgets)) {
+    return null;
+  }
+  if (input.widgets.length > DASHBOARD_MAX_WIDGETS) {
+    return null;
+  }
+
+  const seen = new Set();
+  const widgets = [];
+  for (const entry of input.widgets) {
+    const id = String(entry?.id || '').trim();
+    if (!DASHBOARD_WIDGET_ID.test(id) || seen.has(id)) {
+      return null;
+    }
+    seen.add(id);
+
+    const span = Number.parseInt(entry?.span, 10);
+    if (
+      !Number.isInteger(span) ||
+      span < DASHBOARD_MIN_SPAN ||
+      span > DASHBOARD_GRID_COLUMNS
+    ) {
+      return null;
+    }
+
+    // 0 means "whatever the content needs", which is also the default.
+    const height = Number.parseInt(entry?.height, 10) || 0;
+    if (height < 0 || height > DASHBOARD_MAX_HEIGHT) {
+      return null;
+    }
+
+    widgets.push({ id, span, height });
+  }
+
+  return { widgets };
+}
+
+/**
+ * @swagger
+ * /api/dashboard/layout:
+ *   get:
+ *     summary: Read the authenticated user's dashboard grid layout
+ *     description: >
+ *       Returns the widget order, column spans and pixel heights the user
+ *       arranged. widgets is empty when the user has not customised anything,
+ *       which means the dashboard renders in its default order.
+ *     tags:
+ *       - Dashboard
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: The stored layout
+ *       401:
+ *         description: Not authenticated
+ */
+router.get('/api/dashboard/layout', isAuthenticated, async (req, res) => {
+  try {
+    const username = req.user && req.user.username;
+    if (!username) {
+      return res.json({ success: true, data: { widgets: [] } });
+    }
+
+    const layout = await documentModel.getDashboardLayout(username);
+    return res.json({ success: true, data: layout || { widgets: [] } });
+  } catch (error) {
+    console.error('[ERROR] GET /api/dashboard/layout:', error);
+    return res
+      .status(500)
+      .json({ success: false, error: 'Failed to load dashboard layout' });
+  }
+});
+
+/**
+ * @swagger
+ * /api/dashboard/layout:
+ *   put:
+ *     summary: Store or reset the authenticated user's dashboard grid layout
+ *     description: >
+ *       Accepts a widgets array of {id, span, height} in display order. Spans
+ *       are 3 to 12 columns and heights 0 (content height) to 2000 pixels.
+ *       Sending an empty widgets array clears the layout, so the dashboard
+ *       returns to its default order.
+ *     tags:
+ *       - Dashboard
+ *     security:
+ *       - BearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Layout stored
+ *       400:
+ *         description: Malformed layout
+ *       401:
+ *         description: Not authenticated
+ */
+router.put(
+  '/api/dashboard/layout',
+  isAuthenticated,
+  express.json(),
+  async (req, res) => {
+    try {
+      const username = req.user && req.user.username;
+      if (!username) {
+        return res.json({ success: true, message: 'No user to store against' });
+      }
+
+      // An empty list is how the dashboard asks for the default back.
+      if (Array.isArray(req.body?.widgets) && req.body.widgets.length === 0) {
+        await documentModel.setDashboardLayout(username, null);
+        return res.json({ success: true, message: 'Dashboard layout reset' });
+      }
+
+      const layout = normalizeDashboardLayout(req.body);
+      if (!layout) {
+        return res
+          .status(400)
+          .json({ success: false, error: 'Invalid dashboard layout' });
+      }
+
+      await documentModel.setDashboardLayout(username, layout);
+      return res.json({
+        success: true,
+        data: layout,
+        message: 'Dashboard layout saved',
+      });
+    } catch (error) {
+      console.error('[ERROR] PUT /api/dashboard/layout:', error);
+      return res
+        .status(500)
+        .json({ success: false, error: 'Failed to save dashboard layout' });
+    }
+  }
+);
+
 module.exports = router;
