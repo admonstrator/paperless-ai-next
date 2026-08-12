@@ -30,7 +30,7 @@ export function renderDonut(el, series, caption = '') {
   if (!total) {
     el.innerHTML =
       '<circle cx="50" cy="50" r="42" stroke="var(--zr-surface-sunken)"/>' +
-      '<text x="50" y="52" text-anchor="middle" style="font:400 8px var(--zr-font);fill:var(--zr-text-faint)">no data</text>';
+      '<text x="50" y="52" text-anchor="middle" class="zr-donut__caption">no data</text>';
     return;
   }
 
@@ -52,9 +52,9 @@ export function renderDonut(el, series, caption = '') {
 
   el.innerHTML =
     `<circle cx="50" cy="50" r="${radius}" stroke="var(--zr-surface-sunken)"/>${arcs}` +
-    `<text x="50" y="49" text-anchor="middle" dominant-baseline="central" style="font:700 15px var(--zr-font);fill:var(--zr-text)">${total.toLocaleString()}</text>` +
+    `<text x="50" y="49" text-anchor="middle" dominant-baseline="central" class="zr-donut__total">${total.toLocaleString()}</text>` +
     (caption
-      ? `<text x="50" y="62" text-anchor="middle" style="font:400 8px var(--zr-font);fill:var(--zr-text-faint)">${escapeHtml(caption)}</text>`
+      ? `<text x="50" y="62" text-anchor="middle" class="zr-donut__caption">${escapeHtml(caption)}</text>`
       : '');
 }
 

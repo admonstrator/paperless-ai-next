@@ -1,11 +1,12 @@
-<!-- What's New dialog — shown once per release, skipped on the login page (API returns 401) -->
+<!-- What's New dialog — shown once per release, skipped on the login page (API returns 401).
+     Filled and opened by /js/changelog-modal.js, loaded from the shell. -->
 <dialog id="changelogModal" class="zr-dialog" aria-labelledby="changelogModalTitle">
-    <div class="zr-dialog__head zr-row">
+    <div class="zr-dialog__head">
         <span class="zr-badge zr-badge--brand">
             <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-zap"/></svg>
         </span>
         <span class="zr-grow">
-            <span id="changelogModalTitle" class="modal-title">What's new</span>
+            <span id="changelogModalTitle">What's new</span>
             <span id="changelogModalVersion" class="zr-sm zr-faint"></span>
         </span>
         <button class="zr-btn zr-btn--ghost zr-btn--icon" type="button" id="changelogModalClose"
@@ -25,61 +26,3 @@
         <button class="zr-btn zr-btn--primary" type="button" id="changelogModalDismiss">Got it</button>
     </div>
 </dialog>
-
-<script>
-(function () {
-    'use strict';
-
-    const modal = document.getElementById('changelogModal');
-    if (!modal) {
-        return;
-    }
-
-    // Marking it seen is bound to the dialog's own close event, so Escape,
-    // the close button and "Got it" all go through the same path exactly once.
-    modal.addEventListener('close', function () {
-        fetch('/api/changelog/mark-seen', { method: 'POST', credentials: 'same-origin' }).catch(function () {});
-    });
-
-    function close() {
-        if (modal.open) {
-            modal.close();
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        fetch('/api/changelog/status', { credentials: 'same-origin' })
-            .then(function (res) {
-                return res.ok ? res.json() : null;
-            })
-            .then(function (data) {
-                if (!data || !data.show) return;
-
-                const versionEl = document.getElementById('changelogModalVersion');
-                const listEl = document.getElementById('changelogModalEntries');
-                if (!listEl) return;
-
-                if (versionEl && data.version) {
-                    versionEl.textContent = data.version;
-                }
-
-                if (Array.isArray(data.entries)) {
-                    data.entries.forEach(function (entry) {
-                        const li = document.createElement('li');
-                        li.innerHTML =
-                            '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-check"/></svg>' +
-                            '<span></span>';
-                        li.lastElementChild.innerHTML = entry;
-                        listEl.appendChild(li);
-                    });
-                }
-
-                modal.showModal();
-            })
-            .catch(function () {});
-
-        document.getElementById('changelogModalClose')?.addEventListener('click', close);
-        document.getElementById('changelogModalDismiss')?.addEventListener('click', close);
-    });
-}());
-</script>

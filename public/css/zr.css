@@ -517,8 +517,10 @@ body {
   padding: 0;
 }
 /* A chart next to its legend: the two keep more air between them than a plain
-   row, and the legend starts at the top rather than centring on the chart. */
-.zr-module__body--chart {
+   row, and the legend starts at the top rather than centring on the chart.
+   Doubled selector on purpose: the markup pairs this with .zr-row, which is
+   defined later in the file and would win at equal specificity. */
+.zr-module__body.zr-module__body--chart {
   gap: var(--zr-4);
   align-items: flex-start;
 }

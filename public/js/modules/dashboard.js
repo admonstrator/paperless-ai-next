@@ -54,6 +54,30 @@ function formatNumber(value, { compact = false } = {}) {
   return `${text}${unit.suffix}`;
 }
 
+/**
+ * The legend beside a donut. Shared by both charts so the escaping is not a
+ * property of the call site: one legend is fed hardcoded labels today, and that
+ * is not something the next caller inherits.
+ *
+ * @param {HTMLElement} el
+ * @param {Array<{label: string, value: number, tone: string}>} series
+ * @param {string} emptyHtml markup for an empty series
+ */
+function renderLegend(el, series, emptyHtml = '') {
+  el.innerHTML = series.length
+    ? series
+        .map(
+          (entry) => `
+            <div class="zr-row">
+              <span class="zr-dot zr-dot--${entry.tone}"></span>
+              <span class="zr-grow zr-truncate">${escapeHtml(entry.label)}</span>
+              <span class="zr-num zr-strong">${formatNumber(entry.value)}</span>
+            </div>`
+        )
+        .join('')
+    : emptyHtml;
+}
+
 function formatDocumentCount(value) {
   const numeric = Number(value || 0);
   return `${formatNumber(numeric)} ${Math.abs(numeric) === 1 ? 'doc' : 'docs'}`;
@@ -166,18 +190,11 @@ export default function dashboard(root, { toast }) {
 
     if (chart) renderDonut(chart, series, 'classified');
     if (legend) {
-      legend.innerHTML = series.length
-        ? series
-            .map(
-              (entry) => `
-                <div class="zr-row">
-                  <span class="zr-dot" style="background: var(--zr-${entry.tone})"></span>
-                  <span class="zr-grow zr-truncate">${escapeHtml(entry.label)}</span>
-                  <span class="zr-num zr-strong">${formatNumber(entry.value)}</span>
-                </div>`
-            )
-            .join('')
-        : '<p class="zr-sm zr-faint">No document types yet.</p>';
+      renderLegend(
+        legend,
+        series,
+        '<p class="zr-sm zr-faint">No document types yet.</p>'
+      );
     }
   }
 
@@ -206,18 +223,7 @@ export default function dashboard(root, { toast }) {
     ];
 
     if (chart) renderDonut(chart, series, 'documents');
-    if (legend) {
-      legend.innerHTML = series
-        .map(
-          (entry) => `
-            <div class="zr-row">
-              <span class="zr-dot" style="background: var(--zr-${entry.tone})"></span>
-              <span class="zr-grow">${entry.label}</span>
-              <span class="zr-num zr-strong">${formatNumber(entry.value)}</span>
-            </div>`
-        )
-        .join('');
-    }
+    if (legend) renderLegend(legend, series);
   }
 
   function applyStats(payload) {
@@ -584,7 +590,7 @@ export default function dashboard(root, { toast }) {
     } catch (error) {
       console.error('[dashboard] entity list failed', error);
       body.innerHTML =
-        '<p class="zr-sm" style="color: var(--zr-danger)">Could not load the list.</p>';
+        '<p class="zr-sm zr-danger-text">Could not load the list.</p>';
     }
   }
 

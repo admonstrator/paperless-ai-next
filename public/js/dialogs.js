@@ -1,9 +1,10 @@
 /**
- * Modal dialogs and toasts on top of the native <dialog> element.
+ * Modal dialogs on top of the native <dialog> element.
  *
  * Replaces SweetAlert2 (78 KB) with roughly 3 KB and the framework's own look.
  * Exposed as window.zrDialog / window.zrToast because the page scripts that use
- * it are classic scripts, not modules.
+ * it are classic scripts, not modules. window.zrToast is a thin adapter over
+ * the kernel's toast; only the dialogs are implemented here.
  *
  * zrDialog({ title, text, html, icon, showCancelButton, confirmButtonText,
  *            cancelButtonText, input, inputPlaceholder })
@@ -49,7 +50,7 @@
 
       dlg.innerHTML = `
         <form method="dialog">
-          <div class="zr-dialog__head zr-row"></div>
+          <div class="zr-dialog__head"></div>
           <div class="zr-dialog__body"></div>
           <div class="zr-dialog__foot"></div>
         </form>`;
@@ -137,37 +138,20 @@
     });
   };
 
-  const TOAST_ICONS = {
-    ok: 'i-check-circle',
-    success: 'i-check-circle',
-    danger: 'i-alert-circle',
-    error: 'i-alert-circle',
-    warn: 'i-alert',
-    warning: 'i-alert',
-    info: 'i-info',
+  // The dialog vocabulary plus the kernel's own tone names, which callers of
+  // this API have always been allowed to pass.
+  const TOAST_TONES = {
+    ...TONES,
+    ok: 'ok',
+    danger: 'danger',
+    warn: 'warn',
   };
 
+  // Adapter only: the toast DOM lives in the module kernel (public/js/zr.js).
+  // This classic script runs before that module, so the lookup is deferred to
+  // call time — toasts only fire on user interaction, never during load.
   window.zrToast = function zrToast(message, tone) {
-    const resolved = TOAST_ICONS[tone] ? tone : 'info';
-    let host = document.querySelector('.zr-toasts');
-    if (!host) {
-      host = document.createElement('div');
-      host.className = 'zr-toasts';
-      document.body.append(host);
-    }
-
-    const el = document.createElement('div');
-    el.className = `zr-toast zr-toast--${resolved === 'success' ? 'ok' : resolved === 'error' ? 'danger' : resolved}`;
-    el.setAttribute('role', 'status');
-    el.innerHTML =
-      `<svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#${TOAST_ICONS[resolved]}"/></svg>` +
-      '<div class="zr-grow"></div>';
-    el.lastElementChild.textContent = message;
-    host.append(el);
-
-    const remove = () => el.remove();
-    el.addEventListener('click', remove);
-    setTimeout(remove, 4200);
-    return el;
+    if (typeof window.__zrToast !== 'function') return null;
+    return window.__zrToast(message, { tone: TOAST_TONES[tone] || 'info' });
   };
 })();

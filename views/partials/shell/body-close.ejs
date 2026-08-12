@@ -2,23 +2,7 @@
         </div>
 
         <nav class="zr-tabbar" aria-label="Primary">
-            <a class="zr-tab" href="/dashboard">
-                <svg class="zr-icon zr-icon--lg" aria-hidden="true"><use href="/icons.svg#i-home"/></svg>
-                Dashboard
-            </a>
-            <a class="zr-tab" href="/manual">
-                <svg class="zr-icon zr-icon--lg" aria-hidden="true"><use href="/icons.svg#i-file"/></svg>
-                Manual
-            </a>
-            <a class="zr-tab" href="/history">
-                <svg class="zr-icon zr-icon--lg" aria-hidden="true"><use href="/icons.svg#i-history"/></svg>
-                History
-            </a>
-            <a class="zr-tab" href="/ocr">
-                <svg class="zr-icon zr-icon--lg" aria-hidden="true"><use href="/icons.svg#i-inbox"/></svg>
-                Queues
-                <span class="zr-tab__dot hidden" id="tabbarQueueDot"></span>
-            </a>
+<%- include('../nav', { surface: 'tabbar' }) -%>
             <button class="zr-tab" type="button" data-action="drawer-open">
                 <svg class="zr-icon zr-icon--lg" aria-hidden="true"><use href="/icons.svg#i-menu"/></svg>
                 More
@@ -28,6 +12,7 @@
 
     <script type="module" src="/js/zr.js"></script>
     <script src="/js/sidebar-badges.js"></script>
+    <script src="/js/changelog-modal.js"></script>
     <%- include('../sidebar-nav-scripts') %>
 </body>
 </html>

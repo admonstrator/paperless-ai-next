@@ -24,8 +24,9 @@ export const theme = {
       : 'light';
   },
   set(value) {
-    const resolved = window.zrTheme ? window.zrTheme.apply(value) : value;
-    document.documentElement.setAttribute('data-theme', resolved);
+    const resolved = window.zrTheme
+      ? window.zrTheme.apply(value)
+      : applyThemeFallback(value);
     syncThemeIcon(resolved);
     document.dispatchEvent(
       new CustomEvent('zr:theme', { detail: { theme: resolved } })
@@ -36,6 +37,14 @@ export const theme = {
     return this.set(this.get() === 'dark' ? 'light' : 'dark');
   },
 };
+
+/* Only reached when the head script is absent: it otherwise owns the attribute,
+   localStorage and cookie writes. */
+function applyThemeFallback(value) {
+  const resolved = value === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', resolved);
+  return resolved;
+}
 
 function syncThemeIcon(current) {
   document.querySelectorAll('[data-action="theme"] use').forEach((use) => {
@@ -78,6 +87,10 @@ export function toast(message, { tone = 'info', timeout = 4200 } = {}) {
   }
   return el;
 }
+
+// Classic scripts cannot import this module, so the one implementation is
+// published for them; dialogs.js adapts its own tone vocabulary onto it.
+window.__zrToast = toast;
 
 /* --- dialogs (native <dialog>) ------------------------------------------- */
 
@@ -175,6 +188,8 @@ export function scan(root = document) {
 }
 
 /* --- shell --------------------------------------------------------------- */
+const RAIL_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+
 function shell() {
   const root = document.querySelector('.zr-shell');
   syncThemeIcon(theme.get());
@@ -198,7 +213,11 @@ function shell() {
         const collapsed = root.dataset.rail === 'collapsed';
         root.dataset.rail = collapsed ? 'expanded' : 'collapsed';
         try {
-          document.cookie = `railState=${root.dataset.rail}; Path=/; Max-Age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+          let cookie = `railState=${root.dataset.rail}; Path=/; Max-Age=${RAIL_COOKIE_MAX_AGE}; SameSite=Lax`;
+          if (window.location.protocol === 'https:') {
+            cookie += '; Secure';
+          }
+          document.cookie = cookie;
         } catch {
           // Ignore cookie write failures; the state stays for this page view.
         }

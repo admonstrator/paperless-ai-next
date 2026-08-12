@@ -26,7 +26,6 @@
     const ignoredBadge = document.getElementById('sidebarIgnoredBadge');
 
     if (ocrBadge) {
-      ocrBadge.style.cursor = 'pointer';
       ocrBadge.title = 'Open OCR queue (pending only)';
       ocrBadge.addEventListener('click', function (event) {
         event.preventDefault();
@@ -36,7 +35,6 @@
     }
 
     if (failedBadge) {
-      failedBadge.style.cursor = 'pointer';
       failedBadge.title = 'Open permanently failed documents';
       failedBadge.addEventListener('click', function (event) {
         event.preventDefault();
@@ -46,7 +44,6 @@
     }
 
     if (ignoredBadge) {
-      ignoredBadge.style.cursor = 'pointer';
       ignoredBadge.title = 'Open ignored documents';
       ignoredBadge.addEventListener('click', function (event) {
         event.preventDefault();

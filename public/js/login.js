@@ -15,27 +15,11 @@
   const passwordInput = document.getElementById('password');
   const mfaTokenInput = document.getElementById('mfaToken');
 
-  function normalizeTheme(value) {
-    return value === 'dark' ? 'dark' : 'light';
-  }
-
-  function resolveThemePreference() {
-    if (window.zrTheme && typeof window.zrTheme.get === 'function') {
-      return normalizeTheme(window.zrTheme.get());
-    }
-
-    try {
-      return normalizeTheme(window.localStorage.getItem('theme'));
-    } catch {
-      return normalizeTheme(
-        document.documentElement.getAttribute('data-theme')
-      );
-    }
-  }
-
+  // theme-init-head.ejs runs in <head> on this page and owns the theme; without
+  // it the field keeps its server-rendered value.
   function syncThemePreference() {
-    if (themeInput) {
-      themeInput.value = resolveThemePreference();
+    if (themeInput && window.zrTheme) {
+      themeInput.value = window.zrTheme.get();
     }
   }
 

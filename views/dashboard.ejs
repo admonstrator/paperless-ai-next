@@ -10,8 +10,7 @@
          aria-live="assertive" made the three-second poll interrupt the screen
          reader with the same banner over and over; "status" announces politely
          and waits for a pause. -->
-    <div id="scannerHealthBanner" class="zr-alert zr-alert--danger hidden" role="status"
-        style="margin-bottom: var(--zr-4)">
+    <div id="scannerHealthBanner" class="zr-alert zr-alert--danger hidden" role="status">
         <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>
         <div class="zr-alert__body">
             <div class="zr-alert__title" id="scannerHealthTitle">Document scanning is not working</div>
@@ -20,7 +19,7 @@
     </div>
 
     <!-- key figures -->
-    <section class="zr-stats" style="margin-bottom: var(--zr-4)">
+    <section class="zr-stats">
         <div class="zr-stat">
             <span class="zr-stat__label">
                 <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-layers"/></svg>
@@ -183,7 +182,7 @@
             <div class="zr-module__head">
                 <h2 class="zr-module__title">Document types</h2>
             </div>
-            <div class="zr-module__body zr-row" style="gap: var(--zr-4); align-items: flex-start">
+            <div class="zr-module__body zr-row zr-module__body--chart">
                 <svg class="zr-donut" id="documentTypesDonut" aria-hidden="true"></svg>
                 <div class="zr-grow zr-col zr-col--tight zr-sm" id="documentTypesLegend"></div>
             </div>
@@ -194,7 +193,7 @@
             <div class="zr-module__head">
                 <h2 class="zr-module__title">Processing status</h2>
             </div>
-            <div class="zr-module__body zr-row" style="gap: var(--zr-4); align-items: flex-start">
+            <div class="zr-module__body zr-row zr-module__body--chart">
                 <svg class="zr-donut" id="processingDonut" aria-hidden="true"></svg>
                 <div class="zr-grow zr-col zr-col--tight zr-sm" id="processingLegend"></div>
             </div>
@@ -212,7 +211,7 @@
     </section>
 
     <dialog class="zr-dialog" id="detailsModal" aria-labelledby="detailsModalTitle">
-        <div class="zr-dialog__head zr-row">
+        <div class="zr-dialog__head">
             <span class="zr-grow" id="detailsModalTitle"></span>
             <button class="zr-btn zr-btn--ghost zr-btn--icon" type="button" id="detailsModalClose" aria-label="Close">
                 <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
