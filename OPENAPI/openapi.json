@@ -2867,6 +2867,7 @@
     "/api/setup/complete": {
       "post": {
         "summary": "Finalize initial setup, persist env config, and trigger restart",
+        "description": "Validates the Paperless, AI and OCR connections before writing the configuration. The boolean body flags paperlessTestPassed, aiTestPassed and ocrTestPassed let a caller that has just verified a connection with these exact values skip the matching probe; anything not flagged is validated here. allowFailedPaperlessTest and allowFailedAiTest still accept a connection whose validation failed.\n",
         "tags": [
           "Setup"
         ],

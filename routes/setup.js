@@ -5090,6 +5090,13 @@ router.post(
  * /api/setup/complete:
  *   post:
  *     summary: Finalize initial setup, persist env config, and trigger restart
+ *     description: >
+ *       Validates the Paperless, AI and OCR connections before writing the
+ *       configuration. The boolean body flags paperlessTestPassed, aiTestPassed
+ *       and ocrTestPassed let a caller that has just verified a connection with
+ *       these exact values skip the matching probe; anything not flagged is
+ *       validated here. allowFailedPaperlessTest and allowFailedAiTest still
+ *       accept a connection whose validation failed.
  *     tags:
  *       - Setup
  *     responses:
@@ -5164,6 +5171,19 @@ router.post('/api/setup/complete', express.json(), async (req, res) => {
       false
     );
 
+    // The wizard reports which connections it already proved reachable with
+    // exactly the values being submitted (it drops the flag as soon as one of
+    // them is edited). Honouring that spares the user a second wait — and a
+    // second billed AI call — for probes they just watched succeed. Anything
+    // not reported as passing is still validated below.
+    const paperlessTestPassed = parseBooleanInput(
+      req.body?.paperlessTestPassed,
+      false
+    );
+    const aiTestPassed = parseBooleanInput(req.body?.aiTestPassed, false);
+    const ocrTestPassed = parseBooleanInput(req.body?.ocrTestPassed, false);
+    const alreadyVerified = { success: true, message: 'Verified by setup.' };
+
     const mistralOcrEnabled = parseBooleanInput(
       req.body?.mistralOcrEnabled,
       false
@@ -5234,10 +5254,9 @@ router.post('/api/setup/complete', express.json(), async (req, res) => {
       });
     }
 
-    const paperlessValidation = await validatePaperlessConnectionForSetup(
-      paperlessUrl,
-      paperlessToken
-    );
+    const paperlessValidation = paperlessTestPassed
+      ? alreadyVerified
+      : await validatePaperlessConnectionForSetup(paperlessUrl, paperlessToken);
     if (!paperlessValidation.success && !allowFailedPaperlessTest) {
       return res.status(400).json({
         success: false,
@@ -5245,14 +5264,16 @@ router.post('/api/setup/complete', express.json(), async (req, res) => {
       });
     }
 
-    const aiValidation = await validateAiConnectionForSetup({
-      aiProvider,
-      apiUrl: aiApiUrl,
-      token: aiToken,
-      model: aiModel,
-      azureApiVersion: aiAzureApiVersion,
-      setupValidationTimeoutMs,
-    });
+    const aiValidation = aiTestPassed
+      ? alreadyVerified
+      : await validateAiConnectionForSetup({
+          aiProvider,
+          apiUrl: aiApiUrl,
+          token: aiToken,
+          model: aiModel,
+          azureApiVersion: aiAzureApiVersion,
+          setupValidationTimeoutMs,
+        });
 
     if (!aiValidation.success && !allowFailedAiTest) {
       return res.status(400).json({
@@ -5263,14 +5284,16 @@ router.post('/api/setup/complete', express.json(), async (req, res) => {
 
     const ocrProviderForValidation =
       ocrProvider === 'custom' ? 'ollama' : ocrProvider;
-    const ocrValidation = await validateOcrConnectionForSetup({
-      enabled: mistralOcrEnabled ? 'yes' : 'no',
-      provider: ocrProviderForValidation,
-      apiUrl: ocrApiUrl,
-      apiKey: ocrApiKey,
-      model: mistralOcrModel,
-      setupOcrValidationTimeoutMs,
-    });
+    const ocrValidation = ocrTestPassed
+      ? alreadyVerified
+      : await validateOcrConnectionForSetup({
+          enabled: mistralOcrEnabled ? 'yes' : 'no',
+          provider: ocrProviderForValidation,
+          apiUrl: ocrApiUrl,
+          apiKey: ocrApiKey,
+          model: mistralOcrModel,
+          setupOcrValidationTimeoutMs,
+        });
 
     if (!ocrValidation.success) {
       return res.status(400).json({
