@@ -10282,7 +10282,6 @@ const DASHBOARD_CONFIG_VERSION = 1;
 const DASHBOARD_MAX_BOARDS = 10;
 const DASHBOARD_MAX_NAME_LENGTH = 60;
 const DASHBOARD_DEFAULT_SLUG = 'default';
-const DASHBOARD_DEFAULT_NAME = 'Dashboard';
 
 /* Nothing stored: a valid v1 config that asks for the defaults. */
 function emptyDashboardConfig() {
@@ -10339,48 +10338,6 @@ function normalizeDashboardWidgets(input) {
   }
 
   return widgets;
-}
-
-/* INTERIM COMPAT — delete with the edit-mode batch.
-   -------------------------------------------------
-   public/js/modules/dashboard-layout.js still speaks the old flat format and
-   PUTs { widgets: [...] }. Rather than freezing the storage format until that
-   module is rewritten, the old body is wrapped here into a v1 config with a
-   single 'default' board. Nothing else in the codebase writes the flat shape,
-   so when the module starts sending v1 this function, its call in the PUT
-   handler and withLegacyWidgetsAlias() below all go away together. */
-function adaptLegacyDashboardPayload(input) {
-  if (!input || typeof input !== 'object' || Array.isArray(input)) {
-    return input;
-  }
-  // Already v1, or not the old shape either — hand it to the validator as-is
-  // and let it decide.
-  if (Array.isArray(input.dashboards) || !Array.isArray(input.widgets)) {
-    return input;
-  }
-
-  return {
-    version: DASHBOARD_CONFIG_VERSION,
-    active: DASHBOARD_DEFAULT_SLUG,
-    dashboards: [
-      {
-        slug: DASHBOARD_DEFAULT_SLUG,
-        name: DASHBOARD_DEFAULT_NAME,
-        widgets: input.widgets,
-      },
-    ],
-  };
-}
-
-/* INTERIM COMPAT — delete with the edit-mode batch.
-   The same module reads result.data.widgets, so GET answers with the v1 object
-   plus a top-level alias of the active board's cards. Documented as deprecated
-   in the @swagger block; nothing new may read it. */
-function withLegacyWidgetsAlias(dashboardConfig) {
-  const active = dashboardConfig.dashboards.find(
-    (board) => board.slug === dashboardConfig.active
-  );
-  return { ...dashboardConfig, widgets: active ? active.widgets : [] };
 }
 
 /* "Give me the defaults back" arrives in two shapes: no boards at all, or the
@@ -10527,15 +10484,6 @@ function normalizeDashboardConfig(input) {
  *                                 hidden:
  *                                   type: boolean
  *                                   example: false
- *                     widgets:
- *                       type: array
- *                       deprecated: true
- *                       description: >
- *                         Deprecated alias for the active dashboard's widgets,
- *                         kept only until the browser module speaks the
- *                         named-dashboard format. Read dashboards instead.
- *                       items:
- *                         type: object
  *       401:
  *         description: Not authenticated
  */
@@ -10543,10 +10491,7 @@ router.get('/api/dashboard/layout', isAuthenticated, async (req, res) => {
   try {
     const username = req.user && req.user.username;
     if (!username) {
-      return res.json({
-        success: true,
-        data: withLegacyWidgetsAlias(emptyDashboardConfig()),
-      });
+      return res.json({ success: true, data: emptyDashboardConfig() });
     }
 
     const stored = await documentModel.getDashboardLayout(username);
@@ -10561,10 +10506,7 @@ router.get('/api/dashboard/layout', isAuthenticated, async (req, res) => {
         ? stored
         : emptyDashboardConfig();
 
-    return res.json({
-      success: true,
-      data: withLegacyWidgetsAlias(dashboardConfig),
-    });
+    return res.json({ success: true, data: dashboardConfig });
   } catch (error) {
     console.error('[ERROR] GET /api/dashboard/layout:', error);
     return res
@@ -10594,10 +10536,6 @@ router.get('/api/dashboard/layout', isAuthenticated, async (req, res) => {
  *
  *       If active names a dashboard that is not in the payload it is replaced
  *       with the first dashboard's slug rather than rejecting the write.
- *
- *       Deprecated: a flat {widgets: [...]} body is still accepted and stored
- *       as the single 'default' dashboard, until the browser module speaks the
- *       named-dashboard format. Do not build on it.
  *     tags:
  *       - Dashboard
  *     security:
@@ -10679,23 +10617,18 @@ router.put(
         return res.json({ success: true, message: 'No user to store against' });
       }
 
-      // INTERIM COMPAT — delete with the edit-mode batch: the browser still
-      // sends the old flat { widgets: [...] } body, which is wrapped into a v1
-      // config here so both shapes reach the same validator.
-      const payload = adaptLegacyDashboardPayload(req.body);
-
       // Nothing arranged is not stored as "an empty arrangement": the row is
       // cleared, so the dashboard falls back to the registry order.
-      if (isDashboardResetRequest(payload)) {
+      if (isDashboardResetRequest(req.body)) {
         await documentModel.setDashboardLayout(username, null);
         return res.json({
           success: true,
-          data: withLegacyWidgetsAlias(emptyDashboardConfig()),
+          data: emptyDashboardConfig(),
           message: 'Dashboard layout reset',
         });
       }
 
-      const dashboardConfig = normalizeDashboardConfig(payload);
+      const dashboardConfig = normalizeDashboardConfig(req.body);
       if (!dashboardConfig) {
         return res
           .status(400)
@@ -10705,7 +10638,7 @@ router.put(
       await documentModel.setDashboardLayout(username, dashboardConfig);
       return res.json({
         success: true,
-        data: withLegacyWidgetsAlias(dashboardConfig),
+        data: dashboardConfig,
         message: 'Dashboard layout saved',
       });
     } catch (error) {

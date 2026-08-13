@@ -1,20 +1,34 @@
 /**
  * Dashboard layout module.
  *
- * Lets the user rearrange the dashboard grid: drag a card by its head to
- * reorder, drag the corner grip to resize. Both axes snap — width to the 12
- * grid columns the cards already use via data-span, height to whole tile rows —
- * so resized cards line up with their neighbours instead of landing at
- * arbitrary pixel heights. The result is stored per user through
- * /api/dashboard/layout, so it follows them to another browser.
+ * The dashboard is view-only until the user asks for it: "Edit dashboard" opens
+ * a session, and only inside that session can a card be dragged by its head,
+ * resized from its corner grip, or switched off from the tray above the grid.
+ * Nothing is written while the session runs — Done sends the whole arrangement
+ * in one request, Cancel puts the grid back exactly as it was found. A
+ * dashboard that is only being read never writes anything, and a session the
+ * user walks away from leaves no trace.
+ *
+ * Both axes snap — width to the 12 grid columns the cards already use via
+ * data-span, height to whole tile rows — so a resized card lines up with its
+ * neighbours instead of landing at an arbitrary pixel height. The result is
+ * stored per user through /api/dashboard/layout, so it follows them to another
+ * browser.
  *
  * A sized card is a tile, not a document: it shows what fits and never scrolls.
  * What did not fit fades out, and the card's own footer link is the way to the
  * full list. The content adapts to the tile through the height container
  * queries in pages/dashboard.css.
  *
+ * The wire format is storage v1 (documented in routes/setup.js): named
+ * dashboards, each holding its cards in display order. This module ships a
+ * single board and only ever writes that one; it reads back whichever board the
+ * stored config points at, so a later multi-board UI can grow around it without
+ * changing what is on disk.
+ *
  * Below 861px the grid is a single column and every card spans the full width,
- * so editing is switched off there rather than storing a layout nobody can see.
+ * so a session cannot be opened there rather than storing a layout nobody can
+ * see. A viewport that shrinks mid-session ends it the way Cancel does.
  */
 
 const LAYOUT_URL = '/api/dashboard/layout';
@@ -24,9 +38,14 @@ const MIN_SPAN = 3;
 // than 24 is taller than any viewport this grid is used on.
 const MIN_ROWS = 3;
 const MAX_ROWS = 24;
-const SAVE_DEBOUNCE_MS = 600;
 const DESKTOP_QUERY = '(min-width: 861px)';
 const REQUEST_TIMEOUT_MS = 15000;
+
+/* The one board this module owns. The slug and the name are validated on the
+   way in, so they are spelled the same way the server's own defaults are. */
+const STORAGE_VERSION = 1;
+const BOARD_SLUG = 'default';
+const BOARD_NAME = 'Dashboard';
 
 async function fetchJson(url, options = {}) {
   const controller = new AbortController();
@@ -52,29 +71,57 @@ export default function dashboardLayout(grid, { toast } = {}) {
   if (cards.length === 0) return undefined;
 
   const desktop = window.matchMedia(DESKTOP_QUERY);
-  // The order and spans the server rendered. Reset means going back to these,
-  // and it has to be captured before the stored layout is applied.
+  const cardsById = new Map(cards.map((card) => [card.dataset.widget, card]));
+  // The order and spans the server rendered, every card showing. Reset means
+  // going back to these, and they have to be captured before a stored layout is
+  // applied over them.
   const defaults = cards.map((card) => ({
     card,
     span: Number(card.dataset.span) || GRID_COLUMNS,
   }));
 
-  let saveTimer = 0;
+  // Every listener put on something that outlives this module goes through this
+  // signal, so destroy() is one abort() instead of a list to keep in sync.
+  const listeners = new AbortController();
+  const { signal } = listeners;
+
+  // The tray is server-rendered (views/dashboard.ejs) and starts hidden. It is
+  // the entire UI of the session, so without it the grid stays view-only.
+  const editbar = document.getElementById('dashboardEditbar');
+  const chips = new Map();
+
   let sortable = null;
-  let resetButton = null;
-  // Whether a stored layout exists — the reset control has nothing to offer
-  // until the user has actually moved something.
-  let hasStoredLayout = false;
+  let layoutBar = null;
+  let editButton = null;
+  let editing = false;
+  let saving = false;
+  // Editing before the stored layout has landed would arrange cards that are
+  // about to be rearranged by the answer, so the way in opens once it is here.
+  let ready = false;
+  // The grid as the session found it: what Cancel puts back.
+  let snapshot = null;
+  // "Give me the defaults back" is a different write from "store this": see
+  // commitEdit().
+  let resetRequested = false;
 
   /* --- reading and writing the grid -------------------------------------- */
 
   function currentLayout() {
     return {
-      widgets: [...grid.querySelectorAll('[data-widget]')].map((card) => ({
-        id: card.dataset.widget,
-        span: Number(card.dataset.span) || GRID_COLUMNS,
-        rows: Number(card.dataset.rows) || 0,
-      })),
+      version: STORAGE_VERSION,
+      active: BOARD_SLUG,
+      dashboards: [
+        {
+          slug: BOARD_SLUG,
+          name: BOARD_NAME,
+          widgets: [...grid.querySelectorAll('[data-widget]')].map((card) => ({
+            id: card.dataset.widget,
+            span: Number(card.dataset.span) || GRID_COLUMNS,
+            rows: Number(card.dataset.rows) || 0,
+            hidden: card.classList.contains('is-hidden'),
+          })),
+        },
+      ],
     };
   }
 
@@ -95,6 +142,16 @@ export default function dashboardLayout(grid, { toast } = {}) {
     const value = clamp(Math.round(rows), MIN_ROWS, MAX_ROWS);
     card.dataset.rows = String(value);
     card.style.setProperty('--zr-rows', String(value));
+    markClipping();
+  }
+
+  /* Switched off is a class, never a removal: the card keeps its place in the
+     DOM, so its own module keeps its instance and the dashboard's fetch goes on
+     writing into it. Switching it back on costs nothing and shows live numbers
+     rather than an empty card. The stylesheet decides what "off" looks like —
+     gone while reading, faded but still draggable inside the session. */
+  function setHidden(card, hidden) {
+    card.classList.toggle('is-hidden', hidden);
     markClipping();
   }
 
@@ -133,94 +190,263 @@ export default function dashboardLayout(grid, { toast } = {}) {
     characterData: true,
   });
 
-  function applyLayout(layout) {
-    const widgets = Array.isArray(layout?.widgets) ? layout.widgets : [];
-    const known = new Map(cards.map((card) => [card.dataset.widget, card]));
+  function applyLayout(data) {
+    const dashboards = Array.isArray(data?.dashboards) ? data.dashboards : [];
+    // active is a pointer, and a stale one falls back to the first board rather
+    // than to nothing — the same rule the server applies when it stores.
+    const board =
+      dashboards.find((entry) => entry?.slug === data?.active) || dashboards[0];
+    const stored = Array.isArray(board?.widgets) ? board.widgets : [];
 
-    widgets.forEach((entry) => {
-      const card = known.get(entry.id);
-      // A stored id the dashboard no longer ships is simply dropped; a card the
-      // stored layout predates keeps its markup position at the end.
+    // Nothing arranged — no config, no boards, or a board that only carries a
+    // name — means the arrangement the server rendered.
+    if (stored.length === 0) {
+      applyDefaults();
+      return;
+    }
+
+    const pending = new Map(cardsById);
+    stored.forEach((entry) => {
+      const card = pending.get(entry?.id);
+      // A stored id the dashboard no longer ships is simply dropped.
       if (!card) return;
       setSpan(card, Number(entry.span));
       setRows(card, Number(entry.rows) || 0);
+      setHidden(card, Boolean(entry.hidden));
       grid.appendChild(card);
-      known.delete(entry.id);
+      pending.delete(entry.id);
     });
-    known.forEach((card) => grid.appendChild(card));
+    // A card the stored layout predates is new to this user: an update that
+    // ships a widget has to surface it, so it lands at the end and shows.
+    pending.forEach((card) => {
+      setHidden(card, false);
+      grid.appendChild(card);
+    });
 
-    hasStoredLayout = widgets.length > 0;
-    syncResetButton();
+    syncChips();
   }
 
   function applyDefaults() {
     defaults.forEach(({ card, span }) => {
       setSpan(card, span);
       setRows(card, 0);
+      setHidden(card, false);
       grid.appendChild(card);
     });
-    hasStoredLayout = false;
-    syncResetButton();
+    syncChips();
   }
 
-  /* --- persistence ------------------------------------------------------- */
+  /* --- the edit session -------------------------------------------------- */
 
-  function save() {
-    clearTimeout(saveTimer);
-    saveTimer = setTimeout(async () => {
-      const layout = currentLayout();
-      try {
-        await fetchJson(LAYOUT_URL, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(layout),
-        });
-        hasStoredLayout = true;
-        syncResetButton();
-      } catch (error) {
-        console.error('[dashboard-layout] saving failed', error);
-        toast?.('Could not save the dashboard layout.', { tone: 'danger' });
-      }
-    }, SAVE_DEBOUNCE_MS);
+  function takeSnapshot() {
+    return [...grid.querySelectorAll('[data-widget]')].map((card) => ({
+      card,
+      span: Number(card.dataset.span) || GRID_COLUMNS,
+      rows: Number(card.dataset.rows) || 0,
+      hidden: card.classList.contains('is-hidden'),
+    }));
   }
 
-  async function reset() {
-    clearTimeout(saveTimer);
+  /* Re-appending every card in the order it was captured in restores the order
+     as a side effect, so one pass puts back all four properties. */
+  function restoreSnapshot(entries) {
+    (entries || []).forEach(({ card, span, rows, hidden }) => {
+      setSpan(card, span);
+      setRows(card, rows);
+      setHidden(card, hidden);
+      grid.appendChild(card);
+    });
+    syncChips();
+  }
+
+  /* Anything the user does after a reset means they are building on top of the
+     defaults, so Done has to store that arrangement instead of clearing the
+     row. Every interactive path calls this. */
+  function markEdited() {
+    resetRequested = false;
+  }
+
+  function enterEdit() {
+    if (editing || saving || !ready || !editbar || !desktop.matches) return;
+    snapshot = takeSnapshot();
+    resetRequested = false;
+    editing = true;
+    grid.classList.add('is-editing');
+    editbar.classList.remove('hidden');
+    syncEditButton();
+    enableSorting();
+    markClipping();
+    // The button that opened the session has just hidden itself, so the focus
+    // it held would fall to the top of the document; the tray takes it over.
+    editbar.focus();
+  }
+
+  function leaveEdit() {
+    if (!editing) return;
+    editing = false;
+    snapshot = null;
+    resetRequested = false;
+    grid.classList.remove('is-editing');
+    editbar.classList.add('hidden');
+    disableSorting();
+    syncEditButton();
+    markClipping();
+    // Focus goes back to the control that opened the session — unless the
+    // viewport just took that control away, which is the mid-session shrink.
+    if (editButton && !editButton.classList.contains('hidden')) {
+      editButton.focus();
+    }
+  }
+
+  function cancelEdit() {
+    if (!editing) return;
+    restoreSnapshot(snapshot);
+    leaveEdit();
+  }
+
+  /* Reset inside the session only touches the grid. Nothing is written until
+     Done, so a reset the user thinks better of is undone by Cancel like any
+     other change. */
+  function resetInSession() {
+    if (!editing || saving) return;
     applyDefaults();
+    // What Done will write, until the next edit clears it again.
+    resetRequested = true;
+  }
+
+  function setBusy(busy) {
+    saving = busy;
+    editbar
+      ?.querySelectorAll('.zr-editbar__actions button, .zr-editbar__chip')
+      .forEach((button) => {
+        button.disabled = busy;
+      });
+  }
+
+  async function commitEdit() {
+    if (!editing || saving) return;
+    const wasReset = resetRequested;
+    /* A reset the user confirms with Done clears the stored layout rather than
+       storing a default-shaped one. That is the difference between "I like the
+       current defaults" and "give me the defaults" — only the second keeps
+       following them, so a release that changes a span or ships a new card
+       reaches this user instead of being frozen out by their own copy of
+       yesterday's defaults. An empty dashboards list is what the server reads
+       as "nothing arranged"; if it ever stopped doing so the write would be
+       rejected rather than silently stored wrong. */
+    const payload = wasReset
+      ? { version: STORAGE_VERSION, active: BOARD_SLUG, dashboards: [] }
+      : currentLayout();
+
+    setBusy(true);
     try {
       await fetchJson(LAYOUT_URL, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ widgets: [] }),
+        body: JSON.stringify(payload),
       });
-      toast?.('Dashboard layout reset.', { tone: 'ok' });
+      leaveEdit();
+      toast?.(
+        wasReset ? 'Dashboard layout reset.' : 'Dashboard layout saved.',
+        {
+          tone: 'ok',
+        }
+      );
     } catch (error) {
-      console.error('[dashboard-layout] reset failed', error);
-      toast?.('Could not reset the dashboard layout.', { tone: 'danger' });
+      // The session stays open on failure: the arrangement is still on screen,
+      // and one more click on Done is a cheaper recovery than doing it again.
+      console.error('[dashboard-layout] saving failed', error);
+      toast?.('Could not save the dashboard layout.', { tone: 'danger' });
+    } finally {
+      setBusy(false);
     }
   }
 
-  /* --- reset control ----------------------------------------------------- */
+  /* --- the tray ---------------------------------------------------------- */
 
-  function syncResetButton() {
-    if (!resetButton) return;
-    resetButton.classList.toggle(
+  /* aria-pressed is the state: pressed means the card is on the dashboard. It
+     is derived from the cards themselves rather than tracked alongside them, so
+     the chips cannot drift from what is on screen. */
+  function syncChips() {
+    chips.forEach((chip, id) => {
+      const card = cardsById.get(id);
+      if (!card) return;
+      chip.setAttribute(
+        'aria-pressed',
+        String(!card.classList.contains('is-hidden'))
+      );
+    });
+  }
+
+  function setupChips() {
+    if (!editbar) return;
+    editbar.querySelectorAll('[data-widget-toggle]').forEach((chip) => {
+      const id = chip.dataset.widgetToggle;
+      const card = cardsById.get(id);
+      // A chip whose card is not on the page would toggle nothing, which is
+      // worse than no chip at all.
+      if (!card) {
+        chip.remove();
+        return;
+      }
+      // The label is filled from the card, not from the registry: the title is
+      // already in the partial, and a second copy would drift from it.
+      const label = chip.querySelector('span') || chip;
+      label.textContent =
+        card.querySelector('.zr-module__title')?.textContent?.trim() || id;
+      chip.addEventListener(
+        'click',
+        () => {
+          setHidden(card, !card.classList.contains('is-hidden'));
+          syncChips();
+          markEdited();
+        },
+        { signal }
+      );
+      chips.set(id, chip);
+    });
+    syncChips();
+  }
+
+  function wireEditbar() {
+    if (!editbar) return;
+    editbar
+      .querySelector('#dashboardEditReset')
+      ?.addEventListener('click', resetInSession, { signal });
+    editbar
+      .querySelector('#dashboardEditCancel')
+      ?.addEventListener('click', cancelEdit, { signal });
+    editbar
+      .querySelector('#dashboardEditDone')
+      ?.addEventListener('click', commitEdit, { signal });
+  }
+
+  /* --- the way in -------------------------------------------------------- */
+
+  function syncEditButton() {
+    if (!editButton) return;
+    // One control at a time: the button opens the session, the tray runs it.
+    editButton.classList.toggle(
       'hidden',
-      !hasStoredLayout || !desktop.matches
+      editing || !ready || !desktop.matches
     );
   }
 
-  function buildResetButton() {
-    const bar = document.createElement('div');
-    bar.className = 'zr-row zr-layoutbar';
-    resetButton = document.createElement('button');
-    resetButton.type = 'button';
-    resetButton.className = 'zr-btn zr-btn--ghost hidden';
-    resetButton.innerHTML =
-      '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg><span>Reset layout</span>';
-    resetButton.addEventListener('click', reset);
-    bar.appendChild(resetButton);
-    grid.parentNode.insertBefore(bar, grid);
+  function buildEditButton() {
+    // Without a tray there is nothing to open, so the grid stays view-only.
+    if (!editbar) return;
+    layoutBar = document.createElement('div');
+    layoutBar.className = 'zr-row zr-layoutbar';
+    editButton = document.createElement('button');
+    editButton.type = 'button';
+    editButton.className = 'zr-btn zr-btn--ghost hidden';
+    editButton.innerHTML =
+      '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-grip"/></svg><span>Edit dashboard</span>';
+    editButton.addEventListener('click', enterEdit, { signal });
+    layoutBar.appendChild(editButton);
+    // Above the tray, which sits directly above the grid: the two are never
+    // shown at the same time, and the tab order reads top to bottom either way.
+    editbar.parentNode.insertBefore(layoutBar, editbar);
   }
 
   /* --- resizing ---------------------------------------------------------- */
@@ -257,7 +483,9 @@ export default function dashboardLayout(grid, { toast } = {}) {
   }
 
   function startResize(card, event) {
-    if (!desktop.matches) return;
+    // The grip is only on screen inside a session; this is the belt to that
+    // stylesheet brace.
+    if (!editing) return;
     event.preventDefault();
 
     const grip = event.currentTarget;
@@ -274,7 +502,7 @@ export default function dashboardLayout(grid, { toast } = {}) {
       grip.removeEventListener('pointerup', onUp);
       grip.removeEventListener('pointercancel', onUp);
       card.classList.remove('is-resizing');
-      save();
+      markEdited();
     };
 
     grip.addEventListener('pointermove', onMove);
@@ -283,8 +511,10 @@ export default function dashboardLayout(grid, { toast } = {}) {
   }
 
   /* The grip is the keyboard path into everything the mouse can do: arrows
-     resize, shift and arrows move the card, delete gives the height back. */
+     resize, shift and arrows move the card, delete gives the height back. Like
+     the mouse it only changes the grid — the session is what gets saved. */
   function onGripKey(card, event) {
+    if (!editing) return;
     const moving = event.shiftKey;
     const ordered = [...grid.querySelectorAll('[data-widget]')];
     const index = ordered.indexOf(card);
@@ -328,7 +558,7 @@ export default function dashboardLayout(grid, { toast } = {}) {
     // Moving the card re-inserts it, which drops the focus — without this the
     // second arrow press would go nowhere.
     event.currentTarget.focus();
-    save();
+    markEdited();
   }
 
   function addGrip(card) {
@@ -339,21 +569,30 @@ export default function dashboardLayout(grid, { toast } = {}) {
       'aria-label',
       `Resize ${card.querySelector('.zr-module__title')?.textContent?.trim() || 'widget'}: arrow keys resize, shift and arrow keys move, delete fits the card to its content`
     );
-    grip.addEventListener('pointerdown', (event) => startResize(card, event));
+    grip.addEventListener('pointerdown', (event) => startResize(card, event), {
+      signal,
+    });
     // Double-click hands the card back to its content — the way out of a tile
     // size without hunting for the exact row count.
-    grip.addEventListener('dblclick', () => {
-      setRows(card, 0);
-      save();
+    grip.addEventListener(
+      'dblclick',
+      () => {
+        if (!editing) return;
+        setRows(card, 0);
+        markEdited();
+      },
+      { signal }
+    );
+    grip.addEventListener('keydown', (event) => onGripKey(card, event), {
+      signal,
     });
-    grip.addEventListener('keydown', (event) => onGripKey(card, event));
     card.appendChild(grip);
   }
 
   /* --- drag ordering ----------------------------------------------------- */
 
   function enableSorting() {
-    if (sortable || !window.Sortable || !desktop.matches) return;
+    if (sortable || !window.Sortable || !editing) return;
     sortable = window.Sortable.create(grid, {
       handle: '.zr-module__head',
       draggable: '[data-widget]',
@@ -363,8 +602,10 @@ export default function dashboardLayout(grid, { toast } = {}) {
       // Buttons live in the head as well, so a click must not start a drag.
       filter: 'button, a, input, select',
       preventOnFilter: false,
-      onEnd: save,
+      onEnd: markEdited,
     });
+    // The narrower flag: the grab cursor only promises a drag once the vendor
+    // script is really attached.
     grid.classList.add('is-sortable');
   }
 
@@ -376,38 +617,51 @@ export default function dashboardLayout(grid, { toast } = {}) {
   }
 
   function syncMode() {
-    if (desktop.matches) {
-      enableSorting();
-    } else {
-      disableSorting();
+    // Shrinking into the phone layout ends the session the way Cancel does: a
+    // single column cannot show what was being arranged, and storing a layout
+    // the user can no longer check is worse than dropping the edit.
+    if (!desktop.matches && editing) {
+      cancelEdit();
     }
-    grid.classList.toggle('is-editable', desktop.matches);
-    syncResetButton();
+    syncEditButton();
     markClipping();
   }
 
   /* --- start ------------------------------------------------------------- */
 
-  buildResetButton();
+  setupChips();
+  wireEditbar();
+  buildEditButton();
   cards.forEach(addGrip);
   syncMode();
-  desktop.addEventListener('change', syncMode);
+  desktop.addEventListener('change', syncMode, { signal });
 
   fetchJson(LAYOUT_URL)
     .then((result) => applyLayout(result?.data))
     .catch((error) => {
       // A dashboard that cannot read its layout still works — it just shows the
-      // default arrangement.
+      // default arrangement. Editing stays open: the user can still arrange the
+      // cards, and Done will say whether the write got through either.
       console.error('[dashboard-layout] loading failed', error);
+    })
+    .finally(() => {
+      ready = true;
+      syncEditButton();
     });
 
   return {
     destroy() {
-      clearTimeout(saveTimer);
       cancelAnimationFrame(clipFrame);
       contentObserver.disconnect();
       disableSorting();
-      desktop.removeEventListener('change', syncMode);
+      listeners.abort();
+      editing = false;
+      grid.classList.remove('is-editing');
+      editbar?.classList.add('hidden');
+      layoutBar?.remove();
+      grid
+        .querySelectorAll('.zr-module__grip')
+        .forEach((grip) => grip.remove());
     },
   };
 }

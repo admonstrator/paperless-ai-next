@@ -274,18 +274,50 @@
     }
   }
 
-  /* --- editable grid ------------------------------------------------------
-     The layout module lets the user drag a card by its head and resize it from
-     the corner grip. Everything below is scoped to .is-editable, which the
-     module only sets on wide viewports — the phone grid is one column, so
-     there is nothing to arrange there. */
+  /* --- edit mode ----------------------------------------------------------
+     The dashboard is view-only until the user opens an edit session. The layout
+     module then puts .is-editing on the grid, and every affordance that lets a
+     card be moved, resized or switched off hangs off that one class: outside
+     the session there is no grip, no grab cursor and no drag, so a card is just
+     a card and a click on it does what it says.
+
+     .is-sortable is the narrower flag on top of it — the module sets it only
+     once the vendor drag script is really attached, so the grab cursor never
+     promises a drag that cannot happen. It is only ever set inside a session.
+
+     Editing is desktop-only. Below 861px the grid is a single column and every
+     card spans the full width, so the module never opens a session there; the
+     media query at the end of this file takes the bars and the grips off the
+     page as well, so that holds even if the module were never told. */
 
   .zr-layoutbar {
     justify-content: flex-end;
     margin-bottom: var(--zr-2);
   }
 
-  .zr-grid.is-editable > [data-widget] {
+  /* --- the edit tray ------------------------------------------------------
+     Rendered above the grid and unhidden for the session: one chip per card on
+     the left, reset, cancel and done on the right. */
+  .zr-editbar {
+    margin-bottom: var(--zr-3);
+  }
+  .zr-editbar__actions {
+    margin-left: auto;
+  }
+  /* The chip carries its own state: pressed is a card that is on the dashboard
+     and reads normally, unpressed is one that is not and steps back with its
+     label struck through. Two cues rather than a colour, because a colour alone
+     would leave the states indistinguishable to some readers — and because the
+     chips sit next to each other, where a faint one is only obvious in
+     comparison. */
+  .zr-editbar__chip[aria-pressed='false'] {
+    opacity: 0.5;
+  }
+  .zr-editbar__chip[aria-pressed='false'] span {
+    text-decoration: line-through;
+  }
+
+  .zr-grid.is-editing > [data-widget] {
     position: relative;
   }
   /* The head doubles as the drag handle, so it has to say so — but only where
@@ -323,7 +355,11 @@
     border-bottom: 2px solid currentcolor;
     border-bottom-right-radius: 3px;
   }
-  .zr-grid:not(.is-editable) .zr-module__grip {
+  /* The grips are in the markup from the moment the module mounts; only the
+     session puts them on screen. display: none also keeps them out of the tab
+     order, which is what makes the keyboard resize path a part of the session
+     rather than a surprise on a page nobody is editing. */
+  .zr-grid:not(.is-editing) .zr-module__grip {
     display: none;
   }
   [data-widget]:hover > .zr-module__grip,
@@ -350,6 +386,29 @@
   }
   .zr-module.is-dragghost {
     opacity: 0.35;
+  }
+
+  /* --- cards the user switched off ----------------------------------------
+     A hidden card keeps its markup and its module instance — the dashboard goes
+     on writing numbers into it — so only these two rules decide whether it is
+     on screen, and they say opposite things on purpose:
+
+     - while reading, the card is not there at all;
+     - while editing, it stays in the grid, faded and outlined, because a card
+       you cannot see is a card you cannot drag to where you want it, and
+       switching it back on has to be possible from the same place.
+
+     The hiding is written as :not(.is-editing) rather than as a display value
+     the session overrides: a card that was given a tile height carries
+     display: flex from the tiles block below, and re-stating a display here
+     would have to guess which one to put back. */
+  .zr-grid:not(.is-editing) > .zr-module.is-hidden {
+    display: none;
+  }
+  .zr-grid.is-editing > .zr-module.is-hidden {
+    opacity: 0.35;
+    outline: 1px dashed var(--zr-line-strong);
+    outline-offset: -1px;
   }
 
   /* --- tiles --------------------------------------------------------------
@@ -430,6 +489,22 @@
   }
 
   @media (max-width: 860px) {
+    /* Neither bar has anything to offer on a phone: one column leaves nothing
+       to arrange, so the module never opens a session here. It hides its own
+       button as well — this is the guard that keeps an empty bar from taking up
+       a line if it ever did not. */
+    .zr-layoutbar,
+    .zr-editbar {
+      display: none;
+    }
+    /* And the grips go with them, which makes "no editing here" true from the
+       stylesheet alone: a viewport that reaches this width without the module
+       hearing about it still cannot offer a resize the single column could not
+       honour. */
+    .zr-module__grip {
+      display: none;
+    }
+
     /* One column, full width: a stored tile height would only cut content off
        or leave a gap, so it stands down here. */
     .zr-module[data-rows] {

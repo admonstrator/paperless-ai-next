@@ -5476,14 +5476,6 @@
                               }
                             }
                           }
-                        },
-                        "widgets": {
-                          "type": "array",
-                          "deprecated": true,
-                          "description": "Deprecated alias for the active dashboard's widgets, kept only until the browser module speaks the named-dashboard format. Read dashboards instead.\n",
-                          "items": {
-                            "type": "object"
-                          }
                         }
                       }
                     }
@@ -5499,7 +5491,7 @@
       },
       "put": {
         "summary": "Store or reset the authenticated user's dashboard configuration",
-        "description": "Takes a complete configuration in storage format v1 and replaces the stored one; there is no partial update. Up to 10 dashboards, each with a slug, a name of 1 to 60 characters and up to 50 widgets in display order. Widget spans are 3 to 12 grid columns; rows are 3 to 24 tile rows, or 0 for a card that is as tall as its content. A dashboard without widgets shows the default arrangement under its own name.\nTwo payloads reset instead of storing: an empty dashboards array, and a single dashboard whose widgets array is empty. Both clear the stored configuration, so every board returns to its default order. Emptying one board out of several does not reset — that board simply shows the defaults and keeps its name.\nIf active names a dashboard that is not in the payload it is replaced with the first dashboard's slug rather than rejecting the write.\nDeprecated: a flat {widgets: [...]} body is still accepted and stored as the single 'default' dashboard, until the browser module speaks the named-dashboard format. Do not build on it.\n",
+        "description": "Takes a complete configuration in storage format v1 and replaces the stored one; there is no partial update. Up to 10 dashboards, each with a slug, a name of 1 to 60 characters and up to 50 widgets in display order. Widget spans are 3 to 12 grid columns; rows are 3 to 24 tile rows, or 0 for a card that is as tall as its content. A dashboard without widgets shows the default arrangement under its own name.\nTwo payloads reset instead of storing: an empty dashboards array, and a single dashboard whose widgets array is empty. Both clear the stored configuration, so every board returns to its default order. Emptying one board out of several does not reset — that board simply shows the defaults and keeps its name.\nIf active names a dashboard that is not in the payload it is replaced with the first dashboard's slug rather than rejecting the write.\n",
         "tags": [
           "Dashboard"
         ],

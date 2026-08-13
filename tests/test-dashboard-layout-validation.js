@@ -6,10 +6,9 @@
  * is the only thing standing between a hostile payload and the database. It has
  * to reject anything it cannot vouch for rather than store it half-checked.
  *
- * The helpers around it are checked here too: the interim adapter that still
- * accepts the old flat body, the deprecated widgets alias the browser reads,
- * and the reset detection that decides when a payload clears the row instead of
- * filling it.
+ * The helpers around it are checked here too: the reset detection that decides
+ * when a payload clears the row instead of filling it, and the empty
+ * configuration both the reset and an unarranged dashboard answer with.
  *
  * All of them are read out of the route file instead of being copied here:
  * a copy would keep passing after the real ones changed.
@@ -34,17 +33,13 @@ assert.ok(
 
 const {
   normalizeDashboardConfig,
-  adaptLegacyDashboardPayload,
   isDashboardResetRequest,
-  withLegacyWidgetsAlias,
   emptyDashboardConfig,
 } = new Function(
   `${source.slice(start, end + 2)}
    return {
      normalizeDashboardConfig,
-     adaptLegacyDashboardPayload,
      isDashboardResetRequest,
-     withLegacyWidgetsAlias,
      emptyDashboardConfig,
    };`
 )();
@@ -272,7 +267,7 @@ const accepted = [
   },
   {
     label:
-      'unknown top-level properties being dropped, the deprecated alias included',
+      'unknown top-level properties being dropped, a stray widget list among them',
     input: config({ theme: 'dark', widgets: [widget({ id: 'smuggled' })] }),
     expect: (result) =>
       assert.deepStrictEqual(Object.keys(result), [
@@ -442,46 +437,9 @@ const rejected = [
   },
 ];
 
-/* --- the interim compat layer, deleted with the edit-mode batch ------------ */
+/* --- resetting, and the answer a dashboard nobody arranged gets ------------ */
 
-const compat = [
-  {
-    label: 'the old flat body wrapped into one default dashboard',
-    run: () => {
-      const adapted = adaptLegacyDashboardPayload({
-        widgets: [{ id: 'entities', span: 4, rows: 0 }],
-      });
-      const result = normalizeDashboardConfig(adapted);
-      assert.ok(result, 'the wrapped body should validate');
-      assert.strictEqual(result.active, 'default');
-      assert.strictEqual(result.dashboards.length, 1);
-      assert.strictEqual(result.dashboards[0].slug, 'default');
-      assert.strictEqual(result.dashboards[0].widgets[0].id, 'entities');
-    },
-  },
-  {
-    label: 'a v1 body handed through the adapter untouched',
-    run: () => {
-      const input = config();
-      assert.strictEqual(adaptLegacyDashboardPayload(input), input);
-    },
-  },
-  {
-    label: 'a body that is neither shape left for the validator to reject',
-    run: () => {
-      const input = { nonsense: true };
-      assert.strictEqual(adaptLegacyDashboardPayload(input), input);
-      assert.strictEqual(normalizeDashboardConfig(input), null);
-    },
-  },
-  {
-    label: 'the old flat reset arriving as a reset',
-    run: () =>
-      assert.strictEqual(
-        isDashboardResetRequest(adaptLegacyDashboardPayload({ widgets: [] })),
-        true
-      ),
-  },
+const helpers = [
   {
     label: 'an empty dashboards list read as a reset',
     run: () =>
@@ -524,37 +482,13 @@ const compat = [
     },
   },
   {
-    label: 'the deprecated alias carrying the active dashboard cards',
-    run: () => {
-      const aliased = withLegacyWidgetsAlias(
-        normalizeDashboardConfig(
-          config({
-            active: 'work',
-            dashboards: [
-              board({}),
-              board({
-                slug: 'work',
-                name: 'Work',
-                widgets: [widget({ id: 'entities', span: 4 })],
-              }),
-            ],
-          })
-        )
-      );
-      assert.strictEqual(aliased.widgets.length, 1);
-      assert.strictEqual(aliased.widgets[0].id, 'entities');
-      assert.strictEqual(aliased.dashboards.length, 2);
-    },
-  },
-  {
-    label: 'the alias empty when nothing is stored',
-    run: () => {
-      const aliased = withLegacyWidgetsAlias(emptyDashboardConfig());
-      assert.deepStrictEqual(aliased.widgets, []);
-      assert.deepStrictEqual(aliased.dashboards, []);
-      assert.strictEqual(aliased.version, 1);
-      assert.strictEqual(aliased.active, 'default');
-    },
+    label: 'the empty configuration a reset and an untouched user both get',
+    run: () =>
+      assert.deepStrictEqual(emptyDashboardConfig(), {
+        version: 1,
+        active: 'default',
+        dashboards: [],
+      }),
   },
 ];
 
@@ -586,7 +520,7 @@ for (const { label, input } of rejected) {
   }
 }
 
-for (const { label, run } of compat) {
+for (const { label, run } of helpers) {
   try {
     run();
     console.log(`  ✓ ${label}`);

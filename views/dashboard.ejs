@@ -74,6 +74,32 @@
          ones ship and how wide they start. Order and span come from there so a
          new card is one partial plus one line of registry, with nothing to
          edit in this file. -->
+    <!-- The edit tray. It ships hidden and the layout module unhides it for the
+         duration of an edit session, so the page never briefly shows controls
+         for something the user did not ask for. It is server-rendered rather
+         than built in JS because it is markup, not behaviour — and because a
+         tray built from the same registry as the cards cannot fall out of step
+         with them.
+
+         The chip labels are deliberately empty here: the display title lives in
+         the card's own .zr-module__title, and the module copies it across at
+         mount. One string, one place — see config/dashboardWidgets.js. -->
+    <div class="zr-module zr-editbar hidden" id="dashboardEditbar" role="group" aria-label="Edit dashboard" tabindex="-1">
+        <div class="zr-module__body zr-row zr-row--wrap">
+            <div class="zr-row zr-row--wrap zr-grow" role="group" aria-label="Cards shown on the dashboard">
+                <% dashboardWidgets.forEach(function (widget) { %><button type="button" class="zr-btn zr-editbar__chip" data-widget-toggle="<%= widget.id %>" aria-pressed="true"><span></span></button><% }) %>
+            </div>
+            <div class="zr-row zr-editbar__actions">
+                <button type="button" class="zr-btn zr-btn--ghost" id="dashboardEditReset">
+                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                    <span>Reset layout</span>
+                </button>
+                <button type="button" class="zr-btn zr-btn--ghost" id="dashboardEditCancel">Cancel</button>
+                <button type="button" class="zr-btn zr-btn--primary" id="dashboardEditDone">Done</button>
+            </div>
+        </div>
+    </div>
+
     <section class="zr-grid" data-module="dashboard-layout">
         <% dashboardWidgets.forEach(function (widget) { %><%- include('partials/widgets/' + widget.id, { widget: widget }) %><% }) %>
     </section>
