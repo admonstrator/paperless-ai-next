@@ -11,6 +11,7 @@ const documentModel = require('../models/document.js');
 const AIServiceFactory = require('../services/aiServiceFactory');
 const configFile = require('../config/config.js');
 const changelog = require('../config/changelog.js');
+const dashboardWidgets = require('../config/dashboardWidgets.js');
 const documentsService = require('../services/documentsService.js');
 const fs = require('fs').promises;
 const path = require('path');
@@ -6336,6 +6337,9 @@ router.get('/dashboard', async (req, res) => {
     },
     version,
     paperlessUrl,
+    // The cards the view loops over. Which widgets ship, in which order and how
+    // wide, is the registry's business — the view only renders what it is given.
+    dashboardWidgets,
   });
 });
 
@@ -10231,35 +10235,85 @@ router.get('/api/settings/env-file', isAuthenticated, async (req, res) => {
   }
 });
 
-/* The dashboard sends back the grid the user arranged. Widget ids are not
-   checked against a list on purpose — the dashboard adds and renames cards, and
-   a stale server list would silently drop a card's placement. The shape, the
-   spans and the count are what needs to be trustworthy; anything the dashboard
-   no longer knows is ignored when the layout is applied. */
+/* Dashboard storage format v1.
+   ---------------------------
+   The dashboard sends back the boards the user arranged:
+
+     {
+       version: 1,
+       active: 'default',
+       dashboards: [
+         {
+           slug: 'default',
+           name: 'Dashboard',
+           widgets: [{ id: 'task-runner', span: 12, rows: 0, hidden: false }]
+         }
+       ]
+     }
+
+   This blob goes straight into users.dashboard_layout, so the validator below
+   is the only thing between a hostile payload and the database. It rejects
+   whole configurations rather than repairing them: a payload it cannot vouch
+   for is a bug or an attack, and storing the salvageable half of either is
+   worse than a 400.
+
+   Widget and dashboard ids are deliberately not checked against a list. The
+   dashboard adds and renames cards, and a stale server-side list would silently
+   drop a card's placement; the shape, the spans and the counts are what has to
+   be trustworthy. Anything the browser no longer knows is ignored when the
+   layout is applied.
+
+   Two conventions run through the whole format:
+
+   - Absent means "use the defaults". No stored config, an empty dashboards
+     list, and a dashboard without widgets all say the same thing: render the
+     cards the way the server shipped them, in registry order.
+   - active is a pointer, not data. A slug that no longer resolves — a deleted
+     board, a stale client — falls back to the first dashboard instead of
+     failing the write. The arrangement is the valuable part, and landing on
+     board one beats losing it to a 400 over a name. */
 const DASHBOARD_WIDGET_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
 const DASHBOARD_MAX_WIDGETS = 50;
 const DASHBOARD_MIN_SPAN = 3;
 const DASHBOARD_GRID_COLUMNS = 12;
 const DASHBOARD_MIN_ROWS = 3;
 const DASHBOARD_MAX_ROWS = 24;
+const DASHBOARD_CONFIG_VERSION = 1;
+const DASHBOARD_MAX_BOARDS = 10;
+const DASHBOARD_MAX_NAME_LENGTH = 60;
+const DASHBOARD_DEFAULT_SLUG = 'default';
+const DASHBOARD_DEFAULT_NAME = 'Dashboard';
 
-function normalizeDashboardLayout(input) {
-  if (!input || !Array.isArray(input.widgets)) {
+/* Nothing stored: a valid v1 config that asks for the defaults. */
+function emptyDashboardConfig() {
+  return {
+    version: DASHBOARD_CONFIG_VERSION,
+    active: DASHBOARD_DEFAULT_SLUG,
+    dashboards: [],
+  };
+}
+
+/* One board's cards, cleaned. Returns null — not a partial list — as soon as
+   anything is off, so a single bad card takes the whole write down with it. */
+function normalizeDashboardWidgets(input) {
+  if (!Array.isArray(input)) {
     return null;
   }
-  if (input.widgets.length > DASHBOARD_MAX_WIDGETS) {
+  if (input.length > DASHBOARD_MAX_WIDGETS) {
     return null;
   }
 
   const seen = new Set();
   const widgets = [];
-  for (const entry of input.widgets) {
+  for (const entry of input) {
     const id = String(entry?.id || '').trim();
     if (!DASHBOARD_WIDGET_ID.test(id) || seen.has(id)) {
       return null;
     }
     seen.add(id);
 
+    // span and rows are parsed rather than compared: they are read off DOM
+    // datasets in the browser, where everything is a string.
     const span = Number.parseInt(entry?.span, 10);
     if (
       !Number.isInteger(span) ||
@@ -10279,28 +10333,209 @@ function normalizeDashboardLayout(input) {
       return null;
     }
 
-    widgets.push({ id, span, rows });
+    // hidden is a toggle, not data: absent, null or anything falsy means the
+    // card is shown. Nothing to reject here, so nothing does.
+    widgets.push({ id, span, rows, hidden: Boolean(entry?.hidden) });
   }
 
-  return { widgets };
+  return widgets;
+}
+
+/* INTERIM COMPAT — delete with the edit-mode batch.
+   -------------------------------------------------
+   public/js/modules/dashboard-layout.js still speaks the old flat format and
+   PUTs { widgets: [...] }. Rather than freezing the storage format until that
+   module is rewritten, the old body is wrapped here into a v1 config with a
+   single 'default' board. Nothing else in the codebase writes the flat shape,
+   so when the module starts sending v1 this function, its call in the PUT
+   handler and withLegacyWidgetsAlias() below all go away together. */
+function adaptLegacyDashboardPayload(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return input;
+  }
+  // Already v1, or not the old shape either — hand it to the validator as-is
+  // and let it decide.
+  if (Array.isArray(input.dashboards) || !Array.isArray(input.widgets)) {
+    return input;
+  }
+
+  return {
+    version: DASHBOARD_CONFIG_VERSION,
+    active: DASHBOARD_DEFAULT_SLUG,
+    dashboards: [
+      {
+        slug: DASHBOARD_DEFAULT_SLUG,
+        name: DASHBOARD_DEFAULT_NAME,
+        widgets: input.widgets,
+      },
+    ],
+  };
+}
+
+/* INTERIM COMPAT — delete with the edit-mode batch.
+   The same module reads result.data.widgets, so GET answers with the v1 object
+   plus a top-level alias of the active board's cards. Documented as deprecated
+   in the @swagger block; nothing new may read it. */
+function withLegacyWidgetsAlias(dashboardConfig) {
+  const active = dashboardConfig.dashboards.find(
+    (board) => board.slug === dashboardConfig.active
+  );
+  return { ...dashboardConfig, widgets: active ? active.widgets : [] };
+}
+
+/* "Give me the defaults back" arrives in two shapes: no boards at all, or the
+   single board the reset button empties. Both clear the stored config. More
+   than one board is left alone — an empty board among several is a named view
+   that happens to show the default cards, and dropping its name would be the
+   opposite of what the user asked for. */
+function isDashboardResetRequest(input) {
+  if (!input || !Array.isArray(input.dashboards)) {
+    return false;
+  }
+  if (input.dashboards.length === 0) {
+    return true;
+  }
+  return (
+    input.dashboards.length === 1 &&
+    Array.isArray(input.dashboards[0]?.widgets) &&
+    input.dashboards[0].widgets.length === 0
+  );
+}
+
+function normalizeDashboardConfig(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    return null;
+  }
+  // Strict: version is written by our own code, never typed into a form, so a
+  // string '1' is a bug worth surfacing rather than a value worth coercing.
+  if (input.version !== DASHBOARD_CONFIG_VERSION) {
+    return null;
+  }
+  if (!Array.isArray(input.dashboards)) {
+    return null;
+  }
+  if (
+    input.dashboards.length < 1 ||
+    input.dashboards.length > DASHBOARD_MAX_BOARDS
+  ) {
+    return null;
+  }
+
+  const slugs = new Set();
+  const dashboards = [];
+  for (const entry of input.dashboards) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      return null;
+    }
+
+    // Slugs are ids, so they answer to the widget-id rules: lowercase, no
+    // markup, short enough to live in a URL.
+    const slug = String(entry.slug || '').trim();
+    if (!DASHBOARD_WIDGET_ID.test(slug) || slugs.has(slug)) {
+      return null;
+    }
+    slugs.add(slug);
+
+    // The name is what the user typed, so it is trimmed first and then has to
+    // still say something. It is escaped where it is rendered, not here.
+    const name = typeof entry.name === 'string' ? entry.name.trim() : '';
+    if (name.length < 1 || name.length > DASHBOARD_MAX_NAME_LENGTH) {
+      return null;
+    }
+
+    // A board without widgets is the default arrangement under a name, so a
+    // missing list is the same as an empty one. A non-array is not.
+    const widgets = normalizeDashboardWidgets(
+      entry.widgets === undefined || entry.widgets === null ? [] : entry.widgets
+    );
+    if (!widgets) {
+      return null;
+    }
+
+    dashboards.push({ slug, name, widgets });
+  }
+
+  const requested = String(input.active || '').trim();
+  const active = slugs.has(requested) ? requested : dashboards[0].slug;
+
+  return { version: DASHBOARD_CONFIG_VERSION, active, dashboards };
 }
 
 /**
  * @swagger
  * /api/dashboard/layout:
  *   get:
- *     summary: Read the authenticated user's dashboard grid layout
+ *     summary: Read the authenticated user's dashboard configuration
  *     description: >
- *       Returns the widget order, column spans and tile-row heights the user
- *       arranged. widgets is empty when the user has not customised anything,
- *       which means the dashboard renders in its default order.
+ *       Returns the stored configuration in storage format v1: the named
+ *       dashboards the user arranged, each with its widgets in display order,
+ *       and the slug of the active one. An empty dashboards list means nothing
+ *       has been customised and every board renders in its default order — the
+ *       same answer a user without a stored configuration gets.
  *     tags:
  *       - Dashboard
  *     security:
  *       - BearerAuth: []
  *     responses:
  *       200:
- *         description: The stored layout
+ *         description: The stored configuration
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     version:
+ *                       type: integer
+ *                       example: 1
+ *                     active:
+ *                       type: string
+ *                       description: Slug of the dashboard currently shown
+ *                       example: "default"
+ *                     dashboards:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           slug:
+ *                             type: string
+ *                             example: "default"
+ *                           name:
+ *                             type: string
+ *                             example: "Dashboard"
+ *                           widgets:
+ *                             type: array
+ *                             items:
+ *                               type: object
+ *                               properties:
+ *                                 id:
+ *                                   type: string
+ *                                   example: "task-runner"
+ *                                 span:
+ *                                   type: integer
+ *                                   description: Width in grid columns, 3 to 12
+ *                                   example: 12
+ *                                 rows:
+ *                                   type: integer
+ *                                   description: Height in tile rows, 3 to 24, or 0 for as tall as the content
+ *                                   example: 0
+ *                                 hidden:
+ *                                   type: boolean
+ *                                   example: false
+ *                     widgets:
+ *                       type: array
+ *                       deprecated: true
+ *                       description: >
+ *                         Deprecated alias for the active dashboard's widgets,
+ *                         kept only until the browser module speaks the
+ *                         named-dashboard format. Read dashboards instead.
+ *                       items:
+ *                         type: object
  *       401:
  *         description: Not authenticated
  */
@@ -10308,11 +10543,28 @@ router.get('/api/dashboard/layout', isAuthenticated, async (req, res) => {
   try {
     const username = req.user && req.user.username;
     if (!username) {
-      return res.json({ success: true, data: { widgets: [] } });
+      return res.json({
+        success: true,
+        data: withLegacyWidgetsAlias(emptyDashboardConfig()),
+      });
     }
 
-    const layout = await documentModel.getDashboardLayout(username);
-    return res.json({ success: true, data: layout || { widgets: [] } });
+    const stored = await documentModel.getDashboardLayout(username);
+    // What was stored was validated on the way in, so it is handed back as it
+    // is. Only the shape is checked: this is an unreleased feature, and a blob
+    // in an older shape is a development leftover that should quietly fall back
+    // to the defaults rather than reach the browser.
+    const dashboardConfig =
+      stored &&
+      stored.version === DASHBOARD_CONFIG_VERSION &&
+      Array.isArray(stored.dashboards)
+        ? stored
+        : emptyDashboardConfig();
+
+    return res.json({
+      success: true,
+      data: withLegacyWidgetsAlias(dashboardConfig),
+    });
   } catch (error) {
     console.error('[ERROR] GET /api/dashboard/layout:', error);
     return res
@@ -10325,21 +10577,94 @@ router.get('/api/dashboard/layout', isAuthenticated, async (req, res) => {
  * @swagger
  * /api/dashboard/layout:
  *   put:
- *     summary: Store or reset the authenticated user's dashboard grid layout
+ *     summary: Store or reset the authenticated user's dashboard configuration
  *     description: >
- *       Accepts a widgets array of {id, span, rows} in display order. Spans are
- *       3 to 12 grid columns; rows are 3 to 24 tile rows, or 0 for a card that
- *       is as tall as its content. Sending an empty widgets array clears the
- *       layout, so the dashboard returns to its default order.
+ *       Takes a complete configuration in storage format v1 and replaces the
+ *       stored one; there is no partial update. Up to 10 dashboards, each with
+ *       a slug, a name of 1 to 60 characters and up to 50 widgets in display
+ *       order. Widget spans are 3 to 12 grid columns; rows are 3 to 24 tile
+ *       rows, or 0 for a card that is as tall as its content. A dashboard
+ *       without widgets shows the default arrangement under its own name.
+ *
+ *       Two payloads reset instead of storing: an empty dashboards array, and a
+ *       single dashboard whose widgets array is empty. Both clear the stored
+ *       configuration, so every board returns to its default order. Emptying
+ *       one board out of several does not reset — that board simply shows the
+ *       defaults and keeps its name.
+ *
+ *       If active names a dashboard that is not in the payload it is replaced
+ *       with the first dashboard's slug rather than rejecting the write.
+ *
+ *       Deprecated: a flat {widgets: [...]} body is still accepted and stored
+ *       as the single 'default' dashboard, until the browser module speaks the
+ *       named-dashboard format. Do not build on it.
  *     tags:
  *       - Dashboard
  *     security:
  *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               version:
+ *                 type: integer
+ *                 enum: [1]
+ *                 example: 1
+ *               active:
+ *                 type: string
+ *                 description: Slug of the dashboard to show
+ *                 example: "default"
+ *               dashboards:
+ *                 type: array
+ *                 maxItems: 10
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - slug
+ *                     - name
+ *                   properties:
+ *                     slug:
+ *                       type: string
+ *                       pattern: "^[a-z0-9][a-z0-9-]{0,39}$"
+ *                       example: "default"
+ *                     name:
+ *                       type: string
+ *                       minLength: 1
+ *                       maxLength: 60
+ *                       example: "Dashboard"
+ *                     widgets:
+ *                       type: array
+ *                       maxItems: 50
+ *                       items:
+ *                         type: object
+ *                         required:
+ *                           - id
+ *                           - span
+ *                         properties:
+ *                           id:
+ *                             type: string
+ *                             pattern: "^[a-z0-9][a-z0-9-]{0,39}$"
+ *                             example: "task-runner"
+ *                           span:
+ *                             type: integer
+ *                             minimum: 3
+ *                             maximum: 12
+ *                             example: 12
+ *                           rows:
+ *                             type: integer
+ *                             description: 3 to 24 tile rows, or 0 for as tall as the content
+ *                             example: 0
+ *                           hidden:
+ *                             type: boolean
+ *                             default: false
  *     responses:
  *       200:
- *         description: Layout stored
+ *         description: Configuration stored or reset
  *       400:
- *         description: Malformed layout
+ *         description: Malformed configuration
  *       401:
  *         description: Not authenticated
  */
@@ -10354,23 +10679,33 @@ router.put(
         return res.json({ success: true, message: 'No user to store against' });
       }
 
-      // An empty list is how the dashboard asks for the default back.
-      if (Array.isArray(req.body?.widgets) && req.body.widgets.length === 0) {
+      // INTERIM COMPAT — delete with the edit-mode batch: the browser still
+      // sends the old flat { widgets: [...] } body, which is wrapped into a v1
+      // config here so both shapes reach the same validator.
+      const payload = adaptLegacyDashboardPayload(req.body);
+
+      // Nothing arranged is not stored as "an empty arrangement": the row is
+      // cleared, so the dashboard falls back to the registry order.
+      if (isDashboardResetRequest(payload)) {
         await documentModel.setDashboardLayout(username, null);
-        return res.json({ success: true, message: 'Dashboard layout reset' });
+        return res.json({
+          success: true,
+          data: withLegacyWidgetsAlias(emptyDashboardConfig()),
+          message: 'Dashboard layout reset',
+        });
       }
 
-      const layout = normalizeDashboardLayout(req.body);
-      if (!layout) {
+      const dashboardConfig = normalizeDashboardConfig(payload);
+      if (!dashboardConfig) {
         return res
           .status(400)
           .json({ success: false, error: 'Invalid dashboard layout' });
       }
 
-      await documentModel.setDashboardLayout(username, layout);
+      await documentModel.setDashboardLayout(username, dashboardConfig);
       return res.json({
         success: true,
-        data: layout,
+        data: withLegacyWidgetsAlias(dashboardConfig),
         message: 'Dashboard layout saved',
       });
     } catch (error) {

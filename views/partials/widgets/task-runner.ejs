@@ -1,0 +1,43 @@
+<article class="zr-module" data-widget="task-runner" data-span="<%= widget.span %>">
+    <div class="zr-module__head">
+        <span class="zr-dot zr-dot--ok" id="runnerDot"></span>
+        <h2 class="zr-module__title">Task runner</h2>
+        <div class="zr-module__actions">
+            <span class="zr-sm zr-faint zr-freshness" id="statusLastUpdated"></span>
+            <button class="zr-btn zr-btn--primary" type="button" id="scanButton">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg>
+                <span>Scan now</span>
+            </button>
+            <button class="zr-btn zr-btn--danger hidden" type="button" id="stopScanButton" aria-label="Stop scan">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-stop"/></svg>
+                <span>Stop</span>
+            </button>
+        </div>
+    </div>
+    <div class="zr-module__body zr-col">
+        <div class="zr-row">
+            <div class="zr-grow zr-col zr-col--tight">
+                <strong id="runnerLabel">System idle</strong>
+                <span class="zr-sm zr-faint zr-truncate" id="runnerDetail">Waiting for new documents</span>
+            </div>
+            <span class="zr-badge zr-badge--info hidden" id="currentDocId"></span>
+            <%- include('../runner-seal') %>
+        </div>
+
+        <div class="zr-row zr-row--wrap zr-sm zr-muted" style="gap: var(--zr-4)">
+            <span><strong class="zr-num" id="processedToday">0</strong> processed today</span>
+            <span>last document <strong id="lastProcessed">no data</strong></span>
+        </div>
+    </div>
+
+    <div class="zr-module__foot">
+        <div class="zr-row zr-row--between">
+            <span>Recent activity</span>
+            <a class="zr-row" href="/history" style="gap: 4px">
+                History
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
+            </a>
+        </div>
+    </div>
+    <div class="zr-list" id="recentActivityList"></div>
+</article>
