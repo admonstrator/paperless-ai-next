@@ -269,6 +269,10 @@ class HistoryManager {
           render: (value, row) => {
             const docId = escape(row.document_id ?? value);
             const menuId = `historyRowMenu${docId}`;
+            // _esc(), not escape(): the innerHTML round-trip behind escape()
+            // leaves a double quote intact, and a Paperless-ngx title is free
+            // text that would otherwise break out of the attribute.
+            const titleAttr = this._esc(row.title ?? '');
             return (
               '<div class="zr-row zr-row--wrap">' +
               `<button type="button" class="history-info-btn zr-btn" data-docid="${escape(value)}" title="Show AI analysis details">` +
@@ -283,6 +287,13 @@ class HistoryManager {
               '<div class="zr-menu__sep"></div>' +
               `<button type="button" class="zr-menu__item history-ocr-btn" data-docid="${docId}">` +
               '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>Send to OCR queue</button>' +
+              `<button type="button" class="zr-menu__item history-rescan-btn" data-docid="${docId}">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>Reanalyze</button>' +
+              '<div class="zr-menu__sep"></div>' +
+              // Last and set apart: it is the only entry here that takes the
+              // document out of future scans rather than feeding one.
+              `<button type="button" class="zr-menu__item zr-menu__item--danger history-ignore-btn" data-docid="${docId}" data-title="${titleAttr}">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>Ignore</button>' +
               '</div>' +
               '</div>'
             );
@@ -512,6 +523,34 @@ class HistoryManager {
       });
       button.dataset.boundClick = 'true';
     });
+
+    document.querySelectorAll('.history-rescan-btn').forEach((button) => {
+      if (button.dataset.boundClick === 'true') return;
+      button.addEventListener('click', () => {
+        const docId = button.dataset.docid || '';
+        if (!/^\d+$/.test(docId)) {
+          console.warn('Blocked unsafe document id:', docId);
+          return;
+        }
+        this.rescanFromRow(Number(docId));
+      });
+      button.dataset.boundClick = 'true';
+    });
+
+    document.querySelectorAll('.history-ignore-btn').forEach((button) => {
+      if (button.dataset.boundClick === 'true') return;
+      button.addEventListener('click', () => {
+        const docId = button.dataset.docid || '';
+        if (!/^\d+$/.test(docId)) {
+          console.warn('Blocked unsafe document id:', docId);
+          return;
+        }
+        // The title travels in the markup because the ignore list stores it and
+        // the row is the only place that still knows it at click time.
+        this.ignoreDocument(Number(docId), button.dataset.title || '');
+      });
+      button.dataset.boundClick = 'true';
+    });
   }
 
   /**
@@ -550,6 +589,51 @@ class HistoryManager {
     }
 
     this.showToast(message, tone);
+  }
+
+  /**
+   * Puts a document on the ignore list, so the scan loop leaves it alone from
+   * now on. The Ignored page is otherwise the only way in, and it wants a
+   * document id typed by hand — from here the row already knows it. Reversible
+   * there via "Unignore".
+   */
+  async ignoreDocument(documentId, title) {
+    let message;
+    let tone = 'success';
+
+    // Same split as sendToOcrQueue(): the request stands alone so a fault while
+    // reporting the outcome cannot be shown as a failure to ignore.
+    try {
+      const response = await fetch('/api/ignored/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          documentId,
+          // The list shows the title next to the id; without it the entry would
+          // be a bare number nobody can place later.
+          title: title || '',
+          reason: 'manual',
+        }),
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        message =
+          data.message || `Document ${documentId} added to the ignore list.`;
+      } else {
+        message =
+          data.message || data.error || 'Could not ignore the document.';
+        tone = 'error';
+      }
+    } catch (error) {
+      message = `Could not ignore the document: ${error.message}`;
+      tone = 'error';
+    }
+
+    this.showToast(message, tone);
+    if (tone === 'success') {
+      this.table?.reload();
+    }
   }
 
   isSafeHistoryLink(link) {
@@ -942,7 +1026,7 @@ class HistoryManager {
 
       this.hideModal(document.getElementById('infoModal'));
       this.showToast('Document restored to its original state.', 'success');
-      this.table?.ajax.reload();
+      this.table?.reload();
     } catch (err) {
       console.error('Restore failed:', err);
       this.showToast('Restore failed: ' + err.message, 'error');
@@ -995,6 +1079,32 @@ class HistoryManager {
     }
   }
 
+  /**
+   * Sends one document back for reprocessing and returns the parsed response.
+   * Only the request is shared: the modal button and the row menu differ in
+   * what they have to put back afterwards (a spinner, a modal), and the row
+   * menu has neither. Throws on anything the caller should report as a failure.
+   */
+  async postRescan(documentId) {
+    // Reprocess directly, bypassing the scan tag filter. The backend clears the
+    // local record and enqueues the document for processing.
+    const response = await fetch(`/api/history/${documentId}/rescan`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    if (!response.ok) {
+      throw new Error(`Rescan request failed (${response.status})`);
+    }
+
+    // A JSON body is part of the contract, so an expired session answered with
+    // the login page throws here instead of passing for a queued document.
+    const data = await response.json();
+    if (data && data.success === false) {
+      throw new Error(data.error || 'Rescan failed');
+    }
+    return data;
+  }
+
   async rescanDocument(documentId) {
     const btn = document.getElementById('infoModalRescanBtn');
     const origHtml = btn?.innerHTML;
@@ -1005,13 +1115,7 @@ class HistoryManager {
     }
 
     try {
-      // Reprocess directly, bypassing the scan tag filter. The backend
-      // clears the local record and enqueues the document for processing.
-      const resetRes = await fetch(`/api/history/${documentId}/rescan`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (!resetRes.ok) throw new Error('Reset failed');
+      await this.postRescan(documentId);
 
       // Close modal & show toast
       this.hideModal(document.getElementById('infoModal'));
@@ -1021,7 +1125,7 @@ class HistoryManager {
       );
 
       // Reload table
-      this.table?.ajax.reload();
+      this.table?.reload();
     } catch (err) {
       console.error('Rescan failed:', err);
       this.showToast('Rescan failed. Please try again.', 'error');
@@ -1030,6 +1134,34 @@ class HistoryManager {
         btn.disabled = false;
         btn.innerHTML = origHtml;
       }
+    }
+  }
+
+  /**
+   * "Reanalyze" from the row menu. Same request as the modal button, minus the
+   * modal: the menu closes itself on click, so there is no spinner to restore
+   * and nothing to hide once the document is queued.
+   */
+  async rescanFromRow(documentId) {
+    // Wording taken from the modal path on purpose — the same action should not
+    // report itself differently depending on where it was started.
+    let message =
+      'Document sent for rescan. It might take a few moments to process.';
+    let tone = 'success';
+
+    try {
+      await this.postRescan(documentId);
+    } catch (err) {
+      console.error('Rescan failed:', err);
+      message = 'Rescan failed. Please try again.';
+      tone = 'error';
+    }
+
+    this.showToast(message, tone);
+    // The backend drops the processing record, so the row leaves the table
+    // until the document has been analyzed again.
+    if (tone === 'success') {
+      this.table?.reload();
     }
   }
 
