@@ -3480,7 +3480,7 @@
     "/api/dashboard/stats": {
       "get": {
         "summary": "Get dashboard statistics payload",
-        "description": "Returns all aggregate counters and chart datasets required by the dashboard UI.",
+        "description": "Returns all aggregate counters and chart datasets required by the dashboard UI.\n\nThe payload is served from an in-memory cache instead of being rebuilt per\nrequest. It is refreshed in the background (once a minute, plus after every\nscan run) and expires after STATS_CACHE_TTL_SECONDS (default 60). The scan\nloop invalidates it for every document it processes, so figures follow\nprocessing without polling Paperless-ngx on every request.\n",
         "tags": [
           "System",
           "API"
@@ -3499,7 +3499,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "cachedAt": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "Epoch milliseconds at which the returned payload was assembled. 0 when the assembly time is unknown."
+                    },
+                    "paperless_data": {
+                      "type": "object",
+                      "description": "Aggregate counters and chart datasets."
+                    },
+                    "openai_data": {
+                      "type": "object",
+                      "description": "Token averages and the overall token total."
+                    }
+                  }
                 }
               }
             }

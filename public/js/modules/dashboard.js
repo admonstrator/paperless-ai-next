@@ -367,9 +367,14 @@ export default function dashboard(root, { toast }) {
 
   // Tracked per source: the status poll succeeding every three seconds must not
   // paper over a statistics endpoint that is still failing.
-  function markFresh(source) {
+  // `at` is the epoch-millisecond timestamp at which the data was assembled —
+  // the statistics endpoint answers from a cache, so the time of the fetch is
+  // not the age of the numbers it returned.
+  function markFresh(source, at = null) {
     failures.delete(source);
-    if (!failures.size) lastUpdatedAt = new Date();
+    if (!failures.size) {
+      lastUpdatedAt = Number.isFinite(at) && at > 0 ? new Date(at) : new Date();
+    }
     renderFreshness();
   }
 
@@ -389,7 +394,7 @@ export default function dashboard(root, { toast }) {
       if (!payload?.success)
         throw new Error(payload?.error || 'Invalid dashboard stats response');
       applyStats(payload);
-      markFresh('stats');
+      markFresh('stats', payload.cachedAt);
     } catch (error) {
       console.error('[dashboard] stats failed', error);
       markStale('stats', 'Statistics could not be loaded');

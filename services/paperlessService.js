@@ -1119,6 +1119,23 @@ class PaperlessService {
     return filteredDocuments;
   }
 
+  /**
+   * Stores a computed effective document count and returns it, so every exit
+   * of getEffectiveDocumentCount() populates the cache the same way.
+   *
+   * @param {string} cacheKey
+   * @param {number} count
+   * @returns {number} the count that was cached
+   */
+  cacheEffectiveCount(cacheKey, count) {
+    this._effectiveCountCache = {
+      key: cacheKey,
+      count,
+      expiresAt: Date.now() + this._effectiveCountCacheTtlMs,
+    };
+    return count;
+  }
+
   async getEffectiveDocumentCount() {
     const shouldFilterByTags =
       process.env.PROCESS_PREDEFINED_DOCUMENTS === 'yes';
@@ -1141,14 +1158,17 @@ class PaperlessService {
     let includeTagIds = [];
     let excludeTagIds = [];
 
+    // "Nothing matches" is a result like any other and must be cached too —
+    // otherwise these two paths re-resolve the tag list on every call, which is
+    // exactly the per-request Paperless traffic the cache exists to avoid.
     if (shouldFilterByTags) {
       if (includeTagNames.length === 0) {
-        return 0;
+        return this.cacheEffectiveCount(cacheKey, 0);
       }
 
       includeTagIds = await this.resolveTagIdsByName(includeTagNames);
       if (includeTagIds.length === 0) {
-        return 0;
+        return this.cacheEffectiveCount(cacheKey, 0);
       }
     }
 
@@ -1191,13 +1211,7 @@ class PaperlessService {
         }
       }
 
-      this._effectiveCountCache = {
-        key: cacheKey,
-        count: effectiveCount,
-        expiresAt: Date.now() + this._effectiveCountCacheTtlMs,
-      };
-
-      return effectiveCount;
+      return this.cacheEffectiveCount(cacheKey, effectiveCount);
     } catch (error) {
       console.error(
         '[ERROR] fetching effective document count:',

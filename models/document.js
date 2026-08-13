@@ -100,6 +100,26 @@ const insertMetrics = db.prepare(`
   VALUES (?, ?, ?, ?)
 `);
 
+// The dashboard only needs the aggregates, never the rows. COALESCE keeps rows
+// with a missing token count in the denominator, which is what the previous
+// JavaScript reduce did when it added `undefined` as 0.
+const selectMetricsSummary = db.prepare(`
+  SELECT
+    COUNT(*) as sampleCount,
+    AVG(COALESCE(promptTokens, 0)) as avgPromptTokens,
+    AVG(COALESCE(completionTokens, 0)) as avgCompletionTokens,
+    AVG(COALESCE(totalTokens, 0)) as avgTotalTokens,
+    COALESCE(SUM(COALESCE(totalTokens, 0)), 0) as totalTokensOverall
+  FROM openai_metrics
+`);
+
+const emptyMetricsSummary = () => ({
+  averagePromptTokens: 0,
+  averageCompletionTokens: 0,
+  averageTotalTokens: 0,
+  tokensOverall: 0,
+});
+
 const insertUser = db.prepare(`
   INSERT INTO users (username, password)
   VALUES (?, ?)
@@ -411,12 +431,31 @@ module.exports = {
     }
   },
 
-  async getMetrics() {
+  /**
+   * Token averages and the overall total, aggregated by SQLite.
+   *
+   * Replaces `getMetrics()`, which materialized every openai_metrics row just
+   * so the dashboard could reduce over it four times. The table grows with
+   * every processed document; these four numbers do not.
+   */
+  async getMetricsSummary() {
     try {
-      return db.prepare('SELECT * FROM openai_metrics').all();
+      const row = selectMetricsSummary.get();
+      if (!row || !row.sampleCount) {
+        return emptyMetricsSummary();
+      }
+
+      return {
+        // Rounded here rather than in SQL so the values stay bit-for-bit what
+        // Math.round() produced before.
+        averagePromptTokens: Math.round(row.avgPromptTokens || 0),
+        averageCompletionTokens: Math.round(row.avgCompletionTokens || 0),
+        averageTotalTokens: Math.round(row.avgTotalTokens || 0),
+        tokensOverall: Number(row.totalTokensOverall || 0),
+      };
     } catch (error) {
-      console.error('[ERROR] getting metrics:', error);
-      return [];
+      console.error('[ERROR] getting metrics summary:', error);
+      return emptyMetricsSummary();
     }
   },
 

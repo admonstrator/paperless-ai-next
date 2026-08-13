@@ -33,6 +33,7 @@ const quickstartService = require('../services/quickstartService');
 const reconciliationService = require('../services/reconciliationService');
 const scanHealthService = require('../services/scanHealthService');
 const updateCheckService = require('../services/updateCheckService');
+const dashboardStatsService = require('../services/dashboardStatsService');
 const {
   THUMBNAIL_CACHE_DIR,
   getThumbnailCachePath,
@@ -6338,134 +6339,13 @@ router.get('/dashboard', async (req, res) => {
   });
 });
 
+// The payload itself is assembled in dashboardStatsService and cached there:
+// this endpoint is polled by every open dashboard, and rebuilding it per
+// request meant two Paperless-ngx round trips plus a dozen queries each time.
 router.get('/api/dashboard/stats', async (req, res) => {
   try {
-    const [
-      tagCount,
-      correspondentCount,
-      documentCount,
-      rawProcessedDocumentCount,
-      ocrNeededCount,
-      ocrFailedCount,
-      processingFailedCount,
-      metrics,
-      processingTimeStats,
-      tokenDistribution,
-      documentTypes,
-      tokenTrend,
-      recentActivity,
-      languageDistribution,
-      processingStatus,
-    ] = await Promise.all([
-      paperlessService.getTagCount(),
-      paperlessService.getCorrespondentCount(),
-      paperlessService.getEffectiveDocumentCount(),
-      documentModel.getProcessedDocumentsCount(),
-      documentModel.getOcrQueueCount(),
-      documentModel.getOcrFailedCount(),
-      documentModel.getFailedProcessingCount(),
-      documentModel.getMetrics(),
-      documentModel.getProcessingTimeStats(),
-      documentModel.getTokenDistribution(),
-      documentModel.getDocumentTypeStats(),
-      documentModel.getTokenTrend(7),
-      documentModel.getRecentHistoryDocuments(3),
-      documentModel.getLanguageDistribution(5),
-      documentModel.getCurrentProcessingStatus(),
-    ]);
-
-    const processedDocumentCount = rawProcessedDocumentCount;
-    const failedCount = ocrFailedCount + processingFailedCount;
-    const queueBacklog = Math.max(0, ocrNeededCount + failedCount);
-    const processingAttemptCount = processedDocumentCount + failedCount;
-    const processingEfficiencyRate =
-      processingAttemptCount > 0
-        ? Math.round((processedDocumentCount / processingAttemptCount) * 100)
-        : 0;
-    const failedRate =
-      processingAttemptCount > 0
-        ? Math.round((failedCount / processingAttemptCount) * 100)
-        : 0;
-    const processedToday = Number(processingStatus?.processedToday || 0);
-
-    const averagePromptTokens =
-      metrics.length > 0
-        ? Math.round(
-            metrics.reduce((acc, cur) => acc + cur.promptTokens, 0) /
-              metrics.length
-          )
-        : 0;
-    const averageCompletionTokens =
-      metrics.length > 0
-        ? Math.round(
-            metrics.reduce((acc, cur) => acc + cur.completionTokens, 0) /
-              metrics.length
-          )
-        : 0;
-    const averageTotalTokens =
-      metrics.length > 0
-        ? Math.round(
-            metrics.reduce((acc, cur) => acc + cur.totalTokens, 0) /
-              metrics.length
-          )
-        : 0;
-    const tokensOverall =
-      metrics.length > 0
-        ? metrics.reduce((acc, cur) => acc + cur.totalTokens, 0)
-        : 0;
-
-    const normalizedTokenTrend = Array.isArray(tokenTrend)
-      ? tokenTrend.map((entry) => ({
-          day: entry.day,
-          documents: Number(entry.documents || 0),
-          totalTokens: Number(entry.totalTokens || 0),
-        }))
-      : [];
-
-    const normalizedRecentActivity = Array.isArray(recentActivity)
-      ? recentActivity.map((entry) => ({
-          documentId: Number(entry.documentId || 0),
-          title: entry.title || 'Untitled document',
-          correspondent: entry.correspondent || 'Unknown correspondent',
-          createdAt: entry.createdAt,
-          language: entry.language || 'Unknown',
-        }))
-      : [];
-
-    const normalizedLanguageDistribution = Array.isArray(languageDistribution)
-      ? languageDistribution.map((entry) => ({
-          language: entry.language || 'Unknown',
-          count: Number(entry.count || 0),
-        }))
-      : [];
-
-    res.json({
-      success: true,
-      paperless_data: {
-        tagCount,
-        correspondentCount,
-        documentCount,
-        processedDocumentCount,
-        ocrNeededCount,
-        failedCount,
-        queueBacklog,
-        processingEfficiencyRate,
-        failedRate,
-        processedToday,
-        processingTimeStats,
-        tokenDistribution,
-        documentTypes,
-        tokenTrend: normalizedTokenTrend,
-        recentActivity: normalizedRecentActivity,
-        languageDistribution: normalizedLanguageDistribution,
-      },
-      openai_data: {
-        averagePromptTokens,
-        averageCompletionTokens,
-        averageTotalTokens,
-        tokensOverall,
-      },
-    });
+    const { payload, cachedAt } = await dashboardStatsService.getStats();
+    res.json({ ...payload, cachedAt });
   } catch (error) {
     console.error('[ERROR] loading dashboard stats:', error);
     res
@@ -6479,7 +6359,14 @@ router.get('/api/dashboard/stats', async (req, res) => {
  * /api/dashboard/stats:
  *   get:
  *     summary: Get dashboard statistics payload
- *     description: Returns all aggregate counters and chart datasets required by the dashboard UI.
+ *     description: |
+ *       Returns all aggregate counters and chart datasets required by the dashboard UI.
+ *
+ *       The payload is served from an in-memory cache instead of being rebuilt per
+ *       request. It is refreshed in the background (once a minute, plus after every
+ *       scan run) and expires after STATS_CACHE_TTL_SECONDS (default 60). The scan
+ *       loop invalidates it for every document it processes, so figures follow
+ *       processing without polling Paperless-ngx on every request.
  *     tags:
  *       - System
  *       - API
@@ -6493,6 +6380,21 @@ router.get('/api/dashboard/stats', async (req, res) => {
  *           application/json:
  *             schema:
  *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 cachedAt:
+ *                   type: integer
+ *                   format: int64
+ *                   description: >-
+ *                     Epoch milliseconds at which the returned payload was assembled.
+ *                     0 when the assembly time is unknown.
+ *                 paperless_data:
+ *                   type: object
+ *                   description: Aggregate counters and chart datasets.
+ *                 openai_data:
+ *                   type: object
+ *                   description: Token averages and the overall token total.
  *       500:
  *         description: Server error
  */

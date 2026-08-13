@@ -522,6 +522,12 @@ module.exports = {
   // Cache configuration (in seconds)
   // Recommended: 300 (5 min) for balanced performance, 60-900 (1-15 min) for custom needs
   tagCacheTTL: parseInt(process.env.TAG_CACHE_TTL_SECONDS || '300', 10),
+  // How long the assembled dashboard statistics payload stays valid. The
+  // dashboard polls its stats endpoint, so without this every poll of every
+  // open tab paid for two Paperless-ngx round trips and a dozen queries. The
+  // scan loop invalidates the cache as it processes documents, so a low value
+  // buys little beyond faster reaction to changes made outside this app.
+  statsCacheTTL: parseInt(process.env.STATS_CACHE_TTL_SECONDS || '60', 10),
   // Add limit functions to config
   limitFunctions: {
     activateTagging: limitFunctions.activateTagging,

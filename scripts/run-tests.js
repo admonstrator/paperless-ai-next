@@ -31,6 +31,7 @@ function formatStatus(status) {
 }
 
 const TESTS = {
+  'dashboard-stats-cache': 'test-dashboard-stats-cache.js',
   'document-type-restriction': 'test-document-type-restriction.js',
   'effective-document-count-cache': 'test-effective-document-count-cache.js',
   'failed-reset-all': 'test-failed-reset-all.js',
@@ -137,6 +138,7 @@ const AREAS = {
     'mobile-toolbar-grid',
   ],
   processing: [
+    'dashboard-stats-cache',
     'document-type-restriction',
     'ignore-tags-filter',
     'effective-document-count-cache',
