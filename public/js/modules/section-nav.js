@@ -32,6 +32,11 @@ export default function sectionNav(el) {
       );
       highlight();
     },
+    // The top inset stands in for what the sticky topbar covers, the same offset
+    // css/pages/settings.css gives these sections as scroll-margin-top, so the
+    // section a link scrolls to is also the one the link then highlights. The
+    // bottom one cuts the reading band off above the fold, so a section entering
+    // from below does not take the highlight before it is being read.
     { rootMargin: '-56px 0px -55% 0px', threshold: 0 }
   );
   targets.forEach((t) => io.observe(t));
