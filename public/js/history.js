@@ -266,9 +266,15 @@ class HistoryManager {
           // One labelled action plus the overflow, like the queue pages. Wrapping
           // stays on for the card layout, where a phone has less room; inside
           // the table the actions column overrides it back to a single line.
-          render: (value, row) => {
+          render: (value, row, surface) => {
             const docId = escape(row.document_id ?? value);
-            const menuId = `historyRowMenu${docId}`;
+            // The table copy and the card copy of this row both exist in the
+            // DOM at all times; only one of them is displayed. Without the
+            // surface in the id, the card's button would target the table's
+            // menu, and a menu inside a display:none wrapper has no box to
+            // place — the popover opened and was dismissed again, so the row
+            // menu simply never appeared on a phone.
+            const menuId = `historyRowMenu-${surface || 'table'}-${docId}`;
             // _esc(), not escape(): the innerHTML round-trip behind escape()
             // leaves a double quote intact, and a Paperless-ngx title is free
             // text that would otherwise break out of the attribute.

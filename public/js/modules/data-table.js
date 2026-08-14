@@ -112,8 +112,16 @@ export function createTable(root, options) {
     });
   }
 
-  function cellHtml(col, row) {
-    if (typeof col.render === 'function') return col.render(row[col.key], row);
+  // Every row is rendered twice — once into the table, once into the card list
+  // that replaces it below the mobile breakpoint — so a renderer that mints an
+  // element id would mint it twice. `surface` lets it tell the two apart:
+  // duplicate ids are not merely untidy here, they break `popovertarget` and
+  // getElementById, which resolve to the first match in tree order and would
+  // always find the copy inside the hidden table.
+  function cellHtml(col, row, surface) {
+    if (typeof col.render === 'function') {
+      return col.render(row[col.key], row, surface);
+    }
     return escapeHtml(row[col.key]);
   }
 
@@ -129,7 +137,7 @@ export function createTable(root, options) {
             `<tr data-row-id="${escapeHtml(rowId(row))}">${columns
               .map(
                 (col) =>
-                  `<td${col.cellClass ? ` class="${col.cellClass}"` : ''}>${cellHtml(col, row)}</td>`
+                  `<td${col.cellClass ? ` class="${col.cellClass}"` : ''}>${cellHtml(col, row, 'table')}</td>`
               )
               .join('')}</tr>`
         )
@@ -143,7 +151,7 @@ export function createTable(root, options) {
               .map((col) => {
                 if (col.mobile === false) return '';
                 const label = col.mobileLabel ?? col.label;
-                return `<div class="zr-table-card__row"><span class="zr-table-card__label">${escapeHtml(label)}</span><span class="zr-table-card__value">${cellHtml(col, row)}</span></div>`;
+                return `<div class="zr-table-card__row"><span class="zr-table-card__label">${escapeHtml(label)}</span><span class="zr-table-card__value">${cellHtml(col, row, 'card')}</span></div>`;
               })
               .join('')}</article>`
         )
