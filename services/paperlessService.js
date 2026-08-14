@@ -15,6 +15,19 @@ const CONNECTION_PROBE_TIMEOUT_MS = 10000;
 const DEFAULT_REQUEST_TIMEOUT_MS = 30000;
 
 /**
+ * Page size for the tag cache refresh.
+ *
+ * Deliberately larger than the 100 the document reads here use. The tag cache
+ * is an all-or-nothing read that every tag lookup in the app waits on, and
+ * Paperless-ngx pages at 25 unless asked otherwise — an instance with 1331 tags
+ * therefore spent 54 sequential round trips and 42 seconds rebuilding it, with
+ * the dashboard statistics among the callers queued behind it. Tags are small
+ * objects, so a page of them costs little. DRF clamps to its own max_page_size
+ * rather than rejecting, so asking for more than a server allows is safe.
+ */
+const TAG_PAGE_SIZE = 1000;
+
+/**
  * The deadline every request through `this.client` carries.
  *
  * Axios' own default is no timeout, and only checkConnection() ever set one —
@@ -308,11 +321,17 @@ class PaperlessService {
       if (this._refreshPromise) {
         return this._refreshPromise;
       }
-      const expireTime = new Date(
-        this.lastTagRefresh + this.CACHE_LIFETIME
-      ).toISOString();
+      const ttlSeconds = Math.floor(this.CACHE_LIFETIME / 1000);
+      // A cache that was never filled has no age and no expiry. Dating it from
+      // the epoch reported "age: 1786738904s ... expired at: 1970-01-01" on
+      // every cold start, which reads as a clock problem rather than a first
+      // run.
       console.log(
-        `[DEBUG] Tag cache expired (age: ${Math.floor(cacheAge / 1000)}s, TTL: ${Math.floor(this.CACHE_LIFETIME / 1000)}s, expired at: ${expireTime})`
+        this.lastTagRefresh === 0
+          ? `[DEBUG] Tag cache empty, building it (TTL: ${ttlSeconds}s)`
+          : `[DEBUG] Tag cache expired (age: ${Math.floor(cacheAge / 1000)}s, TTL: ${ttlSeconds}s, expired at: ${new Date(
+              this.lastTagRefresh + this.CACHE_LIFETIME
+            ).toISOString()})`
       );
       // No race condition: synchronous code is never preempted in Node.js's
       // event loop, so no other call can reach here between the check above
@@ -340,7 +359,9 @@ class PaperlessService {
     try {
       console.log('[DEBUG] Refreshing tag cache...');
       this.tagCache.clear();
-      let nextUrl = '/tags/';
+      // The page size only has to be asked for once: Paperless-ngx builds its
+      // `next` link from the request URL, so every following page carries it.
+      let nextUrl = `/tags/?page_size=${TAG_PAGE_SIZE}`;
       while (nextUrl) {
         const response = await this.client.get(nextUrl);
 

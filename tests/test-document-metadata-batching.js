@@ -28,7 +28,12 @@ async function run() {
       get: async (url, options = {}) => {
         calls.push({ url, params: options.params || {} });
 
-        if (url === '/tags/') {
+        // Matched by path, not by the whole string: the tag cache refresh asks
+        // for a page size, and a mock that insists on a bare "/tags/" turns
+        // that into a failure of this test rather than of the caller.
+        const path = url.split('?')[0];
+
+        if (path === '/tags/') {
           return {
             data: {
               results: [
@@ -40,7 +45,7 @@ async function run() {
           };
         }
 
-        if (url === '/correspondents/') {
+        if (path === '/correspondents/') {
           const all = [
             { id: 21, name: 'Acme Corp' },
             { id: 22, name: 'City Council' },
