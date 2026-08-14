@@ -39,6 +39,14 @@ const MIN_SPAN = 3;
 const MIN_ROWS = 3;
 const MAX_ROWS = 24;
 const DESKTOP_QUERY = '(min-width: 861px)';
+// Below this, modules.css collapses the grid to two usable widths: spans 3, 4
+// and 6 render as half, everything else as full. Snapping to the raw 1..12
+// model there hands the user a card that jumps backwards under their own
+// pointer and stores a width they never saw, so the snapping follows the
+// stylesheet instead. Keep the two in step — see the media query in
+// public/css/modules.css.
+const WIDE_QUERY = '(min-width: 1181px)';
+const HALF_SPAN = 6;
 const REQUEST_TIMEOUT_MS = 15000;
 
 /* The one board this module owns. The slug and the name are validated on the
@@ -71,6 +79,9 @@ export default function dashboardLayout(grid, { toast } = {}) {
   if (cards.length === 0) return undefined;
 
   const desktop = window.matchMedia(DESKTOP_QUERY);
+  // Editing is offered from 861px, but the grid only honours every span from
+  // 1181px. Between the two, resizing has fewer widths to offer — see snapSpan.
+  const wide = window.matchMedia(WIDE_QUERY);
   const cardsById = new Map(cards.map((card) => [card.dataset.widget, card]));
   // The order and spans the server rendered, every card showing. Reset means
   // going back to these, and they have to be captured before a stored layout is
@@ -468,9 +479,31 @@ export default function dashboardLayout(grid, { toast } = {}) {
     };
   }
 
+  /* Only the widths the current viewport can actually render. Wide viewports
+     honour every span; narrower ones show half or full and nothing between, so
+     that is what a resize there is allowed to produce. */
+  function snapSpan(span) {
+    const bounded = clamp(span, MIN_SPAN, GRID_COLUMNS);
+    if (wide.matches) return bounded;
+    // Nearest of the two, so the card follows the pointer to whichever width is
+    // closer rather than flipping at the halfway point of the smaller one.
+    return bounded < (HALF_SPAN + GRID_COLUMNS) / 2 ? HALF_SPAN : GRID_COLUMNS;
+  }
+
   function spanForWidth(width) {
     const { column, gap } = gridMetrics();
-    return clamp(Math.round((width + gap) / column), MIN_SPAN, GRID_COLUMNS);
+    return snapSpan(Math.round((width + gap) / column));
+  }
+
+  /* One step in the direction asked for. Between 861 and 1180px there are only
+     two widths, so a step is the jump between them rather than a column that
+     would not change anything on screen. */
+  function stepSpan(card, direction) {
+    const current = Number(card.dataset.span) || GRID_COLUMNS;
+    if (!wide.matches) {
+      return direction > 0 ? GRID_COLUMNS : HALF_SPAN;
+    }
+    return snapSpan(current + direction);
   }
 
   function rowsForHeight(height) {
@@ -526,7 +559,7 @@ export default function dashboardLayout(grid, { toast } = {}) {
         if (moving) {
           if (after) grid.insertBefore(after, card);
         } else {
-          setSpan(card, (Number(card.dataset.span) || GRID_COLUMNS) + 1);
+          setSpan(card, stepSpan(card, 1));
         }
         break;
       }
@@ -535,7 +568,7 @@ export default function dashboardLayout(grid, { toast } = {}) {
         if (moving) {
           if (before) grid.insertBefore(card, before);
         } else {
-          setSpan(card, (Number(card.dataset.span) || GRID_COLUMNS) - 1);
+          setSpan(card, stepSpan(card, -1));
         }
         break;
       }
