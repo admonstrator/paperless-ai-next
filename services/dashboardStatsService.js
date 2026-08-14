@@ -15,6 +15,15 @@
  * background, and invalidated by the scan loop when a document actually
  * changes something. Requests never wait on Paperless-ngx unless the cache is
  * empty.
+ *
+ * That last case — an empty cache — is the whole restart story, and every
+ * safeguard here used to sit on the wrong side of it: the failure backoff was
+ * reached only after a first successful build, and a build that never answered
+ * kept the single-flight slot it hands to every later reader. A Paperless-ngx
+ * still booting therefore left the endpoint hanging for the lifetime of the
+ * process. Both are now handled before the cache exists, and buildStats() reads
+ * its Paperless counts strictly so an outage fails the build instead of caching
+ * itself as a library with nothing in it.
  */
 
 const paperlessService = require('./paperlessService');
@@ -26,6 +35,21 @@ const documentModel = require('../models/document');
 // backend shows up quickly.
 const FAILURE_RETRY_MS = 10 * 1000;
 
+/**
+ * How long a build may run before the service stops waiting on it.
+ *
+ * The single-flight slot is handed to every later reader, so a build that never
+ * settles does not cost one request — it costs all of them, for the lifetime of
+ * the process. That is what a Paperless-ngx host answers with while it is still
+ * booting: the connection is accepted, the response never comes. The request
+ * timeout in paperlessService is the primary guard; this is the backstop that
+ * keeps any future collaborator from being able to wedge the endpoint.
+ *
+ * Well above a slow but working assembly, and below the minute the scheduled
+ * refresh runs on, so a wedged build is always cleared before the next tick.
+ */
+const BUILD_TIMEOUT_MS = 45 * 1000;
+
 const DEFAULT_TTL_SECONDS = 60;
 
 class DashboardStatsService {
@@ -36,6 +60,13 @@ class DashboardStatsService {
     this.inFlightGeneration = 0;
     this.cacheGeneration = 0;
     this.lastFailureAt = 0;
+    // What the last failed build failed with. Served to the readers that are
+    // turned away during the backoff, so the route logs the real reason rather
+    // than a generic "unavailable".
+    this.lastFailureError = null;
+    // Overridable so the tests can wedge a build without waiting out the real
+    // deadline; reset() puts it back.
+    this.buildTimeoutMs = BUILD_TIMEOUT_MS;
     // Bumped by every invalidate(). A build carries the generation it started
     // in, so a build that began before an invalidation can be recognised as
     // describing a world that no longer exists — see getStats().
@@ -50,6 +81,8 @@ class DashboardStatsService {
     this.inFlightGeneration = 0;
     this.cacheGeneration = 0;
     this.lastFailureAt = 0;
+    this.lastFailureError = null;
+    this.buildTimeoutMs = BUILD_TIMEOUT_MS;
     this.generation = 0;
   }
 
@@ -68,6 +101,14 @@ class DashboardStatsService {
     );
   }
 
+  /** Whether the last build failed recently enough to still be backing off. */
+  inFailureBackoff() {
+    return (
+      this.lastFailureAt > 0 &&
+      Date.now() - this.lastFailureAt < FAILURE_RETRY_MS
+    );
+  }
+
   isFresh() {
     if (!this.cache) return false;
     // Serve the last good payload while the failure backoff runs, so a broken
@@ -75,7 +116,7 @@ class DashboardStatsService {
     // This outranks the generation check below on purpose: a backend that
     // cannot answer a rebuild cannot answer a rebuild for a changed document
     // either, so retrying per poll would only add load.
-    if (Date.now() - this.lastFailureAt < FAILURE_RETRY_MS) return true;
+    if (this.inFailureBackoff()) return true;
     // Something was invalidated after these numbers were assembled. They are
     // still worth serving while the rebuild runs, but they are not fresh.
     if (this.cacheGeneration !== this.generation) return false;
@@ -91,6 +132,20 @@ class DashboardStatsService {
       return { payload: this.cache, cachedAt: this.cachedAt };
     }
 
+    // Nothing cached and the last attempt failed moments ago. isFresh() cannot
+    // speak for this case — it has no payload to call fresh — so the backoff
+    // covered every situation except the one that needs it most: a cold start
+    // against a backend that is not answering, where otherwise every poll of
+    // every open tab opened its own round of Paperless-ngx calls. The reader
+    // gets the reason the last build failed, which is what it would have
+    // waited for anyway.
+    if (!force && !this.cache && this.inFailureBackoff()) {
+      throw (
+        this.lastFailureError ||
+        new Error('Dashboard statistics are not available yet')
+      );
+    }
+
     // Concurrent viewers (and the background refresh) share one build instead
     // of each starting their own round of Paperless calls — but only while that
     // build still describes the current state. A build that began before an
@@ -102,7 +157,7 @@ class DashboardStatsService {
     }
 
     const startedAt = this.generation;
-    const build = this.buildStats()
+    const build = this.buildWithDeadline()
       .then((payload) => {
         const builtAt = Date.now();
         // Two builds can be in flight after an invalidation, and the older one
@@ -120,10 +175,12 @@ class DashboardStatsService {
         // rebuilding from scratch on every poll with nothing ever cached.
         this.cacheGeneration = startedAt;
         this.lastFailureAt = 0;
+        this.lastFailureError = null;
         return { payload, cachedAt: this.cachedAt };
       })
       .catch((error) => {
         this.lastFailureAt = Date.now();
+        this.lastFailureError = error;
         // Nothing cached yet: the caller has no numbers to show, so let the
         // route turn this into its 500 instead of inventing zeroes.
         if (!this.cache) {
@@ -145,6 +202,39 @@ class DashboardStatsService {
     this.inFlight = build;
     this.inFlightGeneration = startedAt;
     return build;
+  }
+
+  /**
+   * buildStats() with a deadline.
+   *
+   * Promise.race does not cancel the assembly — it stops the service waiting on
+   * it, which is the part that matters here: the single-flight slot is freed,
+   * so the next reader starts a fresh attempt instead of joining a build that
+   * is never going to answer. The abandoned build stays handled by the race, so
+   * a late rejection cannot surface as an unhandled one.
+   *
+   * @returns {Promise<object>} the payload, or a rejection once the deadline passes
+   */
+  async buildWithDeadline() {
+    let timer = null;
+    try {
+      return await Promise.race([
+        this.buildStats(),
+        new Promise((_resolve, reject) => {
+          timer = setTimeout(() => {
+            reject(
+              new Error(
+                `Building the dashboard statistics took longer than ${this.buildTimeoutMs}ms`
+              )
+            );
+          }, this.buildTimeoutMs);
+          // Never keep the process alive just to time a build out.
+          timer.unref?.();
+        }),
+      ]);
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   /**
@@ -195,9 +285,14 @@ class DashboardStatsService {
       languageDistribution,
       processingStatus,
     ] = await Promise.all([
-      paperlessService.getTagCount(),
-      paperlessService.getCorrespondentCount(),
-      paperlessService.getEffectiveDocumentCount(),
+      // strict: a Paperless-ngx that cannot be reached must fail the build
+      // rather than contribute zeroes. A cached zero is indistinguishable from
+      // an empty library, so the dashboard would report "no documents" with
+      // full confidence — and the staleness banner it has for exactly this
+      // case would never appear.
+      paperlessService.getTagCount({ strict: true }),
+      paperlessService.getCorrespondentCount({ strict: true }),
+      paperlessService.getEffectiveDocumentCount({ strict: true }),
       documentModel.getProcessedDocumentsCount(),
       documentModel.getOcrQueueCount(),
       documentModel.getOcrFailedCount(),
@@ -283,3 +378,4 @@ class DashboardStatsService {
 
 module.exports = new DashboardStatsService();
 module.exports.FAILURE_RETRY_MS = FAILURE_RETRY_MS;
+module.exports.BUILD_TIMEOUT_MS = BUILD_TIMEOUT_MS;

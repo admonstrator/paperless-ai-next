@@ -13,8 +13,10 @@
  * 3. A fresh cache is served without rebuilding, an expired one is not
  * 4. invalidate() forces the next reader to rebuild, and survives a build that
  *    is already running
- * 5. A failed rebuild keeps the last good payload and backs off
- * 6. The endpoint is a thin read of the cache
+ * 5. A failed rebuild keeps the last good payload and backs off — including on
+ *    a cold start, and including a build that never answers at all
+ * 6. The endpoint is a thin read of the cache, and no Paperless-ngx client is
+ *    built without a request timeout
  */
 
 'use strict';
@@ -51,18 +53,32 @@ const counts = {
   metricsSummary: 0,
 };
 
+/* Flipped by the outage test. The fakes mirror the real helpers: without
+   `strict` a failed lookup is reported as 0, with it the caller gets the
+   error — which is the whole difference between a dashboard that says "not
+   loaded" and one that confidently says "no documents". */
+let paperlessDown = false;
+
+function fakeCount(value) {
+  return async ({ strict = false } = {}) => {
+    if (!paperlessDown) return value;
+    if (strict) throw new Error('Paperless-ngx unreachable');
+    return 0;
+  };
+}
+
 const fakePaperlessService = {
-  getTagCount: async () => {
+  getTagCount: async (options) => {
     counts.tagCount += 1;
-    return 12;
+    return fakeCount(12)(options);
   },
-  getCorrespondentCount: async () => {
+  getCorrespondentCount: async (options) => {
     counts.correspondentCount += 1;
-    return 5;
+    return fakeCount(5)(options);
   },
-  getEffectiveDocumentCount: async () => {
+  getEffectiveDocumentCount: async (options) => {
     counts.effectiveDocumentCount += 1;
-    return 100;
+    return fakeCount(100)(options);
   },
 };
 
@@ -118,6 +134,7 @@ function reset() {
   });
   dashboardStatsService.reset();
   restoreBuild();
+  paperlessDown = false;
   config.statsCacheTTL = originalStatsCacheTTL;
 }
 
@@ -128,6 +145,15 @@ function stubBuild(fn) {
 
 function restoreBuild() {
   delete dashboardStatsService.buildStats;
+}
+
+/* The build deadline is unref'd, so in production it can never be the reason a
+   process stays up. A test that stubs a build which never answers has nothing
+   else holding the loop open, and node would exit before the deadline fires —
+   silently ending the run mid-file. This keeps it open for that one test. */
+function holdEventLoopOpen() {
+  const handle = setInterval(() => {}, 10);
+  return () => clearInterval(handle);
 }
 
 (async () => {
@@ -451,6 +477,111 @@ function restoreBuild() {
       );
     });
 
+    // A restart is the one moment where the cache is empty *and* Paperless-ngx
+    // may not be answering yet, so the two cases below are exactly the ones the
+    // dashboard hits after every restart.
+
+    await test('A cold start against a down backend does not rebuild on every poll', async () => {
+      reset();
+      let builds = 0;
+      stubBuild(async () => {
+        builds += 1;
+        throw new Error('Paperless-ngx unreachable');
+      });
+
+      // Nothing was ever cached — the case the backoff used to miss, because
+      // isFresh() answers "not fresh" for an empty cache before it ever looks
+      // at the failure timestamp.
+      for (let poll = 0; poll < 3; poll += 1) {
+        await assert.rejects(
+          () => dashboardStatsService.getStats(),
+          /unreachable/
+        );
+      }
+      assert.strictEqual(
+        builds,
+        1,
+        'A backend that is still coming up must not be hit once per poll'
+      );
+
+      // Once the window is over the next reader tries again.
+      dashboardStatsService.lastFailureAt =
+        Date.now() - dashboardStatsService.FAILURE_RETRY_MS - 1;
+      await assert.rejects(
+        () => dashboardStatsService.getStats(),
+        /unreachable/
+      );
+      assert.strictEqual(builds, 2, 'A recovered backend has to be picked up');
+    });
+
+    await test('A build that never answers does not wedge the endpoint', async () => {
+      reset();
+      dashboardStatsService.buildTimeoutMs = 25;
+      const release = holdEventLoopOpen();
+
+      try {
+        let builds = 0;
+        // What a Paperless-ngx host still booting behind a proxy does: the
+        // connection is accepted, the response never comes.
+        stubBuild(() => {
+          builds += 1;
+          return new Promise(() => {});
+        });
+
+        await assert.rejects(
+          () => dashboardStatsService.getStats(),
+          /took longer than/,
+          'A build that hangs has to give up instead of keeping readers waiting'
+        );
+        assert.strictEqual(
+          dashboardStatsService.inFlight,
+          null,
+          'and it has to release the single-flight slot every later reader joins'
+        );
+
+        // The backend comes up. Nothing may still be pointing at the dead build.
+        dashboardStatsService.buildTimeoutMs = 5000;
+        dashboardStatsService.lastFailureAt = 0;
+        restoreBuild();
+
+        const recovered = await dashboardStatsService.getStats();
+        assert.strictEqual(
+          builds,
+          1,
+          'The hung build is not retried on its own'
+        );
+        assert.strictEqual(
+          recovered.payload.paperless_data.tagCount,
+          12,
+          'and the endpoint answers again without a restart'
+        );
+      } finally {
+        release();
+      }
+    });
+
+    await test('An unreachable Paperless-ngx fails the build instead of caching zeroes', async () => {
+      reset();
+      paperlessDown = true;
+
+      await assert.rejects(
+        () => dashboardStatsService.getStats(),
+        /unreachable/,
+        'The counts have to be read strictly — a cached 0 is indistinguishable from an empty library'
+      );
+      assert.strictEqual(
+        dashboardStatsService.cache,
+        null,
+        'and nothing may be cached, or the dashboard reports "no documents" for a whole TTL'
+      );
+
+      // The backend answers again and the real numbers land.
+      paperlessDown = false;
+      dashboardStatsService.lastFailureAt = 0;
+      const recovered = await dashboardStatsService.getStats();
+      assert.strictEqual(recovered.payload.paperless_data.documentCount, 100);
+    });
+
     // ──────────────────────────────────────────────────────────────────────────
     // 6. The endpoint only reads the cache
     // ──────────────────────────────────────────────────────────────────────────
@@ -473,6 +604,26 @@ function restoreBuild() {
         !/documentModel\.|paperlessService\./.test(handler),
         'Rebuilding the payload per request is what this change removes'
       );
+    });
+
+    await test('No Paperless-ngx client is built without a request timeout', () => {
+      const serviceSource = fs.readFileSync(
+        path.join(__dirname, '..', 'services', 'paperlessService.js'),
+        'utf8'
+      );
+      const clients = serviceSource.split('axios.create({').slice(1);
+      assert.ok(clients.length >= 2, 'Both clients have to be found');
+
+      clients.forEach((tail, index) => {
+        // The two option objects are indented differently, so the close brace
+        // is not a reliable marker. Both are far shorter than this budget.
+        const options = tail.slice(0, 600);
+        assert.match(
+          options,
+          /\btimeout:/,
+          `Client ${index + 1} waits forever without one, and every reader of the statistics waits with it`
+        );
+      });
     });
   } finally {
     reset();
