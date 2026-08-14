@@ -78,11 +78,15 @@
   }
 
   /* --- the runner seal ----------------------------------------------------
-     While a scan is on, the card shows the seal working through the pile: a
-     sheet lifts off the left stack, arcs over her, and lands on the sorted one
-     as the tick fires. Everything below only runs under .is-scanning, which
-     the module sets from the same state the scan buttons read — an idle card
-     paints nothing and animates nothing. */
+     While a scan is on, the card shows the seal working through the pile: she
+     reaches for the unread stack, a sheet lifts into her flippers, she holds
+     it up in front of herself — the mascot's own pose — and lays it on the
+     sorted one as the tick fires. One cycle is 3.2s: pick until 30%, hold
+     until 58%, place until 78%, then a beat of rest. Every timed animation
+     below shares that clock so the flippers meet the sheet they carry.
+     Everything only runs under .is-scanning, which the module sets from the
+     same state the scan buttons read — an idle card paints nothing and
+     animates nothing. */
   .runner-seal {
     display: none;
     /* Shrinks with the card instead of disappearing from it: the scene stays
@@ -105,45 +109,51 @@
   .runner-seal__body {
     transform-box: fill-box;
     transform-origin: 50% 100%;
-    animation: seal-breathe 2.4s ease-in-out infinite;
+    animation: seal-breathe 3.2s ease-in-out infinite;
   }
   .runner-seal__head {
     transform-box: fill-box;
     transform-origin: 50% 100%;
-    /* Her head follows the sheet across, then comes back for the next one. */
-    animation: seal-watch 2.4s ease-in-out infinite;
+    /* Her head follows the sheet: pile, then the one she holds, then across. */
+    animation: seal-watch 3.2s ease-in-out infinite;
   }
   .runner-seal__eyes {
     transform-box: fill-box;
     transform-origin: 50% 50%;
     animation: seal-blink 5.6s infinite;
   }
+  /* Both flippers pivot at their shoulder — the root of the fin, top of its
+     own box. The left one picks, the right one places. */
   .runner-seal__flipper {
     transform-box: fill-box;
-    transform-origin: 90% 20%;
-    animation: seal-toss 2.4s ease-in-out infinite;
+    transform-origin: 90% 5%;
+    animation: seal-pick 3.2s ease-in-out infinite;
+  }
+  .runner-seal__flipper--place {
+    transform-origin: 10% 5%;
+    animation-name: seal-place;
   }
   .runner-seal__tail {
     transform-box: fill-box;
     transform-origin: 10% 50%;
-    animation: seal-wag 2.4s ease-in-out infinite;
+    animation: seal-wag 3.2s ease-in-out infinite;
   }
   .runner-seal__sheet {
     transform-box: view-box;
-    animation: seal-sheet 2.4s ease-in-out infinite;
+    animation: seal-sheet 3.2s ease-in-out infinite;
   }
   .runner-seal__tick {
     transform-box: fill-box;
     transform-origin: 50% 50%;
-    animation: seal-tick 2.4s ease-in-out infinite;
+    animation: seal-tick 3.2s ease-in-out infinite;
   }
   .runner-seal__inbox {
-    animation: seal-pile-shrink 2.4s ease-in-out infinite;
+    animation: seal-pile-shrink 3.2s ease-in-out infinite;
   }
   .runner-seal__outbox rect:last-of-type {
     transform-box: fill-box;
     transform-origin: 50% 100%;
-    animation: seal-pile-grow 2.4s ease-in-out infinite;
+    animation: seal-pile-grow 3.2s ease-in-out infinite;
   }
 
   @keyframes seal-breathe {
@@ -158,13 +168,14 @@
   @keyframes seal-watch {
     0%,
     100% {
-      transform: rotate(-6deg);
+      transform: rotate(-7deg);
     }
-    45% {
+    30%,
+    58% {
+      transform: rotate(-1deg);
+    }
+    78% {
       transform: rotate(7deg);
-    }
-    70% {
-      transform: rotate(2deg);
     }
   }
   @keyframes seal-blink {
@@ -178,16 +189,39 @@
       transform: scaleY(0.08);
     }
   }
-  @keyframes seal-toss {
+  /* Positive rotation swings a hanging fin up and outward, negative presses it
+     in. While she holds the sheet the fins sit behind it, pressed in by a few
+     degrees so their outer edges stay visible beside the paper — the sheet
+     itself hides the rest. The left fin is already reaching at 0% and again at
+     100%, so the loop closes mid-gesture instead of snapping. */
+  @keyframes seal-pick {
     0%,
+    6%,
+    100% {
+      transform: rotate(46deg);
+    }
+    30%,
+    58% {
+      transform: rotate(-8deg);
+    }
+    74%,
+    88% {
+      transform: rotate(0deg);
+    }
+  }
+  @keyframes seal-place {
+    0%,
+    24%,
+    90%,
     100% {
       transform: rotate(0deg);
     }
-    18% {
-      transform: rotate(-24deg);
+    34%,
+    58% {
+      transform: rotate(8deg);
     }
-    40% {
-      transform: rotate(6deg);
+    78% {
+      transform: rotate(-65deg);
     }
   }
   @keyframes seal-wag {
@@ -199,30 +233,38 @@
       transform: rotate(-8deg);
     }
   }
-  /* The sheet starts on the left pile, rises over the seal and drops onto the
-     right one, tilting as it goes. Held out of sight either side of the throw
-     so the loop does not read as a sheet flying backwards. */
+  /* The sheet fades in on the left pile, is carried up in front of the seal,
+     rocks a little while she holds it, then travels onto the right pile and
+     fades as it is filed in. Faded out both ends, so the loop's jump back to
+     the left is never seen. */
   @keyframes seal-sheet {
-    0%,
-    8% {
-      transform: translate(38px, 58px) rotate(-6deg) scale(0.9);
+    0% {
+      transform: translate(29px, 66px) rotate(0deg) scale(0.92);
       opacity: 0;
     }
-    14% {
-      transform: translate(44px, 52px) rotate(-4deg) scale(0.95);
+    6% {
+      transform: translate(29px, 64px) rotate(0deg) scale(0.96);
       opacity: 1;
     }
-    46% {
-      transform: translate(100px, 18px) rotate(9deg) scale(1);
+    30% {
+      transform: translate(100px, 70px) rotate(-2deg) scale(1);
       opacity: 1;
     }
-    76% {
-      transform: translate(176px, 52px) rotate(3deg) scale(0.95);
+    44% {
+      transform: translate(100px, 69.5px) rotate(1deg) scale(1);
       opacity: 1;
     }
-    84%,
+    58% {
+      transform: translate(100px, 70px) rotate(-2deg) scale(1);
+      opacity: 1;
+    }
+    78% {
+      transform: translate(176px, 64px) rotate(0deg) scale(0.96);
+      opacity: 1;
+    }
+    86%,
     100% {
-      transform: translate(176px, 58px) rotate(0deg) scale(0.9);
+      transform: translate(176px, 66px) rotate(0deg) scale(0.92);
       opacity: 0;
     }
   }
@@ -233,7 +275,7 @@
       opacity: 0;
       transform: scale(0.6);
     }
-    80% {
+    82% {
       opacity: 1;
       transform: scale(1.1);
     }
@@ -244,20 +286,20 @@
   }
   @keyframes seal-pile-shrink {
     0%,
-    10% {
+    8% {
       opacity: 1;
     }
-    16%,
+    14%,
     100% {
       opacity: 0.85;
     }
   }
   @keyframes seal-pile-grow {
     0%,
-    74% {
+    76% {
       transform: scaleY(0.94);
     }
-    82%,
+    84%,
     100% {
       transform: scaleY(1);
     }
