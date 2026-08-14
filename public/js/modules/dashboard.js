@@ -345,15 +345,33 @@ export default function dashboard(root, { toast }) {
   // Every figure on this page is polled. When a poll fails the old numbers stay
   // on screen, so the page has to say so — a toast that fades leaves a dashboard
   // that looks current and is not.
-  let lastUpdatedAt = null;
   const failures = new Map();
+  // When each source last delivered, keyed by source. One shared timestamp did
+  // not work: the status poll succeeds every three seconds, so it kept
+  // restamping the label to "now" and hid the age of the statistics, which come
+  // out of a server-side cache and can legitimately be a minute old — or much
+  // older when Paperless-ngx is down and the cache is being served stale.
+  const freshAt = new Map();
+
+  // The oldest thing on screen is the honest claim for a label that covers the
+  // whole page.
+  function oldestFresh() {
+    // A source that has never answered has no age to report, and borrowing the
+    // other one's would date figures that are not on screen at all.
+    for (const source of failures.keys()) {
+      if (!freshAt.has(source)) return null;
+    }
+    if (!freshAt.size) return null;
+    return new Date(Math.min(...freshAt.values()));
+  }
 
   function renderFreshness() {
     const label = byId('statusLastUpdated');
     if (!label) return;
 
     const reason = [...failures.values()][0] || '';
-    const at = lastUpdatedAt ? lastUpdatedAt.toLocaleTimeString() : '';
+    const updatedAt = oldestFresh();
+    const at = updatedAt ? updatedAt.toLocaleTimeString() : '';
     if (!reason) {
       label.textContent = at ? `updated ${at}` : '';
     } else {
@@ -369,12 +387,11 @@ export default function dashboard(root, { toast }) {
   // paper over a statistics endpoint that is still failing.
   // `at` is the epoch-millisecond timestamp at which the data was assembled —
   // the statistics endpoint answers from a cache, so the time of the fetch is
-  // not the age of the numbers it returned.
+  // not the age of the numbers it returned. Sources that have no such stamp
+  // (the status poll builds its answer per request) date themselves to now.
   function markFresh(source, at = null) {
     failures.delete(source);
-    if (!failures.size) {
-      lastUpdatedAt = Number.isFinite(at) && at > 0 ? new Date(at) : new Date();
-    }
+    freshAt.set(source, Number.isFinite(at) && at > 0 ? at : Date.now());
     renderFreshness();
   }
 
