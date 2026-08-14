@@ -415,6 +415,15 @@ module.exports = {
       .replace(/\/+$/, '')
       .replace(/\/api$/i, ''),
     apiToken: process.env.PAPERLESS_API_TOKEN,
+    // Deadline for every single Paperless-ngx request. Axios ships with no
+    // timeout at all, so a host that accepts the connection and then goes
+    // quiet — a Paperless-ngx container that is still booting, which is
+    // exactly what a restart looks like — left the request pending for the
+    // lifetime of the process. Set to 0 to restore the unlimited behaviour.
+    requestTimeoutSeconds: parseInt(
+      process.env.PAPERLESS_REQUEST_TIMEOUT_SECONDS || '30',
+      10
+    ),
   },
   openai: {
     apiKey: process.env.OPENAI_API_KEY,
