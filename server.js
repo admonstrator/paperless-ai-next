@@ -1082,6 +1082,9 @@ async function scanDocuments(source = 'scheduler') {
       } catch (error) {
         await documentModel.setProcessingStatus(doc.id, doc.title, 'failed');
         scanStats.failed += 1;
+        // A failure moves the failed counter and the failure rate, which the
+        // dashboard shows just as prominently as the successes.
+        dashboardStatsService.invalidate();
         console.error(
           `[ERROR] processing document ${doc.id}: ${error.message}`
         );

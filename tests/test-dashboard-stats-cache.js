@@ -11,7 +11,8 @@
  * 1. The payload keeps its shape and is built from the aggregate query
  * 2. Concurrent readers share one build
  * 3. A fresh cache is served without rebuilding, an expired one is not
- * 4. invalidate() forces the next reader to rebuild
+ * 4. invalidate() forces the next reader to rebuild, and survives a build that
+ *    is already running
  * 5. A failed rebuild keeps the last good payload and backs off
  * 6. The endpoint is a thin read of the cache
  */
@@ -256,6 +257,130 @@ function restoreBuild() {
       await dashboardStatsService.refresh();
 
       assert.strictEqual(counts.tagCount, 2);
+    });
+
+    // buildStats reads SQLite synchronously up front and then waits on two
+    // Paperless-ngx round trips, so a document that finishes mid-build is not
+    // in the numbers that build is about to return. These cover that window.
+
+    await test('An invalidation during a build is not buried by it', async () => {
+      reset();
+      let builds = 0;
+      const gates = [];
+      stubBuild(async () => {
+        builds += 1;
+        await new Promise((resolve) => gates.push(resolve));
+        return { success: true, build: builds };
+      });
+
+      const poll = dashboardStatsService.getStats();
+      assert.strictEqual(gates.length, 1, 'A build is under way');
+
+      // A document finishes while Paperless-ngx is still answering.
+      dashboardStatsService.invalidate();
+      gates.shift()();
+      const served = await poll;
+
+      assert.strictEqual(
+        served.payload.build,
+        1,
+        'The reader that waited still gets numbers'
+      );
+      assert.ok(
+        !dashboardStatsService.isFresh(),
+        'Numbers assembled before the change must not be stamped fresh'
+      );
+
+      const next = dashboardStatsService.getStats();
+      assert.strictEqual(gates.length, 1, 'The next reader rebuilds');
+      gates.shift()();
+      await next;
+      assert.strictEqual(builds, 2);
+    });
+
+    await test('The end-of-scan refresh does not adopt a build that predates the last document', async () => {
+      reset();
+      let processed = 5;
+      let builds = 0;
+      const gates = [];
+      stubBuild(async () => {
+        builds += 1;
+        const seen = processed;
+        await new Promise((resolve) => gates.push(resolve));
+        return {
+          success: true,
+          paperless_data: { processedDocumentCount: seen },
+        };
+      });
+
+      // A dashboard poll starts a build while the scan is still running.
+      const poll = dashboardStatsService.getStats();
+      assert.strictEqual(gates.length, 1);
+
+      // The last document lands, and the scan asks for a rebuild on its way out.
+      processed = 6;
+      dashboardStatsService.invalidate();
+      const afterScan = dashboardStatsService.refresh();
+      assert.strictEqual(
+        builds,
+        2,
+        'refresh() has to start its own build, not join the outdated one'
+      );
+
+      gates.shift()();
+      await poll;
+      gates.shift()();
+      await afterScan;
+
+      const served = await dashboardStatsService.getStats();
+      assert.strictEqual(
+        served.payload.paperless_data.processedDocumentCount,
+        6,
+        'The dashboard has to end up showing the document the scan just finished'
+      );
+      assert.strictEqual(
+        builds,
+        2,
+        'and without a third round of Paperless calls'
+      );
+    });
+
+    await test('A slow build finishing last does not overwrite newer numbers', async () => {
+      reset();
+      let processed = 5;
+      let builds = 0;
+      const gates = [];
+      stubBuild(async () => {
+        builds += 1;
+        const seen = processed;
+        await new Promise((resolve) => gates.push(resolve));
+        return {
+          success: true,
+          paperless_data: { processedDocumentCount: seen },
+        };
+      });
+
+      const stale = dashboardStatsService.getStats();
+      processed = 6;
+      dashboardStatsService.invalidate();
+      const current = dashboardStatsService.refresh();
+
+      // The newer build wins the race; the older one lands afterwards.
+      gates.pop()();
+      await current;
+      gates.pop()();
+      await stale;
+
+      assert.strictEqual(
+        dashboardStatsService.cache.paperless_data.processedDocumentCount,
+        6,
+        'The later answer must not put the older picture back'
+      );
+      assert.ok(
+        dashboardStatsService.isFresh(),
+        'and the newer numbers stay fresh, so no third build is needed'
+      );
+      assert.strictEqual(builds, 2);
     });
 
     // ──────────────────────────────────────────────────────────────────────────

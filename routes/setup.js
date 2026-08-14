@@ -3427,6 +3427,11 @@ async function saveDocumentChanges(docId, updateData, analysis, originalData) {
       historyLanguage
     ),
   ]);
+
+  // Document counters and token figures just moved. Every path that writes
+  // processed_documents has to say so, or the dashboard serves numbers from
+  // before the change for up to a full TTL.
+  dashboardStatsService.invalidate();
 }
 
 /**
@@ -7726,6 +7731,7 @@ router.post('/manual/updateDocument', express.json(), async (req, res) => {
 
     // Mark document as processed
     await documentModel.addProcessedDocument(documentId, updateData.title);
+    dashboardStatsService.invalidate();
 
     res.json(updateDocument);
   } catch (error) {
@@ -9441,6 +9447,7 @@ router.post(
           send({ step, message, ...data });
         },
       });
+      dashboardStatsService.invalidate();
     } catch (error) {
       send({ step: 'error', message: error.message });
     }
@@ -9541,6 +9548,7 @@ router.post('/api/ocr/process-all', isAuthenticated, async (req, res) => {
           },
         });
         completed++;
+        dashboardStatsService.invalidate();
       } catch (err) {
         failed++;
         send({

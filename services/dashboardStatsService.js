@@ -33,7 +33,13 @@ class DashboardStatsService {
     this.cache = null;
     this.cachedAt = 0;
     this.inFlight = null;
+    this.inFlightGeneration = 0;
+    this.cacheGeneration = 0;
     this.lastFailureAt = 0;
+    // Bumped by every invalidate(). A build carries the generation it started
+    // in, so a build that began before an invalidation can be recognised as
+    // describing a world that no longer exists — see getStats().
+    this.generation = 0;
   }
 
   /** Test seam — drops the cached payload so the next call rebuilds. */
@@ -41,7 +47,10 @@ class DashboardStatsService {
     this.cache = null;
     this.cachedAt = 0;
     this.inFlight = null;
+    this.inFlightGeneration = 0;
+    this.cacheGeneration = 0;
     this.lastFailureAt = 0;
+    this.generation = 0;
   }
 
   /**
@@ -63,7 +72,13 @@ class DashboardStatsService {
     if (!this.cache) return false;
     // Serve the last good payload while the failure backoff runs, so a broken
     // backend costs one attempt per FAILURE_RETRY_MS instead of one per poll.
+    // This outranks the generation check below on purpose: a backend that
+    // cannot answer a rebuild cannot answer a rebuild for a changed document
+    // either, so retrying per poll would only add load.
     if (Date.now() - this.lastFailureAt < FAILURE_RETRY_MS) return true;
+    // Something was invalidated after these numbers were assembled. They are
+    // still worth serving while the rebuild runs, but they are not fresh.
+    if (this.cacheGeneration !== this.generation) return false;
     return Date.now() - this.cachedAt < this.ttlMs;
   }
 
@@ -77,15 +92,33 @@ class DashboardStatsService {
     }
 
     // Concurrent viewers (and the background refresh) share one build instead
-    // of each starting their own round of Paperless calls.
-    if (this.inFlight) {
+    // of each starting their own round of Paperless calls — but only while that
+    // build still describes the current state. A build that began before an
+    // invalidation is already known to be answering the wrong question, so
+    // joining it would hand the caller the very payload the invalidation
+    // rejected. That is what made the end-of-scan refresh a no-op.
+    if (this.inFlight && this.inFlightGeneration === this.generation) {
       return this.inFlight;
     }
 
-    this.inFlight = this.buildStats()
+    const startedAt = this.generation;
+    const build = this.buildStats()
       .then((payload) => {
+        const builtAt = Date.now();
+        // Two builds can be in flight after an invalidation, and the older one
+        // may well finish last. Serve its numbers to whoever waited on it, but
+        // do not let them overwrite a newer picture.
+        if (this.cache && startedAt < this.cacheGeneration) {
+          return { payload, cachedAt: builtAt };
+        }
         this.cache = payload;
-        this.cachedAt = Date.now();
+        this.cachedAt = builtAt;
+        // The state these numbers describe. If something was invalidated while
+        // Paperless-ngx was answering, this is already behind and isFresh()
+        // sends the next reader back for a rebuild. The payload is still kept
+        // and served in the meantime — dropping it would leave a fast scan
+        // rebuilding from scratch on every poll with nothing ever cached.
+        this.cacheGeneration = startedAt;
         this.lastFailureAt = 0;
         return { payload, cachedAt: this.cachedAt };
       })
@@ -103,13 +136,22 @@ class DashboardStatsService {
         return { payload: this.cache, cachedAt: this.cachedAt };
       })
       .finally(() => {
-        this.inFlight = null;
+        // A build superseded by a newer one must not clear the newer one's slot.
+        if (this.inFlight === build) {
+          this.inFlight = null;
+        }
       });
 
-    return this.inFlight;
+    this.inFlight = build;
+    this.inFlightGeneration = startedAt;
+    return build;
   }
 
-  /** Rebuilds regardless of the TTL. Used by the warmup and the background job. */
+  /**
+   * Rebuilds regardless of the TTL. Used by the warmup and the background job.
+   * Joins a build that is already running for the current generation — that one
+   * will report the same state — but never one that predates an invalidation.
+   */
   async refresh() {
     return this.getStats({ force: true });
   }
@@ -117,9 +159,16 @@ class DashboardStatsService {
   /**
    * Marks the cache stale without doing any work, so the next reader rebuilds.
    * Cheap enough to call once per processed document.
+   *
+   * Bumping the generation is what makes this survive a concurrent build: the
+   * scan invalidates while the dashboard's poll may already be assembling a
+   * payload, and without the bump that payload would land afterwards and be
+   * stamped fresh, burying the change for a full TTL. cachedAt is deliberately
+   * left alone — it says when the numbers currently on screen were assembled,
+   * which is still true.
    */
   invalidate() {
-    this.cachedAt = 0;
+    this.generation += 1;
   }
 
   /**
