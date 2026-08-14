@@ -67,148 +67,41 @@
 
     <!-- Every card carries a data-widget id: the layout module reorders and
          resizes them from the user's stored grid, and an id that is no longer
-         here is simply skipped. -->
+         here is simply skipped.
+
+         The cards themselves live one per file in partials/widgets/, named
+         after that id, and config/dashboardWidgets.js is the list of which
+         ones ship and how wide they start. Order and span come from there so a
+         new card is one partial plus one line of registry, with nothing to
+         edit in this file. -->
+    <!-- The edit tray. It ships hidden and the layout module unhides it for the
+         duration of an edit session, so the page never briefly shows controls
+         for something the user did not ask for. It is server-rendered rather
+         than built in JS because it is markup, not behaviour — and because a
+         tray built from the same registry as the cards cannot fall out of step
+         with them.
+
+         The chip labels are deliberately empty here: the display title lives in
+         the card's own .zr-module__title, and the module copies it across at
+         mount. One string, one place — see config/dashboardWidgets.js. -->
+    <div class="zr-module zr-editbar hidden" id="dashboardEditbar" role="group" aria-label="Edit dashboard" tabindex="-1">
+        <div class="zr-module__body zr-row zr-row--wrap">
+            <div class="zr-row zr-row--wrap zr-grow" role="group" aria-label="Cards shown on the dashboard">
+                <% dashboardWidgets.forEach(function (widget) { %><button type="button" class="zr-btn zr-editbar__chip" data-widget-toggle="<%= widget.id %>" aria-pressed="true"><span></span></button><% }) %>
+            </div>
+            <div class="zr-row zr-editbar__actions">
+                <button type="button" class="zr-btn zr-btn--ghost" id="dashboardEditReset">
+                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                    <span>Reset layout</span>
+                </button>
+                <button type="button" class="zr-btn zr-btn--ghost" id="dashboardEditCancel">Cancel</button>
+                <button type="button" class="zr-btn zr-btn--primary" id="dashboardEditDone">Done</button>
+            </div>
+        </div>
+    </div>
+
     <section class="zr-grid" data-module="dashboard-layout">
-        <!-- task runner -->
-        <article class="zr-module" data-widget="task-runner" data-span="12">
-            <div class="zr-module__head">
-                <span class="zr-dot zr-dot--ok" id="runnerDot"></span>
-                <h2 class="zr-module__title">Task runner</h2>
-                <div class="zr-module__actions">
-                    <span class="zr-sm zr-faint zr-freshness" id="statusLastUpdated"></span>
-                    <button class="zr-btn zr-btn--primary" type="button" id="scanButton">
-                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg>
-                        <span>Scan now</span>
-                    </button>
-                    <button class="zr-btn zr-btn--danger hidden" type="button" id="stopScanButton" aria-label="Stop scan">
-                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-stop"/></svg>
-                        <span>Stop</span>
-                    </button>
-                </div>
-            </div>
-            <div class="zr-module__body zr-col">
-                <div class="zr-row">
-                    <div class="zr-grow zr-col zr-col--tight">
-                        <strong id="runnerLabel">System idle</strong>
-                        <span class="zr-sm zr-faint zr-truncate" id="runnerDetail">Waiting for new documents</span>
-                    </div>
-                    <span class="zr-badge zr-badge--info hidden" id="currentDocId"></span>
-                    <%- include('partials/runner-seal') %>
-                </div>
-
-                <div class="zr-row zr-row--wrap zr-sm zr-muted" style="gap: var(--zr-4)">
-                    <span><strong class="zr-num" id="processedToday">0</strong> processed today</span>
-                    <span>last document <strong id="lastProcessed">no data</strong></span>
-                </div>
-            </div>
-
-            <div class="zr-module__foot">
-                <div class="zr-row zr-row--between">
-                    <span>Recent activity</span>
-                    <a class="zr-row" href="/history" style="gap: 4px">
-                        History
-                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
-                    </a>
-                </div>
-            </div>
-            <div class="zr-list" id="recentActivityList"></div>
-        </article>
-        <!-- document types -->
-        <article class="zr-module" data-widget="document-types" data-span="4">
-            <div class="zr-module__head">
-                <h2 class="zr-module__title">Document types</h2>
-            </div>
-            <div class="zr-module__body zr-row zr-module__body--chart">
-                <svg class="zr-donut" id="documentTypesDonut" aria-hidden="true"></svg>
-                <div class="zr-grow zr-col zr-col--tight zr-sm" id="documentTypesLegend"></div>
-            </div>
-        </article>
-        <!-- entities and rates -->
-        <article class="zr-module" data-widget="entities" data-span="4">
-            <div class="zr-module__head">
-                <h2 class="zr-module__title">Entities</h2>
-            </div>
-            <div class="zr-module__body zr-col">
-                <button class="zr-row zr-entitybtn" type="button" id="showTagDetails">
-                    <span class="zr-badge zr-badge--brand">
-                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-tag"/></svg>
-                    </span>
-                    <span class="zr-grow"><strong id="totalTags">&mdash;</strong> tags</span>
-                    <svg class="zr-icon zr-faint" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
-                </button>
-                <button class="zr-row zr-entitybtn" type="button" id="showCorrespondentDetails">
-                    <span class="zr-badge zr-badge--brand">
-                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-building"/></svg>
-                    </span>
-                    <span class="zr-grow"><strong id="totalCorrespondents">&mdash;</strong> correspondents</span>
-                    <svg class="zr-icon zr-faint" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
-                </button>
-
-                <div class="zr-col zr-col--tight zr-sm" style="margin-top: var(--zr-2)">
-                    <div class="zr-kv">
-                        <span class="zr-kv__k">Efficiency</span>
-                        <span class="zr-kv__v" id="efficiencyRate">&mdash;</span>
-                    </div>
-                    <div class="zr-kv">
-                        <span class="zr-kv__k">Queue backlog</span>
-                        <span class="zr-kv__v" id="queueBacklog">&mdash;</span>
-                    </div>
-                    <div class="zr-kv">
-                        <span class="zr-kv__k">Failed share</span>
-                        <span class="zr-kv__v" id="failedRate">&mdash;</span>
-                    </div>
-                </div>
-            </div>
-        </article>
-        <!-- token usage -->
-        <article class="zr-module" data-widget="token-usage" data-span="4">
-            <div class="zr-module__head">
-                <h2 class="zr-module__title">Token usage</h2>
-                <span class="zr-module__meta">last 7 days</span>
-            </div>
-            <div class="zr-module__body zr-col">
-                <div class="zr-row zr-row--between">
-                    <span class="zr-stat__value" id="tokensOverall">&mdash;</span>
-                    <span class="zr-sm zr-faint">total</span>
-                </div>
-                <svg class="zr-spark" id="tokenTrendSpark" aria-hidden="true"></svg>
-                <p class="zr-sm zr-faint hidden" id="tokenTrendEmpty">No token trend yet.</p>
-                <div class="zr-col zr-col--tight zr-sm">
-                    <div class="zr-kv"><span class="zr-kv__k">Prompt, average</span><span class="zr-kv__v" id="avgPromptTokens">&mdash;</span></div>
-                    <div class="zr-kv"><span class="zr-kv__k">Completion, average</span><span class="zr-kv__v" id="avgCompletionTokens">&mdash;</span></div>
-                    <div class="zr-kv"><span class="zr-kv__k">Total per document</span><span class="zr-kv__v" id="avgTotalTokens">&mdash;</span></div>
-                </div>
-            </div>
-        </article>
-        <!-- token distribution -->
-        <article class="zr-module" data-widget="token-distribution" data-span="4">
-            <div class="zr-module__head">
-                <h2 class="zr-module__title">Token distribution</h2>
-                <span class="zr-module__meta">documents per range</span>
-            </div>
-            <div class="zr-module__body">
-                <div class="zr-barlist" id="tokenDistributionList"></div>
-            </div>
-        </article>
-        <!-- language mix -->
-        <article class="zr-module" data-widget="language-mix" data-span="4">
-            <div class="zr-module__head">
-                <h2 class="zr-module__title">Language mix</h2>
-            </div>
-            <div class="zr-module__body">
-                <div class="zr-barlist" id="languageDistributionList"></div>
-            </div>
-        </article>
-        <!-- processing split -->
-        <article class="zr-module" data-widget="processing-status" data-span="4">
-            <div class="zr-module__head">
-                <h2 class="zr-module__title">Processing status</h2>
-            </div>
-            <div class="zr-module__body zr-row zr-module__body--chart">
-                <svg class="zr-donut" id="processingDonut" aria-hidden="true"></svg>
-                <div class="zr-grow zr-col zr-col--tight zr-sm" id="processingLegend"></div>
-            </div>
-        </article>
+        <% dashboardWidgets.forEach(function (widget) { %><%- include('partials/widgets/' + widget.id, { widget: widget }) %><% }) %>
     </section>
 
     <dialog class="zr-dialog" id="detailsModal" aria-labelledby="detailsModalTitle">

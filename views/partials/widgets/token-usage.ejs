@@ -1,0 +1,19 @@
+<article class="zr-module" data-widget="token-usage" data-span="<%= widget.span %>">
+    <div class="zr-module__head">
+        <h2 class="zr-module__title">Token usage</h2>
+        <span class="zr-module__meta">last 7 days</span>
+    </div>
+    <div class="zr-module__body zr-col">
+        <div class="zr-row zr-row--between">
+            <span class="zr-stat__value" id="tokensOverall">&mdash;</span>
+            <span class="zr-sm zr-faint">total</span>
+        </div>
+        <svg class="zr-spark" id="tokenTrendSpark" aria-hidden="true"></svg>
+        <p class="zr-sm zr-faint hidden" id="tokenTrendEmpty">No token trend yet.</p>
+        <div class="zr-col zr-col--tight zr-sm">
+            <div class="zr-kv"><span class="zr-kv__k">Prompt, average</span><span class="zr-kv__v" id="avgPromptTokens">&mdash;</span></div>
+            <div class="zr-kv"><span class="zr-kv__k">Completion, average</span><span class="zr-kv__v" id="avgCompletionTokens">&mdash;</span></div>
+            <div class="zr-kv"><span class="zr-kv__k">Total per document</span><span class="zr-kv__v" id="avgTotalTokens">&mdash;</span></div>
+        </div>
+    </div>
+</article>

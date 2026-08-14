@@ -59,14 +59,20 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                                 <option value="tags">Tags</option>
                                 <option value="correspondent">Correspondent</option>
                             </select>
-                            <input
-                                id="manualDocSearchInput"
-                                class="zr-input"
-                                type="search"
-                                placeholder="Search documents to add..."
-                                autocomplete="off">
-                            <div id="manualDocSearchResults" class="manual-search-results hidden" role="listbox" aria-label="OCR document search results"></div>
-                            <input type="hidden" id="manualDocId" value="">
+                            <!-- Field and results share one box: the results
+                                 panel is positioned against it and drops over
+                                 the page, instead of taking a third slot on
+                                 the toolbar row next to the field. -->
+                            <div class="manual-search-anchor">
+                                <input
+                                    id="manualDocSearchInput"
+                                    class="zr-input"
+                                    type="search"
+                                    placeholder="Search documents to add..."
+                                    autocomplete="off">
+                                <div id="manualDocSearchResults" class="manual-search-results hidden" role="listbox" aria-label="OCR document search results"></div>
+                                <input type="hidden" id="manualDocId" value="">
+                            </div>
                         </div>
 
                         <select id="statusFilter" class="zr-select app-toolbar-scope">
@@ -92,7 +98,6 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                     </div>
                     <!-- Live search feedback only; empty while idle. -->
                     <p id="manualDocSearchStatus" class="manual-search-status zr-xs"></p>
-                    </div>
                 </div>
 
                 <!-- Queue Table -->
@@ -134,7 +139,6 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                 <% } %>
 
             </div>
-    </div>
 
     <!-- Progress Overlay (SSE) -->
     <div id="progressOverlay" style="display:none;">

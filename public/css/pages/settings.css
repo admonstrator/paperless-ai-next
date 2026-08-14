@@ -23,6 +23,92 @@
 
   /* --- settings ------------------------------------------------------------ */
 
+  /* The section nav navigates with plain #hash links, and the browser scrolls the
+     target flush to the top of the viewport — where the sticky topbar sits on top
+     of it. Every landing target gets the topbar plus the gap the section nav
+     itself keeps below it, so a section lands where the nav says it is.
+     js/modules/section-nav.js approximates the same offset for the scroll-spy. */
+  .zr-settings :is([id$='-tab'], .zr-module[id^='sec-']) {
+    scroll-margin-top: calc(var(--zr-topbar-h) + var(--zr-4));
+  }
+
+  /* Sixty-odd settings rows separated by nothing but 16px of air read as one
+     wall of controls: nothing says where a setting starts or ends. Rows get what
+     rows get everywhere else in the app — a hairline between them and a hover
+     band — drawn the way .zr-table draws them, from card edge to card edge, which
+     the body's own padding has to be undone for.
+
+     Scoped to a card's own body: #changelog-tab uses .zr-module__body as a bare
+     layout wrapper outside any .zr-module, where the release timeline brings its
+     own rhythm and there is no card box for a full-bleed band to bleed into. */
+  .zr-settings .zr-module > .zr-module__body.zr-col--loose {
+    gap: 0;
+  }
+  /* With the gap gone the rows space themselves, and they ask whether anything is
+     rendered above them with the general sibling combinator rather than the
+     adjacent one: half of this form is toggled with .hidden and the custom-field
+     list is an empty box until a field is added, so the row below one of those
+     would otherwise be spaced and ruled off against nothing. */
+  .zr-settings
+    .zr-module
+    > .zr-module__body.zr-col--loose
+    > *:not(.hidden, #customFieldsList:not(:has(*)))
+    ~ * {
+    margin-top: var(--zr-4);
+  }
+  /* A switch tile, an alert or a lone button draws a box of its own, which makes
+     it the exception to both rules below: it keeps the spacing the gap used to
+     give it, and it never carries a hairline — the line would run along its own
+     border, and the padding that comes with the line would push its content off
+     centre. One switch row is wrapped in a field instead of coming from the
+     partial, which is what the :has() catches. */
+  .zr-settings
+    .zr-module
+    > .zr-module__body.zr-col--loose
+    > *:not(.zr-switchrow, .zr-alert, .zr-btn, :has(> .zr-switchrow)) {
+    /* The inset is part of the row at rest, not only under the pointer: added on
+       hover, every row would shift sideways as its band appears. */
+    margin-inline: calc(var(--zr-3) * -1);
+    padding-inline: var(--zr-3);
+  }
+  .zr-settings
+    .zr-module
+    > .zr-module__body.zr-col--loose
+    > *:not(.hidden, #customFieldsList:not(:has(*)))
+    ~ *:not(.zr-switchrow, .zr-alert, .zr-btn, :has(> .zr-switchrow)) {
+    border-top: 1px solid var(--zr-line);
+    padding-top: var(--zr-3);
+    margin-top: var(--zr-3);
+  }
+
+  /* The OCR block is a whole list of settings inside one .zr-field, so its rows
+     are not the body's rows and none of the above reaches them — they were left
+     5px apart, the spacing meant for a label and its input. They at least get the
+     air the body gives its own rows. */
+  .zr-settings .zr-module__body > .zr-field--stacked:has(.zr-field--stacked) {
+    gap: var(--zr-4);
+  }
+
+  /* Only the fields light up: a hint or a heading is nothing to point at. A field
+     holding other fields is a wrapper rather than a row — #ocrFieldsContainer is
+     a .zr-field around the entire OCR block, and lighting that up would paint
+     half the card. */
+  .zr-settings
+    .zr-module
+    > .zr-module__body.zr-col--loose
+    > .zr-field--stacked:not(:has(.zr-field--stacked, .zr-switchrow)):hover {
+    background: var(--zr-surface-2);
+  }
+  /* The unsaved-change marker hangs one body padding to the left of its field —
+     which, measured from a full-bleed row, is outside the card, where the
+     module's overflow: hidden eats it. Zero puts it back on the same pixel. */
+  .zr-settings
+    .zr-module
+    > .zr-module__body.zr-col--loose
+    > .zr-field[data-dirty]:not(:has(> .zr-switchrow))::before {
+    left: 0;
+  }
+
   /* The "field name + type + Add" row: its controls sit in wrapper divs (a bare
      width:100% control would hijack the whole flex row), so the generic
      full-width phone rule cannot reach them. Stack the wrappers instead. */

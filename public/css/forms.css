@@ -197,6 +197,29 @@
     color: var(--zr-text-faint);
     cursor: not-allowed;
   }
+  /* A value the page only reports, wearing the input box so it lines up with the
+     button beside it — the detected public URL. It looked exactly like an
+     editable field, down to the white fill and the text cursor. Unlike a
+     disabled input it is not a control that was switched off, so it keeps the
+     normal text colour and grows with its content instead of clipping: these
+     values are long and there is no caret to scroll them with. */
+  .zr-input--static {
+    height: auto;
+    min-height: 30px;
+    /* The other controls centre their text with the fixed height alone; this one
+       wraps, so the air has to be padding. */
+    padding-block: 5px;
+    background: var(--zr-surface-2);
+    word-break: break-all;
+    cursor: default;
+  }
+  /* Stated even though the plain div cannot be focused: a static value that is
+     made focusable to be copied — as the API key box next to it is — would
+     otherwise light up the brand ring and promise an editable field. */
+  .zr-input--static:focus {
+    border-color: var(--zr-line-strong);
+    box-shadow: none;
+  }
   .zr-inputgroup {
     display: flex;
     gap: var(--zr-2);
@@ -377,8 +400,18 @@
 
   /* masked API key field */
   .zr-apikey {
-    display: flex;
-    align-items: center;
+    /* A block, not a flex box. The key is a bare text node, and in a flex
+       container that becomes an anonymous item which text-overflow cannot reach
+       (the property is not inherited, so the item keeps `clip`) — a 64-character
+       key painted straight through the border and across the button next to it.
+       The line height does the vertical centring the flex box used to do: the
+       control is 30px tall and 1px of that is border on either side. */
+    display: block;
+    line-height: 28px;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
     cursor: pointer;
     filter: blur(4px);
     transition: filter var(--zr-dur) var(--zr-ease);
@@ -431,6 +464,16 @@
     .zr-select,
     .zr-btn {
       height: 38px; /* touch target */
+    }
+    /* …which a reported value is not: it is nothing to tap, and a fixed height
+       would cut off the wrapped lines it exists to show. */
+    .zr-input--static {
+      height: auto;
+    }
+    /* The key box is tappable — it copies — so it keeps the taller target, and
+       the line height that centres its single line has to follow. */
+    .zr-apikey {
+      line-height: 36px;
     }
   }
 }

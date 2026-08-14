@@ -1,0 +1,36 @@
+<article class="zr-module" data-widget="entities" data-span="<%= widget.span %>">
+    <div class="zr-module__head">
+        <h2 class="zr-module__title">Entities</h2>
+    </div>
+    <div class="zr-module__body zr-col">
+        <button class="zr-row zr-entitybtn" type="button" id="showTagDetails">
+            <span class="zr-badge zr-badge--brand">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-tag"/></svg>
+            </span>
+            <span class="zr-grow"><strong id="totalTags">&mdash;</strong> tags</span>
+            <svg class="zr-icon zr-faint" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
+        </button>
+        <button class="zr-row zr-entitybtn" type="button" id="showCorrespondentDetails">
+            <span class="zr-badge zr-badge--brand">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-building"/></svg>
+            </span>
+            <span class="zr-grow"><strong id="totalCorrespondents">&mdash;</strong> correspondents</span>
+            <svg class="zr-icon zr-faint" aria-hidden="true"><use href="/icons.svg#i-chevron-right"/></svg>
+        </button>
+
+        <div class="zr-col zr-col--tight zr-sm" style="margin-top: var(--zr-2)">
+            <div class="zr-kv">
+                <span class="zr-kv__k">Efficiency</span>
+                <span class="zr-kv__v" id="efficiencyRate">&mdash;</span>
+            </div>
+            <div class="zr-kv">
+                <span class="zr-kv__k">Queue backlog</span>
+                <span class="zr-kv__v" id="queueBacklog">&mdash;</span>
+            </div>
+            <div class="zr-kv">
+                <span class="zr-kv__k">Failed share</span>
+                <span class="zr-kv__v" id="failedRate">&mdash;</span>
+            </div>
+        </div>
+    </div>
+</article>

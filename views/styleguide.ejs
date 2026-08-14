@@ -360,9 +360,20 @@
                         <p class="zr-field__hint">Set through the environment, so the form cannot change it.</p>
                     </div>
                     <div class="zr-field zr-field--stacked">
+                        <span class="zr-field__name">Reported value — .zr-input--static</span>
+                        <div class="zr-inputgroup">
+                            <div class="zr-input zr-input--static zr-grow">https://paperless.example.com/api/documents/</div>
+                            <button type="button" class="zr-btn">
+                                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
+                                Refresh
+                            </button>
+                        </div>
+                        <p class="zr-field__hint">Nobody types this one — the page reports it. It keeps the field box so it lines up with the button, and grows instead of clipping.</p>
+                    </div>
+                    <div class="zr-field zr-field--stacked">
                         <span class="zr-field__name">Masked key — .zr-apikey</span>
-                        <div class="zr-input zr-mono zr-apikey" tabindex="0">zr_4f1c9b0e7a2d5843bc61</div>
-                        <p class="zr-field__hint">Blurred until hovered or focused.</p>
+                        <div class="zr-input zr-mono zr-apikey" tabindex="0">zr_4f1c9b0e7a2d5843bc6188e07a2d5843bc6199f31c9b0e7a2d5843bc6104e7a2d5843bc6199f31c9b0e</div>
+                        <p class="zr-field__hint">Blurred until hovered or focused. One line: a key too long for the box ends in an ellipsis rather than outside it.</p>
                     </div>
                 </div>
 

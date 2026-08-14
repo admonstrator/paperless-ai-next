@@ -17,14 +17,20 @@
                 <div class="zr-module">
                     <h2 class="zr-module__title">Select Document</h2>
                     <div class="manual-search-wrapper">
-                        <input
-                            id="manualDocumentSearchInput"
-                            class="zr-input"
-                            type="search"
-                            placeholder="Search documents (title, ID, correspondent)..."
-                            autocomplete="off">
-                        <div id="manualDocumentSearchResults" class="manual-search-results hidden" role="listbox" aria-label="Manual document search results"></div>
-                        <input type="hidden" id="documentSelect" value="">
+                        <!-- Field and results share one box: the results panel
+                             is positioned against it and drops over the page,
+                             instead of pushing the rest of the form down on
+                             every keystroke. -->
+                        <div class="manual-search-anchor">
+                            <input
+                                id="manualDocumentSearchInput"
+                                class="zr-input"
+                                type="search"
+                                placeholder="Search documents (title, ID, correspondent)..."
+                                autocomplete="off">
+                            <div id="manualDocumentSearchResults" class="manual-search-results hidden" role="listbox" aria-label="Manual document search results"></div>
+                            <input type="hidden" id="documentSelect" value="">
+                        </div>
                         <p id="manualDocumentSearchStatus" class="manual-search-status">Loading recent documents...</p>
                     </div>
                 </div>

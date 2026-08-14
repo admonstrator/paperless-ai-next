@@ -3480,7 +3480,7 @@
     "/api/dashboard/stats": {
       "get": {
         "summary": "Get dashboard statistics payload",
-        "description": "Returns all aggregate counters and chart datasets required by the dashboard UI.",
+        "description": "Returns all aggregate counters and chart datasets required by the dashboard UI.\n\nThe payload is served from an in-memory cache instead of being rebuilt per\nrequest. It is refreshed in the background (once a minute, plus after every\nscan run) and expires after STATS_CACHE_TTL_SECONDS (default 60). The scan\nloop invalidates it for every document it processes, so figures follow\nprocessing without polling Paperless-ngx on every request.\n",
         "tags": [
           "System",
           "API"
@@ -3499,7 +3499,25 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object"
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "cachedAt": {
+                      "type": "integer",
+                      "format": "int64",
+                      "description": "Epoch milliseconds at which the returned payload was assembled. 0 when the assembly time is unknown."
+                    },
+                    "paperless_data": {
+                      "type": "object",
+                      "description": "Aggregate counters and chart datasets."
+                    },
+                    "openai_data": {
+                      "type": "object",
+                      "description": "Token averages and the overall token total."
+                    }
+                  }
                 }
               }
             }
@@ -5383,8 +5401,8 @@
     },
     "/api/dashboard/layout": {
       "get": {
-        "summary": "Read the authenticated user's dashboard grid layout",
-        "description": "Returns the widget order, column spans and tile-row heights the user arranged. widgets is empty when the user has not customised anything, which means the dashboard renders in its default order.\n",
+        "summary": "Read the authenticated user's dashboard configuration",
+        "description": "Returns the stored configuration in storage format v1: the named dashboards the user arranged, each with its widgets in display order, and the slug of the active one. An empty dashboards list means nothing has been customised and every board renders in its default order — the same answer a user without a stored configuration gets.\n",
         "tags": [
           "Dashboard"
         ],
@@ -5395,7 +5413,76 @@
         ],
         "responses": {
           "200": {
-            "description": "The stored layout"
+            "description": "The stored configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "version": {
+                          "type": "integer",
+                          "example": 1
+                        },
+                        "active": {
+                          "type": "string",
+                          "description": "Slug of the dashboard currently shown",
+                          "example": "default"
+                        },
+                        "dashboards": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "slug": {
+                                "type": "string",
+                                "example": "default"
+                              },
+                              "name": {
+                                "type": "string",
+                                "example": "Dashboard"
+                              },
+                              "widgets": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "id": {
+                                      "type": "string",
+                                      "example": "task-runner"
+                                    },
+                                    "span": {
+                                      "type": "integer",
+                                      "description": "Width in grid columns, 3 to 12",
+                                      "example": 12
+                                    },
+                                    "rows": {
+                                      "type": "integer",
+                                      "description": "Height in tile rows, 3 to 24, or 0 for as tall as the content",
+                                      "example": 0
+                                    },
+                                    "hidden": {
+                                      "type": "boolean",
+                                      "example": false
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
             "description": "Not authenticated"
@@ -5403,8 +5490,8 @@
         }
       },
       "put": {
-        "summary": "Store or reset the authenticated user's dashboard grid layout",
-        "description": "Accepts a widgets array of {id, span, rows} in display order. Spans are 3 to 12 grid columns; rows are 3 to 24 tile rows, or 0 for a card that is as tall as its content. Sending an empty widgets array clears the layout, so the dashboard returns to its default order.\n",
+        "summary": "Store or reset the authenticated user's dashboard configuration",
+        "description": "Takes a complete configuration in storage format v1 and replaces the stored one; there is no partial update. Up to 10 dashboards, each with a slug, a name of 1 to 60 characters and up to 50 widgets in display order. Widget spans are 3 to 12 grid columns; rows are 3 to 24 tile rows, or 0 for a card that is as tall as its content. A dashboard without widgets shows the default arrangement under its own name.\nTwo payloads reset instead of storing: an empty dashboards array, and a single dashboard whose widgets array is empty. Both clear the stored configuration, so every board returns to its default order. Emptying one board out of several does not reset — that board simply shows the defaults and keeps its name.\nIf active names a dashboard that is not in the payload it is replaced with the first dashboard's slug rather than rejecting the write.\n",
         "tags": [
           "Dashboard"
         ],
@@ -5413,12 +5500,93 @@
             "BearerAuth": []
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "enum": [
+                      1
+                    ],
+                    "example": 1
+                  },
+                  "active": {
+                    "type": "string",
+                    "description": "Slug of the dashboard to show",
+                    "example": "default"
+                  },
+                  "dashboards": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "slug",
+                        "name"
+                      ],
+                      "properties": {
+                        "slug": {
+                          "type": "string",
+                          "pattern": "^[a-z0-9][a-z0-9-]{0,39}$",
+                          "example": "default"
+                        },
+                        "name": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 60,
+                          "example": "Dashboard"
+                        },
+                        "widgets": {
+                          "type": "array",
+                          "maxItems": 50,
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "span"
+                            ],
+                            "properties": {
+                              "id": {
+                                "type": "string",
+                                "pattern": "^[a-z0-9][a-z0-9-]{0,39}$",
+                                "example": "task-runner"
+                              },
+                              "span": {
+                                "type": "integer",
+                                "minimum": 3,
+                                "maximum": 12,
+                                "example": 12
+                              },
+                              "rows": {
+                                "type": "integer",
+                                "description": "3 to 24 tile rows, or 0 for as tall as the content",
+                                "example": 0
+                              },
+                              "hidden": {
+                                "type": "boolean",
+                                "default": false
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
-            "description": "Layout stored"
+            "description": "Configuration stored or reset"
           },
           "400": {
-            "description": "Malformed layout"
+            "description": "Malformed configuration"
           },
           "401": {
             "description": "Not authenticated"

@@ -11,6 +11,7 @@ const config = require('../config/config');
 const paperlessService = require('./paperlessService');
 const mistralOcrService = require('./mistralOcrService');
 const documentModel = require('../models/document');
+const dashboardStatsService = require('./dashboardStatsService');
 
 const DEFAULT_INTERVAL = '*/15 * * * *';
 const DEFAULT_BATCH_SIZE = 10;
@@ -159,6 +160,9 @@ class OcrAutoProcessService {
             autoAnalyze,
           });
           processed += 1;
+          // This queue drains on its own cron, so nothing else tells the
+          // dashboard that the document counters just moved.
+          dashboardStatsService.invalidate();
         } catch (error) {
           // processQueueItem() already moved the item out of 'pending' and
           // recorded the failure, so the next run will not pick it up again.

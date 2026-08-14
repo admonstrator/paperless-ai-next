@@ -16,6 +16,7 @@ const mistralOcrService = require('./services/mistralOcrService');
 const ocrAutoProcessService = require('./services/ocrAutoProcessService');
 const reconciliationService = require('./services/reconciliationService');
 const scanHealthService = require('./services/scanHealthService');
+const dashboardStatsService = require('./services/dashboardStatsService');
 const { RUN_STATUS } = scanHealthService;
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -1074,9 +1075,16 @@ async function scanDocuments(source = 'scheduler') {
         await saveDocumentChanges(doc.id, updateData, analysis, originalData);
         await documentModel.setProcessingStatus(doc.id, doc.title, 'complete');
         scanStats.processed += 1;
+        // The document counters and token figures just changed. Marking the
+        // cache stale costs nothing here; the next dashboard poll pays for the
+        // rebuild, so a long scan does not rebuild once per document.
+        dashboardStatsService.invalidate();
       } catch (error) {
         await documentModel.setProcessingStatus(doc.id, doc.title, 'failed');
         scanStats.failed += 1;
+        // A failure moves the failed counter and the failure rate, which the
+        // dashboard shows just as prominently as the successes.
+        dashboardStatsService.invalidate();
         console.error(
           `[ERROR] processing document ${doc.id}: ${error.message}`
         );
@@ -1109,6 +1117,16 @@ async function scanDocuments(source = 'scheduler') {
     scanControl.source = null;
     scanControl.startedAt = null;
     scanControl.stopRequestedAt = null;
+
+    // Rebuild once the run is over so the first dashboard poll after a scan
+    // reads finished numbers instead of paying for the assembly itself.
+    // Detached: nothing in the scan depends on it, and an unhandled rejection
+    // would take the process down.
+    dashboardStatsService.refresh().catch((error) => {
+      console.debug(
+        `[DASHBOARD-STATS] Refresh after scan failed: ${error.message}`
+      );
+    });
   }
 }
 
@@ -1390,6 +1408,32 @@ async function startScanning() {
         '[RECONCILIATION] Automatic reconciliation is disabled (RECONCILIATION_ENABLED=no).'
       );
     }
+
+    // Dashboard statistics are cached, and the cache is kept warm from here so
+    // no visitor ever waits for the assembly. Armed before the automatic
+    // processing kill-switch below on purpose: the dashboard is served (and
+    // polled) whether or not scanning is enabled.
+    if (isConfigured) {
+      dashboardStatsService.refresh().catch((error) => {
+        console.debug(`[DASHBOARD-STATS] Warmup failed: ${error.message}`);
+      });
+    }
+
+    cron.schedule('* * * * *', async () => {
+      // Never compete with a running scan for the Paperless API — the scan
+      // invalidates the cache per document anyway, and the run end refreshes it.
+      if (scanControl.running) {
+        return;
+      }
+      if (!(await setupService.isConfigured())) {
+        return;
+      }
+      await dashboardStatsService.refresh().catch((error) => {
+        console.debug(
+          `[DASHBOARD-STATS] Scheduled refresh failed: ${error.message}`
+        );
+      });
+    });
 
     if (config.disableAutomaticProcessing === 'yes') {
       scanHealthService.markAutomaticProcessingDisabled();
