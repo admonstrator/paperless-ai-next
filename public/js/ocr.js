@@ -196,8 +196,10 @@
           .filter(Boolean)
           .join('');
 
+        // Labelled and bordered, matching the history row: as a ghost icon
+        // button the "…" read as decoration and nothing said it opened a menu.
         const menu = menuItems
-          ? `<button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" popovertarget="${menuId}" title="More actions" aria-label="More actions"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg></button>
+          ? `<button type="button" class="zr-btn" popovertarget="${menuId}" title="More actions" aria-haspopup="menu"><span>Actions</span><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-down"/></svg></button>
              <div id="${menuId}" popover class="zr-menu">${menuItems}</div>`
           : '';
 

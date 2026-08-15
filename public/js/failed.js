@@ -103,8 +103,12 @@
                     <button class="zr-btn failed-reset-btn" data-id="${item.document_id}" title="Reset failed state and allow re-scan">
                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg> Reset
                     </button>
-                    <button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" popovertarget="failedRowMenu${item.document_id}" title="More actions" aria-label="More actions">
-                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg>
+                    <!-- Labelled and bordered, matching the history row: as a
+                         ghost icon button the "…" read as decoration and
+                         nothing said it opened a menu. -->
+                    <button type="button" class="zr-btn" popovertarget="failedRowMenu${item.document_id}" title="More actions" aria-haspopup="menu">
+                        <span>Actions</span>
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-down"/></svg>
                     </button>
                     <div id="failedRowMenu${item.document_id}" popover class="zr-menu">
                         <button type="button" class="zr-menu__item failed-ignore-btn" data-id="${item.document_id}">
