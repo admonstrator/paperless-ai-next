@@ -232,6 +232,9 @@ class OllamaService {
         document: { tags: [], correspondent: null },
         metrics: null,
         error: error.message,
+        // Undefined for everything that is not one of ours; the scan loop
+        // falls back to its generic reason then.
+        errorCode: error.code,
       };
     }
   }
@@ -290,6 +293,9 @@ class OllamaService {
         document: { tags: [], correspondent: null },
         metrics: null,
         error: error.message,
+        // Undefined for everything that is not one of ours; the scan loop
+        // falls back to its generic reason then.
+        errorCode: error.code,
       };
     }
   }
@@ -661,6 +667,10 @@ class OllamaService {
    * @returns {Object} Ollama API response
    */
   async _callOllamaAPI(prompt, systemPrompt, numCtx, schema) {
+    // The same number _calculateNumCtx() already reserved room for. It used to
+    // be a hardcoded 256 while the reservation followed the setting, so the
+    // context held space for an answer the model was then forbidden to write.
+    const numPredict = Number(config.responseTokens);
     const requestBody = {
       model: this.model,
       prompt: prompt,
@@ -672,7 +682,7 @@ class OllamaService {
         top_p: 0.9,
         repeat_penalty: 1.1,
         top_k: 7,
-        num_predict: 256,
+        num_predict: numPredict,
         num_ctx: numCtx,
       },
     };
@@ -695,7 +705,62 @@ class OllamaService {
       throw new Error('Invalid response from Ollama API');
     }
 
+    this._assertNotTruncated(response.data, numPredict, numCtx);
+
     return response.data;
+  }
+
+  /**
+   * A generation Ollama had to cut short comes back with done_reason "length".
+   * What it returns is a prefix, and for structured output that means JSON
+   * without its closing braces — which no amount of sanitizing recovers, so
+   * there is nothing to do with it but say so.
+   *
+   * Two different limits produce the same done_reason and want opposite fixes:
+   * num_predict is the response budget, but the context window can leave less
+   * room than that, and then raising Response Tokens changes nothing. The
+   * message names whichever one actually bit.
+   *
+   * @param {Object} responseData - Ollama /api/generate response
+   * @param {number} numPredict - response token limit that was sent
+   * @param {number} numCtx - context window that was sent
+   */
+  _assertNotTruncated(responseData, numPredict, numCtx) {
+    const evalCount = Number(responseData?.eval_count) || 0;
+    const promptEvalCount = Number(responseData?.prompt_eval_count) || 0;
+
+    // done_reason is the direct signal. Reaching the limit exactly is the
+    // fallback for an Ollama old enough not to send one.
+    const stoppedOnLength =
+      responseData?.done_reason === 'length' ||
+      (!responseData?.done_reason && numPredict > 0 && evalCount >= numPredict);
+
+    if (!stoppedOnLength) {
+      return;
+    }
+
+    /* Which limit bit is read off the count itself rather than guessed from
+       the context arithmetic: reaching num_predict exactly is the response
+       budget, stopping short of it means the context filled up first. The
+       arithmetic route was tried and got it backwards — _calculateNumCtx sizes
+       the window from an estimate of the prompt (length / 4), so comparing it
+       against the real prompt_eval_count blames the context for a run that
+       generated its full budget. */
+    const error =
+      evalCount >= numPredict
+        ? new Error(
+            `Ollama stopped generating after ${evalCount} tokens, which is the configured response limit. Raise Response Tokens (RESPONSE_TOKENS) above ${numPredict}.`
+          )
+        : new Error(
+            `Ollama stopped generating after ${evalCount} of ${numPredict} response tokens: the ${numCtx}-token context window was full, ${promptEvalCount} of it prompt. Raise Token Limit (TOKEN_LIMIT) or shorten the document.`
+          );
+
+    /* Carried as a code rather than matched out of the message later. The
+       phrase-matching in serviceUtils classifies errors that arrive from
+       elsewhere and have no better handle; this one is raised right here, so
+       rewording it should not silently reclassify the failure. */
+    error.code = 'ai_response_truncated';
+    throw error;
   }
 
   /**
@@ -749,12 +814,24 @@ class OllamaService {
    * @param {string} response - Response text
    * @returns {Object} Parsed object
    */
+  /* Every exit from here either returns something the caller can use or
+     throws. It used to hand back { tags: [], correspondent: null } on each of
+     its three failure paths, which is indistinguishable from a model that
+     genuinely found nothing — so a document whose answer could not be read at
+     all was written back untouched and then marked processed, never to be
+     looked at again. openaiService has thrown at the same point all along. */
   _parseResponse(response) {
     try {
       // Find JSON in response using regex
       const jsonMatch = response.match(/\{[\s\S]*\}/);
       if (!jsonMatch) {
-        return { tags: [], correspondent: null };
+        /* Worded to carry the marker serviceUtils already classifies, so a
+           document whose answer was unreadable takes the same OCR fallback it
+           takes under OpenAI. Truncation deliberately does not — see
+           _assertNotTruncated, where a second pass cannot help. */
+        throw new Error(
+          'Invalid JSON response from API: no JSON object in the answer'
+        );
       }
 
       let jsonStr = jsonMatch[0];
@@ -796,12 +873,14 @@ class OllamaService {
           console.error(
             'Final JSON parsing failed after sanitization. This happens when the JSON structure is too complex or invalid. That indicates an issue with the generated JSON string by Ollama. Switch to OpenAI for better results or fine tune your prompt.'
           );
-          return { tags: [], correspondent: null };
+          throw new Error(
+            `Invalid JSON response from API, unreadable even after sanitizing: ${jsonError.message}`
+          );
         }
       }
     } catch (error) {
       console.error('Error parsing Ollama response:', error.message);
-      return { tags: [], correspondent: null };
+      throw error;
     }
   }
 
@@ -860,7 +939,10 @@ class OllamaService {
         options: {
           temperature: config.aiTemperatureGeneration,
           top_p: 0.9,
-          num_predict: 1024,
+          // The line above reserves config.responseTokens in the context; a
+          // constant here would have the same quarrel with it that the
+          // analysis path had.
+          num_predict: Number(config.responseTokens),
           num_ctx: numCtx,
         },
       };

@@ -3697,7 +3697,8 @@
                   },
                   "responseTokens": {
                     "type": "integer",
-                    "description": "The approx. amount of tokens required for the response",
+                    "minimum": 1,
+                    "description": "Tokens a provider may spend on its answer. Reserved in the context window and sent as the generation limit (num_predict for Ollama, max_tokens elsewhere). Rejected with 400 when it is not a positive whole number.",
                     "example": 1000
                   },
                   "aiTemperatureAnalysis": {

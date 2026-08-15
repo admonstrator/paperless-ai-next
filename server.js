@@ -715,7 +715,9 @@ async function processDocument(
       await documentModel.addFailedDocument(
         doc.id,
         doc.title,
-        'ai_failed_ocr_disabled',
+        // A service that knows exactly why it gave up says so; everything else
+        // keeps the generic reason this branch has always recorded.
+        analysis.errorCode || 'ai_failed_ocr_disabled',
         'ai'
       );
       retryTracker.delete(doc.id);
@@ -725,7 +727,7 @@ async function processDocument(
       await documentModel.addFailedDocument(
         doc.id,
         doc.title,
-        'ai_failed_without_ocr_fallback',
+        analysis.errorCode || 'ai_failed_without_ocr_fallback',
         'ai'
       );
       retryTracker.delete(doc.id);

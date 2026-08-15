@@ -141,6 +141,8 @@
         '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg>AI failed (no OCR fallback)',
       insufficient_content_lt_10:
         '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>Insufficient content (&lt; 10 chars)',
+      ai_response_truncated:
+        '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg>AI answer cut off (token limit)',
     };
 
     if (map[reason]) return map[reason];

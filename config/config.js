@@ -287,6 +287,30 @@ const parseTemperature = (value, defaultValue, envKey) => {
   return parsed;
 };
 
+/* Token counts arrive as unvalidated environment strings and used to be read
+   with a bare Number() at each of the nine call sites. That was harmless while
+   the value only ever entered an addition — a NaN reservation just made the
+   context window NaN, which Ollama ignores. It stopped being harmless once the
+   value became a generation limit: "num_predict": null is a typo away. */
+const parseTokenCount = (value, defaultValue, envKey) => {
+  const normalizedValue = String(value ?? '').trim();
+  if (!normalizedValue) {
+    return defaultValue;
+  }
+
+  const parsed = Number.parseInt(normalizedValue, 10);
+  if (!Number.isFinite(parsed) || parsed < 1) {
+    startupLog(
+      logLevel,
+      'warn',
+      `[WARN] Invalid ${envKey} value "${normalizedValue}". Falling back to ${defaultValue}.`
+    );
+    return defaultValue;
+  }
+
+  return parsed;
+};
+
 const getApiKey = () =>
   process.env.API_KEY || process.env.PAPERLESS_AI_API_KEY || '';
 const getJwtSecret = () => process.env.JWT_SECRET || '';
@@ -428,7 +452,14 @@ module.exports = {
   predefinedMode: process.env.PROCESS_PREDEFINED_DOCUMENTS,
   ignoreTags: process.env.IGNORE_TAGS || '',
   tokenLimit: process.env.TOKEN_LIMIT || 128000,
-  responseTokens: process.env.RESPONSE_TOKENS || 1000,
+  // How many tokens a provider may spend on its answer. Reserved in the
+  // context window and, where the provider offers a knob for it, sent as the
+  // generation limit — num_predict for Ollama, max_tokens for the rest.
+  responseTokens: parseTokenCount(
+    process.env.RESPONSE_TOKENS,
+    1000,
+    'RESPONSE_TOKENS'
+  ),
   // Minimum extracted-text length before a document is sent to AI analysis.
   // Documents below this are skipped or routed to OCR fallback. Default 10.
   minContentLength: parseInt(process.env.MIN_CONTENT_LENGTH || '10', 10),

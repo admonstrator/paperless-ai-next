@@ -7972,7 +7972,8 @@ router.get('/health', async (req, res) => {
  *                 example: 128000
  *               responseTokens:
  *                 type: integer
- *                 description: The approx. amount of tokens required for the response
+ *                 minimum: 1
+ *                 description: Tokens a provider may spend on its answer. Reserved in the context window and sent as the generation limit (num_predict for Ollama, max_tokens elsewhere). Rejected with 400 when it is not a positive whole number.
  *                 example: 1000
  *               aiTemperatureAnalysis:
  *                 type: number
@@ -8538,7 +8539,21 @@ router.post('/settings', express.json(), async (req, res) => {
         .replace(/\n/g, '\\n');
     if (showTags) updatedConfig.PROCESS_PREDEFINED_DOCUMENTS = showTags;
     if (tokenLimit) updatedConfig.TOKEN_LIMIT = tokenLimit;
-    if (responseTokens) updatedConfig.RESPONSE_TOKENS = responseTokens;
+    if (responseTokens) {
+      // Validated here rather than left to the loader's fallback: the value is
+      // a generation limit now, and an operator who mistypes it should be told
+      // so while the form is still on screen.
+      const parsedResponseTokens = Number.parseInt(
+        String(responseTokens).trim(),
+        10
+      );
+      if (!Number.isFinite(parsedResponseTokens) || parsedResponseTokens < 1) {
+        return res.status(400).json({
+          error: 'Invalid Response Tokens. Expected a positive whole number.',
+        });
+      }
+      updatedConfig.RESPONSE_TOKENS = String(parsedResponseTokens);
+    }
     if (aiTemperatureAnalysis !== undefined) {
       updatedConfig.AI_TEMPERATURE_ANALYSIS = sanitizeTemperatureValue(
         aiTemperatureAnalysis,
