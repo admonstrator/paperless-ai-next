@@ -823,24 +823,24 @@
                                         id: 'ocrAutoProcessEnabled',
                                         label: 'Process OCR Queue Automatically',
                                         checked: (config.OCR_AUTO_PROCESS_ENABLED || 'no') === 'yes',
-                                        hint: 'Work through queued documents on a schedule instead of pressing "Process All Pending" on the OCR page &middot; Restart required'
+                                        hint: 'Work through queued documents on a schedule instead of pressing "Process All Pending" on the OCR page · Restart required'
                                     }) %>
                                     <div id="ocrAutoProcessOptionsContainer" class="zr-col zr-col--loose <%= (config.OCR_AUTO_PROCESS_ENABLED || 'no') === 'yes' ? '' : 'hidden' %>">
                                         <div class="zr-field zr-field--stacked">
                                             <label for="ocrAutoProcessInterval" class="zr-field__name">OCR Processing Interval (Cron)</label>
                                             <input type="text" id="ocrAutoProcessInterval" name="ocrAutoProcessInterval" value="<%= config.OCR_AUTO_PROCESS_INTERVAL || '*/15 * * * *' %>" class="zr-input" placeholder="*/15 * * * *">
-                                            <p class="zr-field__hint">Default: every 15 minutes &middot; Runs are skipped while a document scan is active &middot; Restart required</p>
+                                            <p class="zr-field__hint">Default: every 15 minutes · Runs are skipped while a document scan is active · Restart required</p>
                                         </div>
                                         <div class="zr-field zr-field--stacked">
                                             <label for="ocrAutoProcessBatchSize" class="zr-field__name">Documents per Run</label>
                                             <input type="number" id="ocrAutoProcessBatchSize" name="ocrAutoProcessBatchSize" min="1" max="100" step="1" value="<%= config.OCR_AUTO_PROCESS_BATCH_SIZE || 10 %>" class="zr-input">
-                                            <p class="zr-field__hint">Caps how many queued documents one run handles; the rest follow at the next interval (1&ndash;100) &middot; Restart required</p>
+                                            <p class="zr-field__hint">Caps how many queued documents one run handles; the rest follow at the next interval (1-100) · Restart required</p>
                                         </div>
                                         <%- include('partials/settings-switch', {
                                             id: 'ocrAutoAnalyze',
                                             label: 'AI Analysis After OCR',
                                             checked: (config.OCR_AUTO_ANALYZE || 'yes') === 'yes',
-                                            hint: 'Analyse each document right after OCR. Keep this on: when Paperless-ngx rejects the content write-back the OCR text only exists locally, where a regular scan would never see it &middot; Restart required'
+                                            hint: 'Analyse each document right after OCR. Keep this on: when Paperless-ngx rejects the content write-back the OCR text only exists locally, where a regular scan would never see it · Restart required'
                                         }) %>
                                     </div>
                                 </div>
@@ -990,7 +990,7 @@
                                     <div class="zr-field zr-field--stacked">
                                         <label for="reconciliationInterval" class="zr-field__name">Reconciliation Interval (Cron)</label>
                                         <input type="text" id="reconciliationInterval" name="reconciliationInterval" value="<%= config.RECONCILIATION_INTERVAL || '0 * * * *' %>" class="zr-input" placeholder="0 * * * *">
-                                        <p class="zr-field__hint">Default: every hour &middot; Restart required</p>
+                                        <p class="zr-field__hint">Default: every hour · Restart required</p>
                                     </div>
                                 </div>
                                 <div>
