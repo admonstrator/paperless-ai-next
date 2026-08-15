@@ -4,6 +4,7 @@ const {
   truncateToTokenLimit,
   writePromptToFile,
   extractChatMessageContent,
+  assertCompletionNotTruncated,
   toNameList,
 } = require('./serviceUtils');
 const OpenAI = require('openai');
@@ -270,6 +271,11 @@ class OpenAIService {
         }),
       });
 
+      assertCompletionNotTruncated(
+        response,
+        'OpenAI',
+        'Reduce the number of custom fields the prompt asks for, or use a model with a larger completion limit.'
+      );
       const message = response?.choices?.[0]?.message;
       let jsonContent = extractChatMessageContent(message, 'OpenAI');
       if (!jsonContent) {
@@ -357,6 +363,9 @@ class OpenAIService {
         document: { tags: [], correspondent: null },
         metrics: null,
         error: error.message,
+        // Undefined for everything that is not one of ours; the scan loop
+        // falls back to its generic reason then.
+        errorCode: error.code,
       };
     }
   }
@@ -456,6 +465,11 @@ class OpenAIService {
       });
 
       // Handle response
+      assertCompletionNotTruncated(
+        response,
+        'OpenAI',
+        'Reduce the number of custom fields the prompt asks for, or use a model with a larger completion limit.'
+      );
       const message = response?.choices?.[0]?.message;
       let jsonContent = extractChatMessageContent(message, 'OpenAI');
       if (!jsonContent) {
@@ -538,6 +552,9 @@ class OpenAIService {
         document: { tags: [], correspondent: null },
         metrics: null,
         error: error.message,
+        // Undefined for everything that is not one of ours; the scan loop
+        // falls back to its generic reason then.
+        errorCode: error.code,
       };
     }
   }
@@ -567,6 +584,12 @@ class OpenAIService {
         ],
         temperature: config.aiTemperatureGeneration,
       });
+
+      assertCompletionNotTruncated(
+        response,
+        'OpenAI',
+        'Reduce the number of custom fields the prompt asks for, or use a model with a larger completion limit.'
+      );
 
       const generatedText = extractChatMessageContent(
         response?.choices?.[0]?.message,

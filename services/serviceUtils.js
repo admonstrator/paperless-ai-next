@@ -745,6 +745,38 @@ function validateCustomFieldValue(fieldName, rawValue, dataType) {
 }
 
 /**
+ * Reject a completion the provider had to cut short.
+ *
+ * OpenAI-compatible APIs report that as finish_reason "length", the same event
+ * Ollama calls done_reason "length". What comes back is a prefix, and for a
+ * JSON answer that means no closing brace — so the parse fails a few lines
+ * later and the real cause never reaches the operator, who sees "invalid JSON"
+ * and goes looking at the prompt.
+ *
+ * Raised with a code rather than left to be matched out of the message: the
+ * scan loop records it as the failure reason, and rewording should not
+ * silently reclassify the failure.
+ *
+ * @param {Object} response - chat.completions response
+ * @param {string} provider - name for the message, e.g. "OpenAI"
+ * @param {string} remedy - sentence naming the limit the operator can raise
+ */
+function assertCompletionNotTruncated(response, provider, remedy) {
+  if (response?.choices?.[0]?.finish_reason !== 'length') {
+    return;
+  }
+
+  const completionTokens = Number(response?.usage?.completion_tokens) || 0;
+  const spent = completionTokens ? ` after ${completionTokens} tokens` : '';
+
+  const error = new Error(
+    `${provider} stopped generating${spent} because the answer hit a token limit. ${remedy}`
+  );
+  error.code = 'ai_response_truncated';
+  throw error;
+}
+
+/**
  * Decide whether an AI error should trigger OCR queue fallback.
  *
  * @param {string} errorMessage - Error message returned by AI analysis
@@ -902,6 +934,7 @@ module.exports = {
   validateUrlAgainstBase,
   createRedirectGuard,
   validateCustomFieldValue,
+  assertCompletionNotTruncated,
   shouldQueueForOcrOnAiError,
   classifyOcrQueueReasonFromAiError,
   extractChatMessageContent,

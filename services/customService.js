@@ -3,6 +3,7 @@ const {
   calculateTotalPromptTokens,
   truncateToTokenLimit,
   extractChatMessageContent,
+  assertCompletionNotTruncated,
   isTimeoutError,
   buildTimeoutErrorMessage,
   toNameList,
@@ -364,6 +365,11 @@ class CustomOpenAIService {
 
       // Handle response
       //console.log(`MESSAGE: ${response?.choices?.[0]?.message?.content}`);
+      assertCompletionNotTruncated(
+        response,
+        'Custom OpenAI',
+        'Reduce the number of custom fields the prompt asks for, or use a model with a larger completion limit.'
+      );
       const message = response?.choices?.[0]?.message;
       let jsonContent = extractChatMessageContent(message, 'Custom OpenAI');
       if (!jsonContent) {
@@ -435,6 +441,9 @@ class CustomOpenAIService {
         document: { tags: [], correspondent: null },
         metrics: null,
         error: normalizedMessage,
+        // Undefined for everything that is not one of ours; the scan loop
+        // falls back to its generic reason then.
+        errorCode: error.code,
       };
     }
   }
@@ -531,6 +540,11 @@ class CustomOpenAIService {
       });
 
       // Handle response
+      assertCompletionNotTruncated(
+        response,
+        'Custom OpenAI',
+        'Reduce the number of custom fields the prompt asks for, or use a model with a larger completion limit.'
+      );
       const message = response?.choices?.[0]?.message;
       let jsonContent = extractChatMessageContent(message, 'Custom OpenAI');
       if (!jsonContent) {
@@ -585,6 +599,9 @@ class CustomOpenAIService {
         document: { tags: [], correspondent: null },
         metrics: null,
         error: error.message,
+        // Undefined for everything that is not one of ours; the scan loop
+        // falls back to its generic reason then.
+        errorCode: error.code,
       };
     }
   }
@@ -635,6 +652,12 @@ class CustomOpenAIService {
         temperature: config.aiTemperatureGeneration,
         max_tokens: maxCompletionTokens,
       });
+
+      assertCompletionNotTruncated(
+        response,
+        'Custom OpenAI',
+        'Raise Response Tokens (RESPONSE_TOKENS).'
+      );
 
       const generatedText = extractChatMessageContent(
         response?.choices?.[0]?.message,
