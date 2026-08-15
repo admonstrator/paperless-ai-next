@@ -10,10 +10,11 @@
     three times the size the mascot has.
 
     Draw order is the choreography: she picks a sheet off the left pile, holds
-    it up in front of herself, and lays it on the right one. The sheet sits
-    after her whole body group, so while she holds it the paper covers her
-    fins and belly the way a real sheet would — the fins grip it from behind,
-    and only their outer edges peek out beside the paper.
+    it up in front of herself, and lays it on the right one. The sheet is drawn
+    last of everything, so it stays on top for the whole journey — over her
+    fins and belly while she holds it, the way a real sheet would, and over the
+    sorted pile as she sets it down. It used to sit before that pile and so
+    slid behind it at the end, as though she were posting it into a slot.
 
     The animation lives in pages/dashboard.css, keyed off .is-scanning on the
     card, so nothing moves when no scan is running. The sheet's transform
@@ -104,16 +105,6 @@
             </g>
         </g>
 
-        <!-- the sheet she is working on: lifted off the left pile, held up in
-             front of her — covering the fins that hold it — and laid on the
-             right one. -->
-        <g class="runner-seal__sheet" transform="translate(100 70) rotate(-2)">
-            <rect x="-21" y="-13" width="42" height="26" rx="3" fill="#FDFBF5"/>
-            <rect x="-13" y="-6" width="19" height="5" rx="2.5" fill="#27A69A"/>
-            <rect x="-13" y="3" width="25" height="3" rx="1.5" fill="#C3D4E2"/>
-            <rect x="-13" y="9" width="16" height="3" rx="1.5" fill="#C3D4E2"/>
-        </g>
-
         <!-- the sorted pile, on the right, with the tick that fires as a sheet lands -->
         <g class="runner-seal__outbox">
             <rect x="152" y="70" width="42" height="20" rx="3" fill="#C3D4E2"/>
@@ -125,6 +116,16 @@
                 <path d="M 182 42 L 185 45.5 L 190.5 38.5" fill="none" stroke="#FFFFFF"
                     stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
             </g>
+        </g>
+
+        <!-- the sheet she is working on: lifted off the left pile, held up in
+             front of her — covering the fins that hold it — and laid on the
+             right one. -->
+        <g class="runner-seal__sheet" transform="translate(100 70) rotate(-2)">
+            <rect x="-21" y="-13" width="42" height="26" rx="3" fill="#FDFBF5"/>
+            <rect x="-13" y="-6" width="19" height="5" rx="2.5" fill="#27A69A"/>
+            <rect x="-13" y="3" width="25" height="3" rx="1.5" fill="#C3D4E2"/>
+            <rect x="-13" y="9" width="16" height="3" rx="1.5" fill="#C3D4E2"/>
         </g>
     </svg>
 </div>
