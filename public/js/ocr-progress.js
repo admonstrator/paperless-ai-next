@@ -19,26 +19,33 @@
   // download, ocr, writeback, ai — the four the endpoints report.
   const TOTAL_STEPS = 4;
 
+  // Sprite symbols, not emoji: the rest of the app draws its icons from
+  // /icons.svg, and emoji render in whatever the operating system ships,
+  // which followed neither the type nor the theme of the dialog around them.
+  // A step prefixed with item_ belongs to one document inside a bulk run and
+  // is drawn indented; both spellings share an icon.
   const STEP_ICONS = {
-    download: '⬇ ',
-    ocr: '🔍 ',
-    writeback: '📤 ',
-    ai: '🤖 ',
-    done: '✅ ',
-    error: '❌ ',
-    start: '▶ ',
-    progress: '· ',
-    item_download: '  ⬇ ',
-    item_ocr: '  🔍 ',
-    item_writeback: '  📤 ',
-    item_ai: '  🤖 ',
-    item_done: '  ✅ ',
-    item_error: '  ❌ ',
+    download: 'i-download',
+    ocr: 'i-scan',
+    writeback: 'i-save',
+    ai: 'i-cpu',
+    done: 'i-check-circle',
+    error: 'i-alert-circle',
+    start: 'i-play',
   };
+  // No entry for 'progress': that step carries separators and the raw OCR text
+  // dump behind "Show OCR output", where an icon per line would be noise.
 
   // Looked up per call rather than at load: the overlay markup sits at the end
   // of the page, and this script is free to be loaded before it.
   const el = (id) => document.getElementById(id);
+
+  // .hidden is the framework's !important toggle; the dismiss controls used
+  // style.display, which fought the class the moment anything else set one.
+  const reveal = (id, shown) => {
+    const node = el(id);
+    if (node) node.classList.toggle('hidden', !shown);
+  };
 
   function open(title) {
     const overlay = el('progressOverlay');
@@ -51,14 +58,16 @@
       bar.style.width = '5%';
       bar.classList.remove('zr-meter__fill--ok', 'zr-meter__fill--danger');
     }
-    if (el('progressCloseBtn')) el('progressCloseBtn').style.display = 'none';
-    if (el('progressDoneBtn')) el('progressDoneBtn').style.display = 'none';
-    if (overlay) overlay.style.display = 'flex';
+    reveal('progressCloseBtn', false);
+    reveal('progressFoot', false);
+    // showModal() throws on an already-open dialog, and runAll() reopens the
+    // same one between batches.
+    if (overlay && !overlay.open) overlay.showModal();
   }
 
   function close() {
     const overlay = el('progressOverlay');
-    if (overlay) overlay.style.display = 'none';
+    if (overlay && overlay.open) overlay.close();
   }
 
   function finalize(isError) {
@@ -70,8 +79,8 @@
       bar.classList.toggle('zr-meter__fill--danger', Boolean(isError));
       bar.classList.toggle('zr-meter__fill--ok', !isError);
     }
-    if (el('progressCloseBtn')) el('progressCloseBtn').style.display = 'block';
-    if (el('progressDoneBtn')) el('progressDoneBtn').style.display = 'block';
+    reveal('progressCloseBtn', true);
+    reveal('progressFoot', true);
   }
 
   function setProgress(pct) {
@@ -83,9 +92,32 @@
     const log = el('progressLog');
     if (!log) return;
 
+    // A per-document step inside a bulk run reduces to its plain name plus the
+    // nesting modifier, so 'ai' and 'item_ai' share one rule. The slug guard
+    // keeps a step name the server invents out of the class list.
+    const nested = step.startsWith('item_');
+    const base = (nested ? step.slice(5) : step).replace(/[^a-z0-9-]/gi, '-');
+    const icon = STEP_ICONS[base];
+
     const line = document.createElement('div');
-    line.className = `log-line log-${step}`;
-    line.textContent = (STEP_ICONS[step] || '  ') + message;
+    line.className = `log-line log-${base}${nested ? ' log-line--nested' : ''}`;
+
+    if (icon) {
+      // innerHTML only ever receives a symbol id from the map above. The
+      // message is appended as a text node, so an error string coming back
+      // from a provider cannot bring markup into the dialog with it.
+      const holder = document.createElement('span');
+      holder.innerHTML = `<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#${icon}"/></svg>`;
+      line.appendChild(holder.firstChild);
+    }
+
+    // The message gets its own element so it can wrap and keep the newlines of
+    // an OCR dump while the icon stays put at the start of the line.
+    const text = document.createElement('span');
+    text.className = 'log-line__text';
+    text.textContent = message;
+    line.appendChild(text);
+
     log.appendChild(line);
     log.scrollTop = log.scrollHeight;
   }

@@ -1,26 +1,34 @@
-<!-- OCR run overlay. Driven by /js/ocr-progress.js, styled in css/pages/queues.css;
-     a page that includes this needs the script too. Shared by the OCR queue and
-     the history list, which both start the same SSE job. -->
-<div id="progressOverlay" style="display:none;">
-    <div id="progressBox">
-        <div class="zr-row zr-row--between">
-            <h3 id="progressTitle" class="zr-module__title">Processing…</h3>
-            <button id="progressCloseBtn" class="zr-btn" style="display:none;" aria-label="Close progress overlay">
-                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
-            </button>
-        </div>
+<!-- OCR run overlay. Driven by /js/ocr-progress.js, styled by the dialog
+     component plus .zr-ocrlog in css/pages/queues.css; a page that includes
+     this needs the script too. Shared by the OCR queue and the history list,
+     which both start the same SSE job.
 
-        <!-- Progress bar -->
+     A native <dialog>: it lands in the top layer, so the scrim, the centring
+     and the Escape key come from the platform instead of a hand-placed
+     z-index. -->
+<dialog id="progressOverlay" class="zr-dialog zr-dialog--wide" aria-labelledby="progressTitle">
+    <div class="zr-dialog__head">
+        <span class="zr-badge zr-badge--brand">
+            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>
+        </span>
+        <span class="zr-grow" id="progressTitle">Processing…</span>
+        <!-- Both dismiss controls stay hidden while the job runs: closing the
+             view does not stop the run, and offering the button mid-flight
+             suggests it does. -->
+        <button class="zr-btn zr-btn--ghost zr-btn--icon hidden" type="button" id="progressCloseBtn"
+            aria-label="Close progress overlay">
+            <svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
+        </button>
+    </div>
+    <div class="zr-dialog__body">
         <div class="zr-meter">
             <div id="progressBar" class="zr-meter__fill" style="width:0%"></div>
         </div>
-
-        <div id="progressLog"></div>
-
-        <div class="zr-row">
-            <button id="progressDoneBtn" class="zr-btn zr-btn--primary" style="display:none;">
-                Close
-            </button>
-        </div>
+        <!-- aria-live: the log is the whole content of this dialog, and it
+             arrives line by line after it opens. -->
+        <div id="progressLog" class="zr-ocrlog" role="log" aria-live="polite"></div>
     </div>
-</div>
+    <div class="zr-dialog__foot hidden" id="progressFoot">
+        <button class="zr-btn zr-btn--primary" type="button" id="progressDoneBtn">Close</button>
+    </div>
+</dialog>

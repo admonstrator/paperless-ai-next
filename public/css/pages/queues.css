@@ -6,58 +6,69 @@
 
 @layer pages {
   /* --- ocr ------------------------------------------------------------- */
-  #progressOverlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 9000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #progressBox {
-    background: var(--zr-surface);
-    border-radius: 12px;
-    padding: 2rem;
-    width: 560px;
-    max-width: 95vw;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  }
-
-  /* The OCR progress log. It used to reference --input-bg / --border-color /
-     --text-color, which this framework never defined, so it fell back to the
-     hardcoded greys that came with those declarations. */
-  #progressLog {
+  /* The OCR run log inside the progress dialog. The dialog itself is the
+     framework component; only the log is particular to this page pair. It
+     once referenced --input-bg / --border-color / --text-color, which this
+     framework never defined, so it fell back to the hardcoded greys those
+     declarations shipped with. */
+  .zr-ocrlog {
+    margin-top: var(--zr-3);
     max-height: 260px;
     overflow-y: auto;
     font-family: var(--zr-font-mono);
     font-size: var(--zr-fs-sm);
+    line-height: 1.5;
     background: var(--zr-surface-sunken);
     border: 1px solid var(--zr-line);
     border-radius: var(--zr-r-md);
     padding: var(--zr-3);
-    color: var(--zr-text-muted);
+    color: var(--zr-text);
   }
 
   .log-line {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--zr-2);
     margin-bottom: 4px;
   }
-  .log-download,
-  .log-ocr,
-  .log-writeback {
-    color: var(--zr-info);
+
+  /* Keeps the newlines of the OCR dump that "Show OCR output" pours in here,
+     and breaks the long unbroken runs a scan of a table can produce. */
+  .log-line__text {
+    min-width: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
-  .log-ai {
+
+  /* One document inside a bulk run, set in from the run-level lines. */
+  .log-line--nested {
+    padding-left: var(--zr-4);
+  }
+
+  /* The step is carried by its icon. Colouring whole lines by step turned
+     almost every one of them blue, which said nothing and drowned out the
+     two that matter. */
+  .log-line .zr-icon {
+    flex: none;
+    margin-top: 3px;
+    color: var(--zr-text-muted);
+  }
+  .log-ai .zr-icon {
     color: var(--zr-brand);
   }
   .log-done {
     color: var(--zr-ok);
     font-weight: 600;
   }
+  .log-done .zr-icon {
+    color: var(--zr-ok);
+  }
   .log-error {
     color: var(--zr-danger);
     font-weight: 600;
+  }
+  .log-error .zr-icon {
+    color: var(--zr-danger);
   }
 
   .disabled-overlay {

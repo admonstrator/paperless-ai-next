@@ -23,6 +23,11 @@
     background: var(--zr-scrim);
     backdrop-filter: blur(2px);
   }
+  /* For a dialog whose content sets its own line length — a run log, a table —
+     rather than prose that reads better narrow. */
+  .zr-dialog--wide {
+    width: min(600px, calc(100vw - 32px));
+  }
   /* The head lays its own contents out — a title, sometimes a badge or a close
      button beside it — so it does not need .zr-row on top. The three flex
      declarations are exactly what that utility contributes. */
