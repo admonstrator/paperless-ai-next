@@ -1624,16 +1624,13 @@ function initializeFormHandlers() {
         provider,
         ocrApiUrlInput?.value
       );
+      // Sent empty when the field is empty, which is the normal case: a saved
+      // key is never echoed back into a password field and one injected through
+      // the environment was never in the form to begin with. The route resolves
+      // it from OCR_API_KEY / MISTRAL_API_KEY, so only the server can tell
+      // whether a key exists — refusing here asked "did you just type one?"
+      // and reported the answer as "there is none".
       const apiKey = String(ocrApiKeyInput?.value || '').trim();
-
-      if (provider === 'mistral' && !apiKey) {
-        await zrDialog({
-          icon: 'warning',
-          title: 'Missing API key',
-          text: 'Mistral OCR requires an API key to load models.',
-        });
-        return;
-      }
 
       setButtonLoading(fetchOcrModelsBtn, true);
       try {

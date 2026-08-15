@@ -3936,7 +3936,10 @@ function resolveSettingsAiToken(aiProvider, token) {
   return normalizedToken || resolveStoredAiToken(aiProvider);
 }
 
-function resolveSettingsOcrApiKey(apiKey) {
+/* The key may be typed into the form, saved from an earlier save, or
+   injected through the environment. Only this side can see the last two, which
+   is why neither page refuses an empty field on its own. */
+function resolveOcrApiKey(apiKey) {
   const normalizedApiKey = String(apiKey || '').trim();
   return (
     normalizedApiKey ||
@@ -4976,7 +4979,9 @@ router.post('/api/setup/ocr/models', express.json(), async (req, res) => {
     const result = await discoverOcrModelsForSetup({
       provider: req.body?.provider,
       apiUrl: req.body?.apiUrl,
-      apiKey: req.body?.apiKey,
+      // The wizard used to take the field at face value, so an operator whose
+      // key already sat in the environment was told to supply one.
+      apiKey: resolveOcrApiKey(req.body?.apiKey),
       setupValidationTimeoutMs: req.body?.setupValidationTimeoutMs,
     });
 
@@ -5117,7 +5122,7 @@ router.post(
         enabled: req.body?.enabled,
         provider: req.body?.provider,
         apiUrl: req.body?.apiUrl,
-        apiKey: resolveSettingsOcrApiKey(req.body?.apiKey),
+        apiKey: resolveOcrApiKey(req.body?.apiKey),
         model: req.body?.model,
         setupOcrValidationTimeoutMs:
           req.body?.setupOcrValidationTimeoutMs ??
@@ -5184,7 +5189,7 @@ router.post(
       const result = await discoverOcrModelsForSetup({
         provider: req.body?.provider,
         apiUrl: req.body?.apiUrl,
-        apiKey: resolveSettingsOcrApiKey(req.body?.apiKey),
+        apiKey: resolveOcrApiKey(req.body?.apiKey),
         setupOcrValidationTimeoutMs:
           req.body?.setupOcrValidationTimeoutMs ??
           req.body?.setupValidationTimeoutMs,

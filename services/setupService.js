@@ -927,7 +927,12 @@ class SetupService {
 
     if (provider === 'mistral') {
       if (!apiKey) {
-        throw new Error('API key is required for Mistral OCR model discovery');
+        // Reached only when the field, the saved configuration and the
+        // environment are all empty — the routes resolve the other two before
+        // asking. Naming all three saves the reader the guess.
+        throw new Error(
+          'Mistral OCR model discovery needs an API key. Enter one above, or set OCR_API_KEY or MISTRAL_API_KEY.'
+        );
       }
 
       const targetUrls = this.buildVersionedApiUrlCandidates(

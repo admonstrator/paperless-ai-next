@@ -1846,17 +1846,9 @@ class SetupWizard {
       setupOcrValidationTimeoutMs: this.getOcrValidationTimeoutMs(),
     };
 
-    if (payload.provider === 'mistral' && !payload.apiKey) {
-      if (!silent) {
-        await this.showPopup({
-          icon: 'warning',
-          title: 'API key missing',
-          text: 'Mistral OCR requires an API key to discover models.',
-        });
-      }
-      return [];
-    }
-
+    // No local refusal on an empty field: an operator who already has
+    // MISTRAL_API_KEY in their compose file never types one here, and the route
+    // resolves it. Whether a key exists is the server's question to answer.
     this.setButtonLoading(this.fetchOcrModelsBtn, true, 'Loading...');
     try {
       const result = await this.request('/api/setup/ocr/models', payload);
