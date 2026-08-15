@@ -50,11 +50,30 @@ export default function toolbarMenu(bar) {
     '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg><span>Actions</span>';
 
   let collapsed = false;
+  // Menus whose items were folded into this one, so expand() can hand them
+  // back to the popover they came from.
+  const borrowed = new Map();
 
   function collapse() {
     if (collapsed) return;
     order.forEach((el) => {
       if (el.classList.contains('zr-btn')) {
+        const nested = document.getElementById(
+          el.getAttribute('popovertarget') || ''
+        );
+
+        /* A button that opens its own menu cannot simply move in here: two
+           popovers cannot be open at once, so the outer one closes as the
+           inner opens, the trigger loses its box, and the placement code
+           dismisses the menu it was about to position. Its items are folded
+           in instead — one flat menu is what a phone wants anyway. */
+        if (nested?.classList.contains('zr-menu')) {
+          borrowed.set(nested, [...nested.children]);
+          menu.append(...nested.children);
+          el.hidden = true;
+          return;
+        }
+
         el.className = itemClass(el);
         menu.append(el);
         return;
@@ -76,8 +95,17 @@ export default function toolbarMenu(bar) {
   function expand() {
     if (!collapsed) return;
     if (menu.matches(':popover-open')) menu.hidePopover();
+
+    // Hand the folded-in items back before the buttons move, or they would be
+    // restored into a menu that has already been re-appended to the bar.
+    borrowed.forEach((children, nestedMenu) => {
+      nestedMenu.append(...children);
+    });
+    borrowed.clear();
+
     original.forEach((className, button) => {
       button.className = className;
+      button.hidden = false;
     });
     // Re-appending in the recorded order moves the buttons back out of the menu
     // and restores the row exactly as the template wrote it.

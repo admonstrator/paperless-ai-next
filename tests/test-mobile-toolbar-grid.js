@@ -18,6 +18,7 @@
  * 2. The spacer rule still comes after the rule that hides it
  * 3. The collapsed rules still come after both
  * 4. Every button in the bar is wired to the page script
+ * 5. A button with its own menu is folded flat rather than nested
  */
 
 'use strict';
@@ -98,7 +99,14 @@ test('Every action in the bar is wired to the page script', () => {
     path.join(root, 'public', 'js', 'history.js'),
     'utf8'
   );
-  const ids = [...bar.matchAll(/<button[^>]*\bid="([^"]+)"/g)].map((m) => m[1]);
+  // A popovertarget button is wired by the platform, not by the page script:
+  // it opens the menu whose id it names, and the items inside that menu are
+  // what the script binds. Demanding a listener for it would only invite a
+  // listener that does nothing.
+  const ids = [...bar.matchAll(/<button\b([^>]*)>/g)]
+    .filter((match) => !/\bpopovertarget=/.test(match[1]))
+    .map((match) => /\bid="([^"]+)"/.exec(match[1])?.[1])
+    .filter(Boolean);
   assert.ok(
     ids.length >= 2,
     `Expected buttons in the bar, found ${ids.length}`
@@ -115,6 +123,38 @@ test('Every action in the bar is wired to the page script', () => {
     [],
     `No handler references: ${orphans.join(', ')}. A button nobody binds is a ` +
       'button that does nothing when clicked.'
+  );
+});
+
+test('A button with its own menu is folded flat, not nested', () => {
+  const module = fs.readFileSync(
+    path.join(root, 'public', 'js', 'modules', 'toolbar-menu.js'),
+    'utf8'
+  );
+
+  // Two popovers cannot be open at once: opening the inner one closes the
+  // outer, the trigger loses its box, and the placement code dismisses the
+  // menu. Measured in a browser at 375px before this existed — the bulk menu
+  // simply never appeared.
+  assert.match(
+    module,
+    /getAttribute\('popovertarget'\)/,
+    'The collapse step no longer looks for a nested menu'
+  );
+  assert.match(
+    module,
+    /borrowed\.set\(/,
+    'Folded-in items are no longer recorded, so expand() cannot return them'
+  );
+  assert.match(
+    module,
+    /borrowed\.forEach\(/,
+    'expand() no longer hands the items back to their own menu'
+  );
+  assert.match(
+    module,
+    /button\.hidden = false/,
+    'A trigger hidden while collapsed is never shown again'
   );
 });
 

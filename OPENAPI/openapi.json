@@ -584,6 +584,33 @@
     }
   ],
   "paths": {
+    "/api/csrf-token": {
+      "get": {
+        "summary": "Issue a CSRF token for the current browser",
+        "description": "Returns a token paired with the CSRF cookie this response sets, for a\npage whose own token has gone stale.\n\nA token is minted per page render and the cookie it pairs with belongs\nto the browser, not the tab — so a second tab, a navigation, or the\nrestart after saving settings leaves every older tab holding a token\nthe server no longer accepts. /js/csrf.js calls this after a rejected\nrequest and repeats the request once.\n\nDeliberately unauthenticated: the login form needs the same recovery,\nand a token is only usable together with the cookie sent alongside it.\n",
+        "tags": [
+          "System"
+        ],
+        "responses": {
+          "200": {
+            "description": "A token matching the cookie set on this response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "csrfToken": {
+                      "type": "string",
+                      "example": "e3b0c44298fc1c14…"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api-docs/openapi.json": {
       "get": {
         "summary": "Retrieve the OpenAPI specification",
@@ -4943,13 +4970,20 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "documentId"
-                ],
+                "description": "One of documentId or documentIds is required.",
                 "properties": {
                   "documentId": {
                     "type": "integer",
-                    "minimum": 1
+                    "minimum": 1,
+                    "description": "A single document, as the row menu sends it."
+                  },
+                  "documentIds": {
+                    "type": "array",
+                    "description": "A selection, as the bulk menu sends it. Documents that are\nalready queued are counted as skipped and ones missing from\nPaperless-ngx are listed, rather than failing the batch.\n",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
                   }
                 }
               }
@@ -5276,6 +5310,84 @@
           },
           "500": {
             "description": "Server error"
+          }
+        }
+      }
+    },
+    "/api/ignored/add": {
+      "post": {
+        "summary": "Add one or more documents to the ignored list",
+        "description": "Ignored documents are skipped by every future scan. Accepts a single\nid from the history row menu or a selection from its bulk menu; a\ndocument that was already ignored counts as skipped rather than an\nerror.\n",
+        "tags": [
+          "Documents"
+        ],
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "ApiKeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "One of documentId or documentIds is required.",
+                "properties": {
+                  "documentId": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "documentIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "Stored with a single document; ignored for a selection."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "default": "manual"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "How many were added and how many were already ignored",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "added": {
+                      "type": "integer"
+                    },
+                    "skipped": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No usable document id in the payload"
           }
         }
       }

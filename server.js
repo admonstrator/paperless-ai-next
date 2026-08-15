@@ -427,6 +427,41 @@ app.use((req, res, next) => {
   });
 });
 
+/**
+ * @swagger
+ * /api/csrf-token:
+ *   get:
+ *     summary: Issue a CSRF token for the current browser
+ *     description: |
+ *       Returns a token paired with the CSRF cookie this response sets, for a
+ *       page whose own token has gone stale.
+ *
+ *       A token is minted per page render and the cookie it pairs with belongs
+ *       to the browser, not the tab — so a second tab, a navigation, or the
+ *       restart after saving settings leaves every older tab holding a token
+ *       the server no longer accepts. /js/csrf.js calls this after a rejected
+ *       request and repeats the request once.
+ *
+ *       Deliberately unauthenticated: the login form needs the same recovery,
+ *       and a token is only usable together with the cookie sent alongside it.
+ *     tags:
+ *       - System
+ *     responses:
+ *       200:
+ *         description: A token matching the cookie set on this response
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 csrfToken:
+ *                   type: string
+ *                   example: "e3b0c44298fc1c14…"
+ */
+app.get('/api/csrf-token', (req, res) => {
+  res.json({ csrfToken: generateCsrfToken(req, res) });
+});
+
 app.use(['/api', '/manual'], apiGlobalLimiter);
 
 const isApiDocsEnabled = config.exposeApiDocs === 'yes';

@@ -283,8 +283,12 @@ class HistoryManager {
               '<div class="zr-row zr-row--wrap">' +
               `<button type="button" class="history-info-btn zr-btn" data-docid="${escape(value)}" title="Show AI analysis details">` +
               '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg><span>Details</span></button>' +
-              `<button type="button" class="zr-btn zr-btn--ghost zr-btn--icon" popovertarget="${menuId}" title="More actions" aria-label="More actions">` +
-              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-dots"/></svg></button>' +
+              // Labelled and bordered rather than a bare "…": as a ghost icon
+              // button it read as decoration, and nothing said it opened
+              // anything. The chevron is the part that promises a menu.
+              `<button type="button" class="zr-btn" popovertarget="${menuId}" title="More actions" aria-haspopup="menu">` +
+              '<span>Actions</span>' +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-down"/></svg></button>' +
               `<div id="${menuId}" popover class="zr-menu">` +
               `<button type="button" class="zr-menu__item history-view-btn" data-link="${escape(row.link ?? '')}">` +
               '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg>Open in Paperless-ngx</button>' +
@@ -425,6 +429,21 @@ class HistoryManager {
     document
       .getElementById('rescanSelectedBtn')
       ?.addEventListener('click', () => this._handleRescanSelected());
+
+    // The row menu applied to a selection. Wired once — unlike the row
+    // buttons these live in the toolbar and survive every table re-render.
+    const bulk = [
+      ['bulkOcrRunBtn', () => this.bulkOcrAndAnalyze()],
+      ['bulkOcrQueueBtn', () => this.bulkSendToOcrQueue()],
+      ['bulkReanalyzeBtn', () => this._handleRescanSelected()],
+      ['bulkIgnoreBtn', () => this.bulkIgnore()],
+    ];
+    bulk.forEach(([id, handler]) => {
+      document.getElementById(id)?.addEventListener('click', () => {
+        document.getElementById('historyBulkMenu')?.hidePopover?.();
+        handler();
+      });
+    });
   }
 
   initializeTableEvents() {
@@ -630,6 +649,144 @@ class HistoryManager {
         if (ok) this.table?.reload();
       },
     });
+  }
+
+  /**
+   * The ids behind the checkboxes, or null after telling the operator there
+   * are none. Every bulk action starts here, so the complaint is worded once.
+   */
+  _selectionOrComplain(action) {
+    const ids = this.getSelectedDocuments()
+      .map((id) => Number(id))
+      .filter((id) => Number.isInteger(id) && id > 0);
+
+    if (!ids.length) {
+      this.showToast(`Select at least one document to ${action}.`, 'error');
+      return null;
+    }
+    return ids;
+  }
+
+  /**
+   * Asks before a bulk action that is awkward to undo. Falls through to a
+   * plain yes when the dialog module has not loaded, rather than swallowing
+   * the action the operator asked for.
+   */
+  async _confirmBulk(text) {
+    if (typeof window.zrDialog !== 'function') return true;
+
+    const result = await window.zrDialog({
+      icon: 'warning',
+      title: 'Apply to the selection?',
+      text,
+      showCancelButton: true,
+      confirmButtonText: 'Yes, apply',
+      destructive: true,
+    });
+    return Boolean(result?.isConfirmed);
+  }
+
+  /** Sends the whole selection to the OCR queue in one request. */
+  async bulkSendToOcrQueue() {
+    const ids = this._selectionOrComplain('send to the OCR queue');
+    if (!ids) return;
+
+    try {
+      const response = await fetch('/api/ocr/queue/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentIds: ids }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(data?.error || `Request failed (${response.status})`);
+      }
+      this.showToast(
+        data?.message || `${ids.length} document(s) queued.`,
+        'success'
+      );
+    } catch (error) {
+      this.showToast(
+        `Could not queue the selection: ${error.message}`,
+        'error'
+      );
+    }
+  }
+
+  /** Ignores the whole selection in one request. */
+  async bulkIgnore() {
+    const ids = this._selectionOrComplain('ignore');
+    if (!ids) return;
+
+    const confirmed = await this._confirmBulk(
+      `Ignore ${ids.length} document(s)? They will be skipped by future scans.`
+    );
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch('/api/ignored/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentIds: ids, reason: 'manual' }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(data?.error || `Request failed (${response.status})`);
+      }
+      this.showToast(
+        data?.message || `${ids.length} document(s) ignored.`,
+        'success'
+      );
+      await this.table?.reload();
+    } catch (error) {
+      this.showToast(
+        `Could not ignore the selection: ${error.message}`,
+        'error'
+      );
+    }
+  }
+
+  /**
+   * Runs OCR and the analysis for every selected document, one after another
+   * in the shared progress overlay. The queue entries are created up front in
+   * a single request so the runs themselves are the only thing left to wait
+   * for, and so the OCR page shows the whole batch while it works through it.
+   */
+  async bulkOcrAndAnalyze() {
+    const ids = this._selectionOrComplain('run OCR on');
+    if (!ids) return;
+
+    try {
+      const response = await fetch('/api/ocr/queue/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentIds: ids }),
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(data?.error || `Request failed (${response.status})`);
+      }
+    } catch (error) {
+      this.showToast(`OCR could not be started: ${error.message}`, 'error');
+      return;
+    }
+
+    if (!window.zrOcrProgress) {
+      this.showToast('The progress overlay is unavailable.', 'error');
+      return;
+    }
+
+    window.zrOcrProgress.runAll(
+      ids.map((id) => ({
+        url: `/api/ocr/process/${id}`,
+        body: { autoAnalyze: true },
+        label: `Document #${id}`,
+      })),
+      {
+        title: `OCR and analysis for ${ids.length} document(s)`,
+        onDone: () => this.table?.reload(),
+      }
+    );
   }
 
   /**

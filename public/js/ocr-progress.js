@@ -91,18 +91,25 @@
   }
 
   /**
-   * Runs one SSE job and reports into the overlay.
+   * Streams one SSE job into the overlay without opening or closing it.
+   *
+   * Split out of run() so several jobs can share one overlay: a per-job
+   * finalize would paint the bar green after the first document of forty.
    *
    * The stream is read with fetch rather than EventSource because the endpoints
    * take a POST body (autoAnalyze), which EventSource cannot send.
+   *
+   * @param {string} url
+   * @param {object} body
+   * @param {function(boolean): void} onSettle
    */
-  function run({ url, body = {}, title = 'Processing…', onDone = null }) {
-    open(title);
-
+  function runInto(url, body, onSettle) {
     let stepsDone = 0;
+    let settled = false;
     const settle = (ok) => {
-      finalize(!ok);
-      if (onDone) onDone(ok);
+      if (settled) return;
+      settled = true;
+      onSettle(ok);
     };
 
     const handleEvent = (event) => {
@@ -188,6 +195,53 @@
       });
   }
 
+  /** One job with its own overlay, from opening to the Close button. */
+  function run({ url, body = {}, title = 'Processing…', onDone = null }) {
+    open(title);
+    runInto(url, body, (ok) => {
+      finalize(!ok);
+      if (onDone) onDone(ok);
+    });
+  }
+
+  /**
+   * Runs several jobs one after another into the same overlay.
+   *
+   * Sequential on purpose: each run is an OCR call and an AI call, and firing a
+   * selection of forty at once would bury a local model and interleave the log
+   * into something nobody can read. The overall bar tracks documents rather
+   * than steps, so it still moves while an individual run reports its own.
+   *
+   * @param {Array<{url: string, body?: object, label: string}>} jobs
+   * @param {{title?: string, onDone?: function}} [options]
+   */
+  async function runAll(jobs, { title = 'Processing…', onDone = null } = {}) {
+    open(title);
+
+    let failures = 0;
+
+    for (let index = 0; index < jobs.length; index += 1) {
+      const job = jobs[index];
+      appendLog('start', `${job.label} (${index + 1}/${jobs.length})`);
+
+      const ok = await new Promise((resolve) => {
+        runInto(job.url, job.body || {}, resolve);
+      });
+
+      if (!ok) failures += 1;
+      setProgress(Math.round(((index + 1) / jobs.length) * 100));
+    }
+
+    appendLog(
+      failures ? 'error' : 'done',
+      failures
+        ? `Finished with ${failures} of ${jobs.length} failing.`
+        : `Finished all ${jobs.length} document(s).`
+    );
+    finalize(failures > 0);
+    if (onDone) onDone(failures === 0);
+  }
+
   // The two dismiss buttons belong to the overlay, so they are wired here
   // rather than by every page that includes it.
   document.addEventListener('click', (event) => {
@@ -195,5 +249,13 @@
     if (target) close();
   });
 
-  window.zrOcrProgress = { run, open, close, appendLog, setProgress, finalize };
+  window.zrOcrProgress = {
+    run,
+    runAll,
+    open,
+    close,
+    appendLog,
+    setProgress,
+    finalize,
+  };
 })();

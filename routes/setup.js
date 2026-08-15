@@ -3936,6 +3936,19 @@ function resolveSettingsAiToken(aiProvider, token) {
   return normalizedToken || resolveStoredAiToken(aiProvider);
 }
 
+/* Accepts what the row menu sends (one id) and what the bulk menu sends (a
+   list), so both reach the same endpoint. Anything that is not a positive
+   whole number is dropped rather than rejected: a selection is assembled from
+   checkboxes, and one stale row should not fail the other forty. */
+function normalizeDocumentIdList(input) {
+  const raw = Array.isArray(input) ? input : [input];
+  const ids = raw
+    .map((value) => Number.parseInt(String(value ?? '').trim(), 10))
+    .filter((value) => Number.isInteger(value) && value > 0);
+
+  return [...new Set(ids)];
+}
+
 /* The key may be typed into the form, saved from an earlier save, or
    injected through the environment. Only this side can see the last two, which
    is why neither page refuses an empty field on its own. */
@@ -9297,67 +9310,81 @@ router.get('/api/ocr/queue/ids', isAuthenticated, async (req, res) => {
   }
 });
 
-// API: Add a document manually to OCR queue
+// API: Add one or more documents manually to the OCR queue
 router.post('/api/ocr/queue/add', isAuthenticated, async (req, res) => {
   try {
-    const { documentId } = req.body;
-    if (documentId === undefined || documentId === null || documentId === '') {
+    const rawInput = req.body.documentIds ?? req.body.documentId;
+    if (rawInput === undefined || rawInput === null || rawInput === '') {
       return res
         .status(400)
         .json({ success: false, error: 'documentId is required' });
     }
 
-    const normalizedDocumentId = String(documentId).trim();
-    if (!/^\d+$/.test(normalizedDocumentId)) {
+    const documentIds = normalizeDocumentIdList(rawInput);
+    if (!documentIds.length) {
       return res.status(400).json({
         success: false,
         error: 'documentId must be a positive integer',
       });
     }
 
-    const docIdNum = Number(normalizedDocumentId);
-    if (!Number.isInteger(docIdNum) || docIdNum <= 0) {
-      return res.status(400).json({
-        success: false,
-        error: 'documentId must be a positive integer',
-      });
-    }
+    const single = documentIds.length === 1;
+    let added = 0;
+    const missing = [];
 
-    let doc;
-    try {
-      doc = await paperlessService.getDocument(docIdNum);
-    } catch (error) {
-      if (error.response?.status === 404) {
-        return res.status(404).json({
-          success: false,
-          error: `Document ${docIdNum} was not found in Paperless-ngx`,
-        });
+    for (const docIdNum of documentIds) {
+      let doc;
+      try {
+        doc = await paperlessService.getDocument(docIdNum);
+      } catch (error) {
+        if (error.response?.status === 404) {
+          doc = null;
+        } else {
+          throw error;
+        }
       }
-      throw error;
+
+      if (!doc || !Number.isInteger(Number(doc.id))) {
+        // One document that has since been deleted in Paperless-ngx must not
+        // cost the rest of the selection its place in the queue.
+        if (single) {
+          return res.status(404).json({
+            success: false,
+            error: `Document ${docIdNum} was not found in Paperless-ngx`,
+          });
+        }
+        missing.push(docIdNum);
+        continue;
+      }
+
+      const title =
+        typeof doc.title === 'string' && doc.title.trim()
+          ? doc.title.trim()
+          : `Document ${docIdNum}`;
+
+      if (await documentModel.addToOcrQueue(docIdNum, title, 'manual')) {
+        added += 1;
+      }
     }
 
-    if (!doc || !Number.isInteger(Number(doc.id))) {
-      return res.status(404).json({
-        success: false,
-        error: `Document ${docIdNum} was not found in Paperless-ngx`,
-      });
-    }
-
-    const title =
-      typeof doc.title === 'string' && doc.title.trim()
-        ? doc.title.trim()
-        : `Document ${docIdNum}`;
-
-    const added = await documentModel.addToOcrQueue(docIdNum, title, 'manual');
-    if (!added) {
+    if (single && !added) {
       return res.json({
         success: false,
         message: 'Document already in queue or could not be added',
       });
     }
+
+    const skipped = documentIds.length - added - missing.length;
     return res.json({
       success: true,
-      message: `Document ${docIdNum} added to OCR queue`,
+      added,
+      skipped,
+      missing,
+      message: single
+        ? `Document ${documentIds[0]} added to OCR queue`
+        : `${added} document(s) added to the OCR queue` +
+          (skipped ? `, ${skipped} already queued` : '') +
+          (missing.length ? `, ${missing.length} not found` : ''),
     });
   } catch (error) {
     console.error('[ERROR] POST /api/ocr/queue/add:', error);
@@ -9382,12 +9409,21 @@ router.post('/api/ocr/queue/add', isAuthenticated, async (req, res) => {
  *         application/json:
  *           schema:
  *             type: object
- *             required:
- *               - documentId
+ *             description: One of documentId or documentIds is required.
  *             properties:
  *               documentId:
  *                 type: integer
  *                 minimum: 1
+ *                 description: A single document, as the row menu sends it.
+ *               documentIds:
+ *                 type: array
+ *                 description: |
+ *                   A selection, as the bulk menu sends it. Documents that are
+ *                   already queued are counted as skipped and ones missing from
+ *                   Paperless-ngx are listed, rather than failing the batch.
+ *                 items:
+ *                   type: integer
+ *                   minimum: 1
  *     responses:
  *       200:
  *         description: Add operation result
@@ -9994,11 +10030,69 @@ router.get('/api/ignored/queue', isAuthenticated, async (req, res) => {
   }
 });
 
-// API: Add a document to the ignored list
+/**
+ * @swagger
+ * /api/ignored/add:
+ *   post:
+ *     summary: Add one or more documents to the ignored list
+ *     description: |
+ *       Ignored documents are skipped by every future scan. Accepts a single
+ *       id from the history row menu or a selection from its bulk menu; a
+ *       document that was already ignored counts as skipped rather than an
+ *       error.
+ *     tags:
+ *       - Documents
+ *     security:
+ *       - BearerAuth: []
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             description: One of documentId or documentIds is required.
+ *             properties:
+ *               documentId:
+ *                 type: integer
+ *                 minimum: 1
+ *               documentIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *                   minimum: 1
+ *               title:
+ *                 type: string
+ *                 description: Stored with a single document; ignored for a selection.
+ *               reason:
+ *                 type: string
+ *                 default: manual
+ *     responses:
+ *       200:
+ *         description: How many were added and how many were already ignored
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 added:
+ *                   type: integer
+ *                 skipped:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: No usable document id in the payload
+ */
+// API: Add one or more documents to the ignored list
 router.post('/api/ignored/add', isAuthenticated, async (req, res) => {
   try {
-    const documentId = parseInt(req.body.documentId, 10);
-    if (isNaN(documentId)) {
+    const documentIds = normalizeDocumentIdList(
+      req.body.documentIds ?? req.body.documentId
+    );
+    if (!documentIds.length) {
       return res
         .status(400)
         .json({ success: false, error: 'Invalid document ID' });
@@ -10007,16 +10101,29 @@ router.post('/api/ignored/add', isAuthenticated, async (req, res) => {
     const title = req.body.title || '';
     const reason = req.body.reason || 'manual';
 
-    const added = await documentModel.addIgnoredDocument(
-      documentId,
-      title,
-      reason
-    );
+    let added = 0;
+    for (const documentId of documentIds) {
+      // The title belongs to one document, so it only travels when one was
+      // asked for; a bulk call lets the model fall back to what it knows.
+      const wasAdded = await documentModel.addIgnoredDocument(
+        documentId,
+        documentIds.length === 1 ? title : '',
+        reason
+      );
+      if (wasAdded) added += 1;
+    }
+
+    const skipped = documentIds.length - added;
     return res.json({
       success: true,
-      message: added
-        ? `Document ${documentId} added to ignored list.`
-        : `Document ${documentId} was already ignored.`,
+      added,
+      skipped,
+      message:
+        documentIds.length === 1
+          ? added
+            ? `Document ${documentIds[0]} added to ignored list.`
+            : `Document ${documentIds[0]} was already ignored.`
+          : `${added} document(s) added to ignored list${skipped ? `, ${skipped} already ignored` : ''}.`,
     });
   } catch (error) {
     console.error('[ERROR] POST /api/ignored/add:', error);

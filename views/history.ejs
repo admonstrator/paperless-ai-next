@@ -40,6 +40,28 @@
                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                         Rescan selected
                     </button>
+                    <!-- The row menu applied to a selection. Same actions, same
+                         order, so the two read as one vocabulary. -->
+                    <button id="bulkActionsBtn" class="zr-btn" popovertarget="historyBulkMenu"
+                        title="Apply an action to the selected documents" aria-haspopup="menu">
+                        <span>Actions</span>
+                        <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-chevron-down"/></svg>
+                    </button>
+                    <div id="historyBulkMenu" popover class="zr-menu">
+                        <button type="button" class="zr-menu__item" id="bulkOcrRunBtn">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg>OCR now, then analyze
+                        </button>
+                        <button type="button" class="zr-menu__item" id="bulkOcrQueueBtn">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>Send to OCR queue
+                        </button>
+                        <button type="button" class="zr-menu__item" id="bulkReanalyzeBtn">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>Reanalyze
+                        </button>
+                        <div class="zr-menu__sep"></div>
+                        <button type="button" class="zr-menu__item zr-menu__item--danger" id="bulkIgnoreBtn">
+                            <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye-off"/></svg>Ignore
+                        </button>
+                    </div>
                     <button id="forceReloadBtn" class="zr-btn" title="Reload the tag and correspondent lists, bypassing the cache">
                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>
                         Refresh filters
@@ -232,5 +254,7 @@
     <!-- Classic script: history.js is a module and can read the global it sets,
          but the OCR queue page cannot import one. -->
     <script src="/js/ocr-progress.js"></script>
+    <!-- window.zrDialog, for the confirmation before a bulk action. -->
+    <script src="/js/dialogs.js"></script>
     <script type="module" src="/js/history.js"></script>
     <%- include('partials/shell/body-close') %>
