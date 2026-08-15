@@ -39,6 +39,7 @@ const TESTS = {
   'ignore-tags-filter': 'test-ignore-tags-filter.js',
   'injected-env-priority': 'test-injected-env-priority.js',
   'changelog-releases': 'test-changelog-releases.js',
+  'date-format-config': 'test-date-format-config.js',
   'log-level-config': 'test-log-level-config.js',
   'log-level-logger': 'test-log-level-logger.js',
   'native-install-log-paths': 'test-native-install-log-paths.js',
@@ -129,6 +130,7 @@ const AREAS = {
   ],
   observability: [
     'changelog-releases',
+    'date-format-config',
     'log-level-config',
     'log-level-logger',
     'native-install-log-paths',

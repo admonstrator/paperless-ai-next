@@ -369,7 +369,7 @@ class PromptRatingSystem {
                 </div>
                 <div class="prompt-text zr-sm zr-mono">${prompt.prompt}</div>
                 ${prompt.comment ? `<div class="zr-sm zr-muted">${prompt.comment}</div>` : ''}
-                <div class="zr-xs zr-faint">${new Date(prompt.date).toLocaleString()}</div>
+                <div class="zr-xs zr-faint">${window.zrDate.formatDateTime(prompt.date)}</div>
                 <div class="saved-prompt-card__actions">
                     <button onclick="window.promptRating.usePrompt(${prompt.id})" 
                             class="zr-btn zr-btn--primary"
@@ -472,10 +472,7 @@ class PlaygroundAnalyzer {
   }
 
   formatDocumentDate(dateValue) {
-    if (!dateValue) return 'Unknown date';
-    const parsed = new Date(dateValue);
-    if (Number.isNaN(parsed.getTime())) return 'Unknown date';
-    return parsed.toLocaleDateString();
+    return window.zrDate.format(dateValue, { fallback: 'Unknown date' });
   }
 
   renderDocuments(documents, tagNames = {}, correspondentNames = {}) {

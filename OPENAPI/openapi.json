@@ -3794,6 +3794,15 @@
                     "type": "string",
                     "description": "Run AI analysis directly after automatic OCR (yes/no)",
                     "example": "yes"
+                  },
+                  "dateFormat": {
+                    "type": "string",
+                    "description": "How every date in the web interface is rendered",
+                    "enum": [
+                      "DD.MM.YYYY",
+                      "YYYY-MM-DD"
+                    ],
+                    "example": "DD.MM.YYYY"
                   }
                 }
               }

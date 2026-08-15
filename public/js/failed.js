@@ -84,11 +84,12 @@
         const reasonLabel = formatFailedReason(item.failed_reason);
         const sourceLabel = formatFailedSource(item.source);
         // Date only; the full timestamp stays reachable through the cell title.
-        const updatedAt = item.updated_at ? new Date(item.updated_at) : null;
-        const updated = updatedAt ? updatedAt.toLocaleDateString() : '–';
-        const updatedTitle = updatedAt
-          ? escHtml(updatedAt.toLocaleString())
-          : '';
+        const updated = window.zrDate.format(item.updated_at, {
+          fallback: '–',
+        });
+        const updatedTitle = escHtml(
+          window.zrDate.formatDateTime(item.updated_at)
+        );
 
         // data-label carries the column name into the stacked phone layout,
         // where the header row is hidden.
@@ -97,7 +98,7 @@
                 <td data-label="Title" class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
                 <td data-label="Reason"><span class="zr-badge">${reasonLabel}</span></td>
                 <td data-label="Source" class="zr-sm">${sourceLabel}</td>
-                <td data-label="Updated" class="zr-sm zr-faint" title="${updatedTitle}">${updated}</td>
+                <td data-label="Updated" class="zr-sm zr-faint zr-table__date" title="${updatedTitle}">${updated}</td>
                 <td data-label="" class="zr-table__actions"><div class="zr-row">
                     <button class="zr-btn failed-reset-btn" data-id="${item.document_id}" title="Reset failed state and allow re-scan">
                         <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-undo"/></svg> Reset

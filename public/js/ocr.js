@@ -173,9 +173,10 @@
         // Date only: the exact second added nothing and its width forced the
         // table to scroll sideways on ordinary desktop windows. The full
         // timestamp stays reachable through the cell title.
-        const addedAt = item.added_at ? new Date(item.added_at) : null;
-        const addedDate = addedAt ? addedAt.toLocaleDateString() : '–';
-        const addedTitle = addedAt ? escHtml(addedAt.toLocaleString()) : '';
+        const addedDate = window.zrDate.format(item.added_at, {
+          fallback: '–',
+        });
+        const addedTitle = escHtml(window.zrDate.formatDateTime(item.added_at));
 
         // One labelled action per row, everything else behind the "…" — which
         // state a row is in decides what that primary action is, so the column
@@ -218,7 +219,7 @@
                 <td data-label="Title" class="zr-truncate" title="${escHtml(item.title || '')}">${escHtml(item.title || '–')}</td>
                 <td data-label="Reason"><span class="zr-badge">${reasonLabel}</span></td>
                 <td data-label="Status">${statusHtml}</td>
-                <td data-label="Added" class="zr-sm zr-faint" title="${addedTitle}">${addedDate}</td>
+                <td data-label="Added" class="zr-sm zr-faint zr-table__date" title="${addedTitle}">${addedDate}</td>
                 <td data-label="" class="zr-table__actions">
                     <div class="zr-row">
                         ${primaryBtn}

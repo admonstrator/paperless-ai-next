@@ -30,6 +30,25 @@ const LOG_LEVEL_WEIGHTS = {
 };
 const VALID_LOG_LEVELS = Object.keys(LOG_LEVEL_WEIGHTS);
 
+/* The date formats the interface offers. A locale's own idea of the order is
+   deliberately not among them: the dates sit in dense table cells without a
+   label, and an unadorned 08/09 has to mean one thing whoever is reading. Both
+   formats pad the month and day to two digits for the same reason — a column of
+   15.08.2026 and 3.9.2026 does not scan. */
+const VALID_DATE_FORMATS = ['DD.MM.YYYY', 'YYYY-MM-DD'];
+const DEFAULT_DATE_FORMAT = 'DD.MM.YYYY';
+
+const normalizeDateFormat = (value) => {
+  if (!value) {
+    return DEFAULT_DATE_FORMAT;
+  }
+
+  const normalized = String(value).trim().toUpperCase();
+  return VALID_DATE_FORMATS.includes(normalized)
+    ? normalized
+    : DEFAULT_DATE_FORMAT;
+};
+
 const normalizeLogLevel = (value) => {
   if (!value) {
     return 'info';
@@ -205,6 +224,24 @@ if (
   );
 }
 process.env.LOG_LEVEL = logLevel;
+
+/* Written back onto the environment so the settings view and the .env export,
+   which both read process.env directly, show the value the app actually renders
+   with rather than the typo an operator left behind. */
+const requestedDateFormat = process.env.DATE_FORMAT;
+const dateFormat = normalizeDateFormat(requestedDateFormat);
+if (
+  requestedDateFormat &&
+  String(requestedDateFormat).trim().toUpperCase() !== dateFormat
+) {
+  startupLog(
+    logLevel,
+    'warn',
+    `[WARN] Invalid DATE_FORMAT "${requestedDateFormat}". Falling back to "${dateFormat}".`
+  );
+}
+process.env.DATE_FORMAT = dateFormat;
+
 if (CONFIG_SOURCE_MODE === LEGACY_CONFIG_SOURCE_MODE) {
   startupLog(logLevel, 'debug', 'Loading legacy .env from:', envPath);
 } else {
@@ -373,6 +410,11 @@ module.exports = {
     return getCookieSecureMode();
   },
   logLevel,
+  // How every date in the interface is rendered. The browser gets it through a
+  // <meta> tag in the shell, so one setting covers server-rendered pages and
+  // the tables the page scripts build alike.
+  dateFormat,
+  validDateFormats: VALID_DATE_FORMATS,
   disableAutomaticProcessing: process.env.DISABLE_AUTOMATIC_PROCESSING || 'no',
   exposeApiDocs: parseEnvBoolean(process.env.EXPOSE_API_DOCS, 'no'),
   // Contacts api.github.com once a day to compare release tags. Set to `no` in

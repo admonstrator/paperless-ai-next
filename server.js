@@ -321,6 +321,7 @@ app.use((req, res, next) => {
   res.locals.appServerTimeUtc = new Date().toISOString();
   res.locals.appServerTimezone =
     Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  res.locals.appDateFormat = config.dateFormat || 'DD.MM.YYYY';
   res.locals.appPaperlessApiUrl = config.paperless?.apiUrl || 'unknown';
   res.locals.appOllamaApiUrl = config.ollama?.apiUrl || 'unknown';
   res.locals.appOllamaModel = config.ollama?.model || 'unknown';

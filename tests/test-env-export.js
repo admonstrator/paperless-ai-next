@@ -123,6 +123,7 @@ check('emits every group when everything is configured', () => {
     MISTRAL_OCR_ENABLED: 'yes',
     API_KEY: 'abc',
     LOG_LEVEL: 'debug',
+    DATE_FORMAT: 'YYYY-MM-DD',
   });
   [
     '# Paperless-ngx connection',
@@ -133,6 +134,7 @@ check('emits every group when everything is configured', () => {
     '# OCR fallback',
     '# Server and security',
     '# Maintenance',
+    '# Interface',
   ].forEach((heading) => assert.ok(env.includes(heading), heading));
 });
 
