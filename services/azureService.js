@@ -4,6 +4,7 @@ const {
   truncateToTokenLimit,
   writePromptToFile,
   extractChatMessageContent,
+  assertCompletionNotTruncated,
   toNameList,
 } = require('./serviceUtils');
 const axios = require('axios');
@@ -258,6 +259,11 @@ class AzureOpenAIService {
         temperature: 0.3,
       });
 
+      assertCompletionNotTruncated(
+        response,
+        'AzureOpenAI',
+        'Reduce the number of custom fields the prompt asks for, or use a model with a larger completion limit.'
+      );
       const message = response?.choices?.[0]?.message;
       let jsonContent = extractChatMessageContent(message, 'AzureOpenAI');
       if (!jsonContent) {
@@ -322,6 +328,9 @@ class AzureOpenAIService {
         document: { tags: [], correspondent: null },
         metrics: null,
         error: error.message,
+        // Undefined for everything that is not one of ours; the scan loop
+        // falls back to its generic reason then.
+        errorCode: error.code,
       };
     }
   }
@@ -419,6 +428,11 @@ class AzureOpenAIService {
       });
 
       // Handle response
+      assertCompletionNotTruncated(
+        response,
+        'AzureOpenAI',
+        'Reduce the number of custom fields the prompt asks for, or use a model with a larger completion limit.'
+      );
       const message = response?.choices?.[0]?.message;
       let jsonContent = extractChatMessageContent(message, 'AzureOpenAI');
       if (!jsonContent) {
@@ -478,6 +492,9 @@ class AzureOpenAIService {
         document: { tags: [], correspondent: null },
         metrics: null,
         error: error.message,
+        // Undefined for everything that is not one of ours; the scan loop
+        // falls back to its generic reason then.
+        errorCode: error.code,
       };
     }
   }
@@ -506,8 +523,17 @@ class AzureOpenAIService {
           },
         ],
         temperature: 0.7,
-        max_tokens: 1000,
+        // Was a hardcoded 1000, which quarrelled with the setting the same way
+        // Ollama's num_predict did — the reservation followed the operator,
+        // the limit did not.
+        max_tokens: Number(config.responseTokens),
       });
+
+      assertCompletionNotTruncated(
+        response,
+        'AzureOpenAI',
+        'Raise Response Tokens (RESPONSE_TOKENS).'
+      );
 
       const generatedText = extractChatMessageContent(
         response?.choices?.[0]?.message,
