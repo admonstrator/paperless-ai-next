@@ -36,21 +36,18 @@ function run() {
     'onclick="window.open(\'${data.link}\')"',
     'History view button must not use inline window.open handler'
   );
+  // The chat feature is gone and /chat answers nothing, so the row menu must
+  // not offer it again — an entry that opens a 404 is worse than no entry.
   assertNotIncludes(
     historyContent,
-    'onclick="window.open(\'/chat?open=${data.document_id}\')"',
-    'History chat button must not use inline window.open handler'
+    '/chat?open=',
+    'History row menu must not link to the removed chat page'
   );
 
   assertHasClass(
     historyContent,
     'history-view-btn',
     'History view button should use dedicated class for safe event binding'
-  );
-  assertHasClass(
-    historyContent,
-    'history-chat-btn',
-    'History chat button should use dedicated class for safe event binding'
   );
   assertHasClass(
     historyContent,
@@ -71,12 +68,7 @@ function run() {
   assertIncludes(
     historyContent,
     'if (!/^\\d+$/.test(docId))',
-    'History chat action must validate numeric document ids'
-  );
-  assertIncludes(
-    historyContent,
-    'encodeURIComponent(docId)',
-    'History chat action must URL-encode document ids'
+    'History row actions must validate numeric document ids'
   );
 
   console.log('✅ History XSS hardening checks passed');

@@ -260,7 +260,8 @@ class HistoryManager {
           label: 'Actions',
           sortable: false,
           // The column sizes itself to the buttons and keeps them on one line;
-          // wrapping used to push "Chat" down and double the row height.
+          // wrapping used to push the second button down and double the row
+          // height.
           cellClass: 'zr-table__actions',
           mobileLabel: '',
           // One labelled action plus the overflow, like the queue pages. Wrapping
@@ -292,8 +293,6 @@ class HistoryManager {
               `<div id="${menuId}" popover class="zr-menu">` +
               `<button type="button" class="zr-menu__item history-view-btn" data-link="${escape(row.link ?? '')}">` +
               '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-eye"/></svg>Open in Paperless-ngx</button>' +
-              `<button type="button" class="zr-menu__item history-chat-btn" data-docid="${docId}">` +
-              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-comment"/></svg>Chat about this document</button>' +
               '<div class="zr-menu__sep"></div>' +
               // Shown whether or not the OCR fallback is configured. Hiding
               // them made "this build has no such feature" and "OCR is
@@ -521,26 +520,6 @@ class HistoryManager {
           return;
         }
         window.open(link);
-      });
-
-      button.dataset.boundClick = 'true';
-    });
-
-    const chatButtons = document.querySelectorAll('.history-chat-btn');
-    chatButtons.forEach((button) => {
-      if (button.dataset.boundClick === 'true') {
-        return;
-      }
-
-      button.addEventListener('click', () => {
-        const docId = button.dataset.docid || '';
-        if (!/^\d+$/.test(docId)) {
-          console.warn('Blocked unsafe document id:', docId);
-          return;
-        }
-
-        const encodedDocId = encodeURIComponent(docId);
-        window.open(`/chat?open=${encodedDocId}`);
       });
 
       button.dataset.boundClick = 'true';
