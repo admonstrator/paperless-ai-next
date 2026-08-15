@@ -140,32 +140,10 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
 
             </div>
 
-    <!-- Progress Overlay (SSE) -->
-    <div id="progressOverlay" style="display:none;">
-        <div id="progressBox">
-            <div class="zr-row zr-row--between">
-                <h3 id="progressTitle" class="zr-module__title">Processing…</h3>
-                <button id="progressCloseBtn" class="zr-btn" style="display:none;" aria-label="Close progress overlay">
-                    <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
-                </button>
-            </div>
-
-            <!-- Progress bar -->
-            <div class="zr-meter">
-                <div id="progressBar" class="zr-meter__fill" style="width:0%"></div>
-            </div>
-
-            <div id="progressLog"></div>
-
-            <div class="zr-row">
-                <button id="progressDoneBtn" class="zr-btn zr-btn--primary" style="display:none;">
-                    Close
-                </button>
-            </div>
-        </div>
-    </div>
+    <%- include('partials/ocr-progress-overlay') %>
 
     <%- include('partials/scripts/ocr-scripts') %>
     <script src="/js/document-omnibox.js"></script>
+    <script src="/js/ocr-progress.js"></script>
     <script src="/js/ocr.js"></script>
     <%- include('partials/shell/body-close') %>

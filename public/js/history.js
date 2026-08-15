@@ -6,6 +6,11 @@ class HistoryManager {
     this.confirmModalAll = document.getElementById('confirmModalAll');
     this.selectAll = document.getElementById('selectAll');
     this.table = null; // Will be initialized in initializeDataTable
+    // Server-rendered: the row menu is built here, but whether OCR is
+    // configured at all is only known on the server.
+    this.ocrEnabled =
+      document.getElementById('historyTableContainer')?.dataset.ocrEnabled ===
+      'yes';
     this.initialize();
   }
 
@@ -291,8 +296,16 @@ class HistoryManager {
               `<button type="button" class="zr-menu__item history-chat-btn" data-docid="${docId}">` +
               '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-comment"/></svg>Chat about this document</button>' +
               '<div class="zr-menu__sep"></div>' +
-              `<button type="button" class="zr-menu__item history-ocr-btn" data-docid="${docId}">` +
-              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>Send to OCR queue</button>' +
+              // Both OCR entries are dropped when the fallback is switched
+              // off: queueing a document nothing will ever process, and
+              // offering a run that answers "OCR is not enabled", are two ways
+              // of wasting the same click.
+              (this.ocrEnabled
+                ? `<button type="button" class="zr-menu__item history-ocr-run-btn" data-docid="${docId}">` +
+                  '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg>OCR now, then analyze</button>' +
+                  `<button type="button" class="zr-menu__item history-ocr-btn" data-docid="${docId}">` +
+                  '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>Send to OCR queue</button>'
+                : '') +
               `<button type="button" class="zr-menu__item history-rescan-btn" data-docid="${docId}">` +
               '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>Reanalyze</button>' +
               '<div class="zr-menu__sep"></div>' +
@@ -517,6 +530,19 @@ class HistoryManager {
       button.dataset.boundClick = 'true';
     });
 
+    document.querySelectorAll('.history-ocr-run-btn').forEach((button) => {
+      if (button.dataset.boundClick === 'true') return;
+      button.addEventListener('click', () => {
+        const docId = button.dataset.docid || '';
+        if (!/^\d+$/.test(docId)) {
+          console.warn('Blocked unsafe document id:', docId);
+          return;
+        }
+        this.ocrAndAnalyze(Number(docId));
+      });
+      button.dataset.boundClick = 'true';
+    });
+
     document.querySelectorAll('.history-ocr-btn').forEach((button) => {
       if (button.dataset.boundClick === 'true') return;
       button.addEventListener('click', () => {
@@ -556,6 +582,56 @@ class HistoryManager {
         this.ignoreDocument(Number(docId), button.dataset.title || '');
       });
       button.dataset.boundClick = 'true';
+    });
+  }
+
+  /**
+   * Runs OCR for one document now and lets the AI analysis follow, from the row
+   * the operator is already looking at. Queueing and then walking to the OCR
+   * page to press Process was the only route before.
+   *
+   * The queue entry is created first even though processQueueItem() does not
+   * insist on one: the extracted text is stored on that row, and without it the
+   * OCR page — where the output is read back — would never learn the document
+   * had been through.
+   */
+  async ocrAndAnalyze(documentId) {
+    try {
+      const response = await fetch('/api/ocr/queue/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ documentId }),
+      });
+
+      // A 200 carrying success:false only means the document was in the queue
+      // already, which is the ordinary case here. Anything else is a real
+      // refusal — an unknown document, a bad id — and stops the run.
+      if (!response.ok) {
+        const data = await response.json().catch(() => null);
+        throw new Error(
+          data?.error ||
+            `Could not queue the document (HTTP ${response.status})`
+        );
+      }
+    } catch (error) {
+      this.showToast(`OCR could not be started: ${error.message}`, 'error');
+      return;
+    }
+
+    if (!window.zrOcrProgress) {
+      this.showToast('The progress overlay is unavailable.', 'error');
+      return;
+    }
+
+    window.zrOcrProgress.run({
+      url: `/api/ocr/process/${documentId}`,
+      // The whole point of this entry over the queue one: the operator wants
+      // the finished result, not an OCR text to analyze from another page.
+      body: { autoAnalyze: true },
+      title: `OCR and analysis for document #${documentId}`,
+      onDone: (ok) => {
+        if (ok) this.table?.reload();
+      },
     });
   }
 

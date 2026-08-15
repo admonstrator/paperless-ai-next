@@ -77,7 +77,9 @@
                 </div>
 
                 <!-- DataTable -->
-                <div id="historyTableContainer" class="zr-module" data-module="row-menu" style="display: none;">
+                <div id="historyTableContainer" class="zr-module" data-module="row-menu"
+                    data-ocr-enabled="<%= typeof appOcrEnabled !== 'undefined' && appOcrEnabled ? 'yes' : 'no' %>"
+                    style="display: none;">
                     <div class="zr-module__head">
                         <label class="zr-row zr-sm">
                             <input type="checkbox" id="selectAll" class="zr-check">
@@ -227,5 +229,10 @@
             </div>
         </div>
     </div>
+    <%- include('partials/ocr-progress-overlay') %>
+
+    <!-- Classic script: history.js is a module and can read the global it sets,
+         but the OCR queue page cannot import one. -->
+    <script src="/js/ocr-progress.js"></script>
     <script type="module" src="/js/history.js"></script>
     <%- include('partials/shell/body-close') %>

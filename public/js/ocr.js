@@ -27,14 +27,6 @@
   const processAllBtn = document.getElementById('processAllBtn');
   const autoAnalyze = document.getElementById('autoAnalyzeToggle');
 
-  // Progress overlay
-  const overlay = document.getElementById('progressOverlay');
-  const progressLog = document.getElementById('progressLog');
-  const progressBar = document.getElementById('progressBar');
-  const progressTitle = document.getElementById('progressTitle');
-  const closeBtn = document.getElementById('progressCloseBtn');
-  const doneBtn = document.getElementById('progressDoneBtn');
-
   // ── Init ───────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
     const urlParams = new URLSearchParams(window.location.search);
@@ -78,9 +70,6 @@
           loadQueue();
         }
       });
-
-    if (closeBtn) closeBtn.addEventListener('click', closeOverlay);
-    if (doneBtn) doneBtn.addEventListener('click', closeOverlay);
   });
 
   // ── Load queue ─────────────────────────────────────────────────────────
@@ -444,58 +433,50 @@
     }
   }
 
+  // The overlay and the SSE reader live in /js/ocr-progress.js, which the
+  // history page drives as well.
+  const progress = () => window.zrOcrProgress;
+
+  const refreshAfterRun = (done) => {
+    if (done) {
+      loadQueue();
+      loadStats();
+    }
+  };
+
   // ── Process single ─────────────────────────────────────────────────────
   function processSingle(documentId) {
-    const autoAnalyzeVal = autoAnalyze ? autoAnalyze.checked : false;
-    openOverlay(`Processing Document #${documentId}…`);
-
-    const es = new EventSource(`/api/ocr/process/${documentId}`);
-    // SSE doesn't support POST natively; use fetch + ReadableStream instead
-    es.close();
-
-    fetchSSE(
-      `/api/ocr/process/${documentId}`,
-      { autoAnalyze: autoAnalyzeVal },
-      function (done) {
-        if (done) {
-          loadQueue();
-          loadStats();
-        }
-      }
-    );
+    progress().run({
+      url: `/api/ocr/process/${documentId}`,
+      body: { autoAnalyze: autoAnalyze ? autoAnalyze.checked : false },
+      title: `Processing Document #${documentId}…`,
+      onDone: refreshAfterRun,
+    });
   }
 
   // ── Process all ────────────────────────────────────────────────────────
   function processAll() {
-    const autoAnalyzeVal = autoAnalyze ? autoAnalyze.checked : false;
-    openOverlay('Processing All Pending Items…');
-
-    fetchSSE(
-      '/api/ocr/process-all',
-      { autoAnalyze: autoAnalyzeVal },
-      function (done) {
-        if (done) {
-          loadQueue();
-          loadStats();
-        }
-      }
-    );
+    progress().run({
+      url: '/api/ocr/process-all',
+      body: { autoAnalyze: autoAnalyze ? autoAnalyze.checked : false },
+      title: 'Processing All Pending Items…',
+      onDone: refreshAfterRun,
+    });
   }
 
   // ── AI only (existing OCR text) ───────────────────────────────────────
   function analyzeSingle(documentId) {
-    openOverlay(`AI Analysis for Document #${documentId}…`);
-    fetchSSE(`/api/ocr/analyze/${documentId}`, {}, function (done) {
-      if (done) {
-        loadQueue();
-        loadStats();
-      }
+    progress().run({
+      url: `/api/ocr/analyze/${documentId}`,
+      title: `AI Analysis for Document #${documentId}…`,
+      onDone: refreshAfterRun,
     });
   }
 
   // ── OCR output info ───────────────────────────────────────────────────
   async function showOcrInfo(documentId) {
-    openOverlay(`OCR Output for Document #${documentId}`);
+    const { open, setProgress, appendLog, finalize } = progress();
+    open(`OCR Output for Document #${documentId}`);
     setProgress(100);
     try {
       const resp = await fetch(`/api/ocr/queue/${documentId}/text`);
@@ -506,7 +487,7 @@
 
       if (!data.hasOcrText) {
         appendLog('error', 'No OCR text available for this document.');
-        finalizeOverlay(true);
+        finalize(true);
         return;
       }
 
@@ -520,159 +501,11 @@
           ? `${text.slice(0, 12000)}\n\n[... truncated ...]`
           : text;
       appendLog('progress', preview);
-      finalizeOverlay();
+      finalize();
     } catch (error) {
       appendLog('error', error.message);
-      finalizeOverlay(true);
+      finalize(true);
     }
-  }
-
-  // ── SSE via fetch (POST) ───────────────────────────────────────────────
-  function fetchSSE(url, body, onDone) {
-    const totalSteps = 4;
-    let stepsDone = 0;
-
-    fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    })
-      .then((resp) => {
-        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-        const reader = resp.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-
-        function read() {
-          reader
-            .read()
-            .then(({ done, value }) => {
-              if (done) {
-                finalizeOverlay();
-                if (onDone) onDone(true);
-                return;
-              }
-              buffer += decoder.decode(value, { stream: true });
-              const lines = buffer.split('\n');
-              buffer = lines.pop(); // keep incomplete line
-              for (const line of lines) {
-                if (!line.startsWith('data:')) continue;
-                try {
-                  const event = JSON.parse(line.slice(5).trim());
-                  handleEvent(event);
-                } catch {
-                  // Ignore partial or malformed SSE frames.
-                }
-              }
-              read();
-            })
-            .catch((err) => {
-              appendLog('error', `Connection error: ${err.message}`);
-              finalizeOverlay();
-              if (onDone) onDone(false);
-            });
-        }
-        read();
-
-        function handleEvent(ev) {
-          const step = ev.step || 'info';
-          const msg = ev.message || '';
-
-          appendLog(step, msg);
-
-          if (
-            ['download', 'ocr', 'writeback', 'ai'].includes(step) &&
-            msg &&
-            !msg.startsWith('[OCR]')
-          ) {
-            // count step completions roughly
-            if (
-              !msg.includes('…') &&
-              !msg.includes('Sending') &&
-              !msg.includes('Writing') &&
-              !msg.includes('Starting')
-            ) {
-              stepsDone = Math.min(stepsDone + 1, totalSteps);
-              setProgress(Math.round((stepsDone / totalSteps) * 90));
-            }
-          }
-          if (step === 'done') {
-            setProgress(100);
-            finalizeOverlay();
-            if (onDone) onDone(true);
-          }
-          if (step === 'error') {
-            finalizeOverlay(true);
-            if (onDone) onDone(false);
-          }
-        }
-      })
-      .catch((err) => {
-        appendLog('error', err.message);
-        finalizeOverlay(true);
-        if (onDone) onDone(false);
-      });
-  }
-
-  // ── Overlay helpers ────────────────────────────────────────────────────
-  function openOverlay(title) {
-    if (progressTitle) progressTitle.textContent = title;
-    if (progressLog) progressLog.innerHTML = '';
-    if (progressBar) {
-      progressBar.style.width = '5%';
-      progressBar.classList.remove(
-        'zr-meter__fill--ok',
-        'zr-meter__fill--danger'
-      );
-    }
-    if (closeBtn) closeBtn.style.display = 'none';
-    if (doneBtn) doneBtn.style.display = 'none';
-    if (overlay) overlay.style.display = 'flex';
-  }
-
-  function closeOverlay() {
-    if (overlay) overlay.style.display = 'none';
-  }
-
-  function finalizeOverlay(isError) {
-    if (progressBar) {
-      progressBar.style.width = '100%';
-      // Assigning the whole className used to drop zr-meter__fill along with
-      // the Tailwind classes it replaced, so the bar vanished at 100%.
-      progressBar.classList.toggle('zr-meter__fill--danger', isError);
-      progressBar.classList.toggle('zr-meter__fill--ok', !isError);
-    }
-    if (closeBtn) closeBtn.style.display = 'block';
-    if (doneBtn) doneBtn.style.display = 'block';
-  }
-
-  function setProgress(pct) {
-    if (progressBar) progressBar.style.width = `${pct}%`;
-  }
-
-  function appendLog(step, message) {
-    if (!progressLog) return;
-    const line = document.createElement('div');
-    line.className = `log-line log-${step}`;
-    const icons = {
-      download: '⬇ ',
-      ocr: '🔍 ',
-      writeback: '📤 ',
-      ai: '🤖 ',
-      done: '✅ ',
-      error: '❌ ',
-      start: '▶ ',
-      progress: '· ',
-      item_download: '  ⬇ ',
-      item_ocr: '  🔍 ',
-      item_writeback: '  📤 ',
-      item_ai: '  🤖 ',
-      item_done: '  ✅ ',
-      item_error: '  ❌ ',
-    };
-    line.textContent = (icons[step] || '  ') + message;
-    progressLog.appendChild(line);
-    progressLog.scrollTop = progressLog.scrollHeight;
   }
 
   // ── Toast ──────────────────────────────────────────────────────────────
