@@ -6,11 +6,6 @@ class HistoryManager {
     this.confirmModalAll = document.getElementById('confirmModalAll');
     this.selectAll = document.getElementById('selectAll');
     this.table = null; // Will be initialized in initializeDataTable
-    // Server-rendered: the row menu is built here, but whether OCR is
-    // configured at all is only known on the server.
-    this.ocrEnabled =
-      document.getElementById('historyTableContainer')?.dataset.ocrEnabled ===
-      'yes';
     this.initialize();
   }
 
@@ -296,16 +291,18 @@ class HistoryManager {
               `<button type="button" class="zr-menu__item history-chat-btn" data-docid="${docId}">` +
               '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-comment"/></svg>Chat about this document</button>' +
               '<div class="zr-menu__sep"></div>' +
-              // Both OCR entries are dropped when the fallback is switched
-              // off: queueing a document nothing will ever process, and
-              // offering a run that answers "OCR is not enabled", are two ways
-              // of wasting the same click.
-              (this.ocrEnabled
-                ? `<button type="button" class="zr-menu__item history-ocr-run-btn" data-docid="${docId}">` +
-                  '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg>OCR now, then analyze</button>' +
-                  `<button type="button" class="zr-menu__item history-ocr-btn" data-docid="${docId}">` +
-                  '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>Send to OCR queue</button>'
-                : '') +
+              // Shown whether or not the OCR fallback is configured. Hiding
+              // them made "this build has no such feature" and "OCR is
+              // switched off here" look identical, which cost an afternoon of
+              // looking for the wrong bug — and the queue entry, which had
+              // always been unconditional, disappeared along with them. The
+              // run endpoint answers "OCR fallback is not enabled. Set
+              // MISTRAL_OCR_ENABLED=yes …" in the progress log, which says it
+              // better than an absent menu item ever could.
+              `<button type="button" class="zr-menu__item history-ocr-run-btn" data-docid="${docId}">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg>OCR now, then analyze</button>' +
+              `<button type="button" class="zr-menu__item history-ocr-btn" data-docid="${docId}">` +
+              '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-scan"/></svg>Send to OCR queue</button>' +
               `<button type="button" class="zr-menu__item history-rescan-btn" data-docid="${docId}">` +
               '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-refresh"/></svg>Reanalyze</button>' +
               '<div class="zr-menu__sep"></div>' +
