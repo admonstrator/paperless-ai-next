@@ -11,6 +11,7 @@ import { renderSpark } from './spark.js';
 import { renderBarList } from './bar-list.js';
 import { formatTimeAgo, updateScannerHealthBanner } from './scanner-health.js';
 import { escapeHtml } from './text-utils.js';
+import { formatDate } from './date-format.js';
 
 const STATS_URL = '/api/dashboard/stats';
 const STATUS_URL = '/api/processing-status';
@@ -83,16 +84,6 @@ function formatDocumentCount(value) {
   return `${formatNumber(numeric)} ${Math.abs(numeric) === 1 ? 'doc' : 'docs'}`;
 }
 
-function formatDate(value) {
-  if (!value) return 'unknown date';
-  const normalized = String(value).includes(' ')
-    ? String(value).replace(' ', 'T')
-    : String(value);
-  const parsed = new Date(normalized);
-  if (Number.isNaN(parsed.getTime())) return 'unknown date';
-  return parsed.toLocaleDateString();
-}
-
 async function fetchJson(url, options = {}) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
@@ -152,7 +143,7 @@ export default function dashboard(root, { toast }) {
               <span class="zr-list__title">${escapeHtml(item.title || 'Untitled document')}</span>
               <span class="zr-list__sub">${escapeHtml(item.correspondent || 'Unknown correspondent')} &middot; #${Number(item.documentId || 0)}</span>
             </span>
-            <span class="zr-list__time">${escapeHtml(formatDate(item.createdAt))}</span>
+            <span class="zr-list__time">${escapeHtml(formatDate(item.createdAt, { fallback: 'unknown date' }))}</span>
           </${tag}>`;
       })
       .join('');

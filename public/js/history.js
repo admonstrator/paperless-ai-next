@@ -245,7 +245,7 @@ class HistoryManager {
           render: (value, row) =>
             `<div class="zr-strong">${escape(value)}</div>` +
             // Date only, like the queue pages; the full timestamp sits in the title.
-            `<div class="zr-sm zr-faint" title="${escape(new Date(row.created_at).toLocaleString())}">Modified: ${escape(new Date(row.created_at).toLocaleDateString())}</div>`,
+            `<div class="zr-sm zr-faint" title="${escape(window.zrDate.formatDateTime(row.created_at))}">Modified: ${escape(window.zrDate.format(row.created_at, { fallback: '–' }))}</div>`,
         },
         {
           key: 'correspondent',
@@ -907,10 +907,10 @@ class HistoryManager {
       }
 
       // --- Processed At ---
-      document.getElementById('infoModalProcessedAt').textContent = data.history
-        .created_at
-        ? new Date(data.history.created_at).toLocaleString()
-        : 'Unknown';
+      document.getElementById('infoModalProcessedAt').textContent =
+        window.zrDate.formatDateTime(data.history.created_at, {
+          fallback: 'Unknown',
+        });
 
       // --- Token Usage ---
       const tokensSection = document.getElementById('infoModalTokensSection');

@@ -3797,6 +3797,10 @@ const ENV_EXPORT_GROUPS = [
       'ANONYMIZED_TELEMETRY',
     ],
   },
+  {
+    title: 'Interface',
+    keys: ['DATE_FORMAT'],
+  },
 ];
 
 /* A value only needs quoting when it carries something a .env parser would
@@ -6605,6 +6609,7 @@ router.get('/settings', async (req, res) => {
     MIN_CONTENT_LENGTH: process.env.MIN_CONTENT_LENGTH || '10',
     PAPERLESS_AI_PORT: process.env.PAPERLESS_AI_PORT || '3000',
     LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+    DATE_FORMAT: process.env.DATE_FORMAT || 'DD.MM.YYYY',
   };
 
   if (isConfigured) {
@@ -8045,6 +8050,11 @@ router.get('/health', async (req, res) => {
  *                 type: string
  *                 description: Run AI analysis directly after automatic OCR (yes/no)
  *                 example: "yes"
+ *               dateFormat:
+ *                 type: string
+ *                 description: How every date in the web interface is rendered
+ *                 enum: ["DD.MM.YYYY", "YYYY-MM-DD"]
+ *                 example: "DD.MM.YYYY"
  *     responses:
  *       200:
  *         description: Settings updated successfully
@@ -8155,6 +8165,7 @@ router.post('/settings', express.json(), async (req, res) => {
       paperlessAiPort,
       externalApiAllowPrivateIps,
       logLevel,
+      dateFormat,
     } = req.body;
 
     //replace equal char in system prompt
@@ -8253,6 +8264,7 @@ router.post('/settings', express.json(), async (req, res) => {
       MIN_CONTENT_LENGTH: process.env.MIN_CONTENT_LENGTH || '10',
       PAPERLESS_AI_PORT: process.env.PAPERLESS_AI_PORT || '3000',
       LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+      DATE_FORMAT: process.env.DATE_FORMAT || 'DD.MM.YYYY',
     };
 
     const hasValue = (value) =>
@@ -8710,6 +8722,19 @@ router.post('/settings', express.json(), async (req, res) => {
       } else {
         return res.status(400).json({
           error: 'Invalid Log Level. Allowed values: debug, info, warn, error.',
+        });
+      }
+    }
+    if (typeof dateFormat === 'string') {
+      // Upper-cased before the comparison because the value doubles as the
+      // pattern it describes — an operator typing dd.mm.yyyy into the .env file
+      // means the same thing the select does.
+      const normalizedDateFormat = dateFormat.trim().toUpperCase();
+      if (['DD.MM.YYYY', 'YYYY-MM-DD'].includes(normalizedDateFormat)) {
+        updatedConfig.DATE_FORMAT = normalizedDateFormat;
+      } else {
+        return res.status(400).json({
+          error: 'Invalid Date Format. Allowed values: DD.MM.YYYY, YYYY-MM-DD.',
         });
       }
     }

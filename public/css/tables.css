@@ -47,6 +47,13 @@
     flex-wrap: nowrap;
     justify-content: flex-end;
   }
+  /* A date column never breaks its dates. YYYY-MM-DD offers the browser two
+     break opportunities at its hyphens and it takes them the moment the column
+     is tight, so the same row that reads 03.09.2026 on one line came back as
+     2026- / 09-03 on two the moment the format was switched. */
+  .zr-table__date {
+    white-space: nowrap;
+  }
   .zr-table tbody tr:hover {
     background: var(--zr-surface-2);
   }

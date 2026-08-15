@@ -2,6 +2,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+    <!-- How /js/date-format.js renders every date on the page. A meta tag rather than a data attribute on <html>, because the theme script already owns that element and rewrites it before first paint. -->
+    <meta name="date-format" content="<%= typeof appDateFormat !== 'undefined' && appDateFormat ? appDateFormat : 'DD.MM.YYYY' %>">
     <title><%= typeof pageTitle !== 'undefined' ? pageTitle : 'Zettelrobbe' %></title>
     <link rel="icon" type="image/webp" href="/favicon.webp">
     <%- include('theme-init-head') %>
@@ -27,3 +29,4 @@
     <link rel="stylesheet" href="/css/pages/shared.css">
     <link rel="stylesheet" href="/css/utilities.css">
     <script src="/js/csrf.js"></script>
+    <script src="/js/date-format.js"></script>

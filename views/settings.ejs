@@ -222,6 +222,24 @@
                                 </div>
                             </section>
 
+                            <section class="zr-module" id="sec-display">
+                                <div class="zr-module__head">
+                                    <h2 class="zr-module__title">Display</h2>
+                                </div>
+                                <div class="zr-module__body zr-col zr-col--loose">
+                                <div class="zr-formgrid">
+                                    <div class="zr-field zr-field--stacked">
+                                        <label for="dateFormat" class="zr-field__name">Date Format</label>
+                                        <select id="dateFormat" name="dateFormat" class="zr-input">
+                                            <option value="DD.MM.YYYY" <%= String(config.DATE_FORMAT || 'DD.MM.YYYY').toUpperCase() === 'YYYY-MM-DD' ? '' : 'selected' %>>DD.MM.YYYY</option>
+                                            <option value="YYYY-MM-DD" <%= String(config.DATE_FORMAT || 'DD.MM.YYYY').toUpperCase() === 'YYYY-MM-DD' ? 'selected' : '' %>>YYYY-MM-DD</option>
+                                        </select>
+                                        <p class="zr-field__hint">Every date in the interface: 15 August 2026 reads as 15.08.2026 or 2026-08-15 &middot; Restart required</p>
+                                    </div>
+                                </div>
+                                </div>
+                            </section>
+
                         </div>
 
                         <div id="mfa-tab" class="zr-col zr-col--loose">

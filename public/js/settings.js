@@ -2780,6 +2780,7 @@ function initializeRuntimeOverridePills() {
     { selector: '#globalRateLimitMax', envKey: 'GLOBAL_RATE_LIMIT_MAX' },
     { selector: '#trustProxy', envKey: 'TRUST_PROXY' },
     { selector: '#cookieSecureMode', envKey: 'COOKIE_SECURE_MODE' },
+    { selector: '#dateFormat', envKey: 'DATE_FORMAT' },
     { selector: '#minContentLength', envKey: 'MIN_CONTENT_LENGTH' },
     { selector: '#paperlessAiPort', envKey: 'PAPERLESS_AI_PORT' },
     { selector: '#reconciliationEnabled', envKey: 'RECONCILIATION_ENABLED' },
