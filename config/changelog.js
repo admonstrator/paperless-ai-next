@@ -83,6 +83,18 @@ const RELEASES = [
       "New: Settings has a Changelog tab showing the full release history, so past release notes are readable after the What's New modal has been dismissed",
     ],
   },
+  {
+    version: 'v2026.08.03',
+    entries: [
+      'New: Dashboard widgets can be rearranged, resized and hidden in an explicit edit mode',
+      'New: The date format is configurable between DD.MM.YYYY and YYYY-MM-DD under Settings &rarr; System &rarr; Display',
+      'New: History rows can start OCR with AI analysis directly, and send a document to Reanalyze or Ignore',
+      'Fix: The "Response Tokens" setting is applied as the AI response limit - Ollama was capped at 256 tokens regardless of it, which cut long answers off mid-sentence <a href="https://github.com/admonstrator/zettelrobbe/issues/263">(see here)</a>',
+      'Fix: An AI answer that was cut off is reported as a failed document instead of being silently marked processed with nothing extracted',
+      'Improvement: The dashboard serves its statistics from a cache instead of querying Paperless-ngx on every request',
+      'Improvement: The tag cache is rebuilt in two requests instead of one per 25 tags, which could stall startup for a minute on large libraries',
+    ],
+  },
 ];
 
 const latestRelease = RELEASES[RELEASES.length - 1];
