@@ -8989,6 +8989,11 @@ router.get('/ocr', protectApiRoute, async (req, res) => {
     return res.render('ocr', {
       version: configFile.PAPERLESS_AI_VERSION || ' ',
       ocrEnabled: configFile.mistralOcr?.enabled === 'yes',
+      // Same reading as ocrAutoProcessService.autoAnalyze, so the checkbox
+      // starts where OCR_AUTO_ANALYZE stands and the button does what the
+      // scheduled drain does. It used to start unchecked regardless, which
+      // made the same queue behave differently depending on who ran it.
+      ocrAutoAnalyze: configFile.mistralOcr?.autoAnalyze !== 'no',
     });
   } catch (error) {
     console.error('[ERROR] OCR page:', error);
@@ -9834,6 +9839,14 @@ router.get('/api/ocr/stats', isAuthenticated, async (req, res) => {
       pending: allItems.filter((i) => i.status === 'pending').length,
       processing: allItems.filter((i) => i.status === 'processing').length,
       done: allItems.filter((i) => i.status === 'done').length,
+      // Counted separately rather than folded into "done": these are the items
+      // Paperless-ngx refused the content for, so this queue entry is the only
+      // place their OCR text exists. Items completed before the wrote_back
+      // column existed carry null and stay out of this count — their outcome
+      // was never recorded.
+      notWrittenBack: allItems.filter(
+        (i) => i.status === 'done' && i.wrote_back === 0
+      ).length,
       failed: allItems.filter((i) => i.status === 'failed').length,
       permanentlyFailed: failedDocs.total || 0,
       ignored: ignoredCount,

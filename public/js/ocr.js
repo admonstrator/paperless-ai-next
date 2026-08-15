@@ -157,7 +157,14 @@
 
         const reasonLabel = formatReasonLabel(item.reason);
 
-        const statusHtml = `<span class="zr-badge ${statusTone(item.status)}">${statusIcon(item.status)} ${escHtml(item.status)}</span>`;
+        // A finished item whose text Paperless-ngx accepted is removed from the
+        // queue, so a 'done' row that is still listed is one whose text exists
+        // nowhere else. A plain green "done" would read as "nothing to see
+        // here", which is the opposite of what that row means.
+        const localOnly = item.status === 'done' && item.wrote_back === 0;
+        const statusHtml = localOnly
+          ? `<span class="zr-badge zr-badge--warn" title="Paperless-ngx did not accept the content. The OCR text exists only in this queue entry."><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg> not written back</span>`
+          : `<span class="zr-badge ${statusTone(item.status)}">${statusIcon(item.status)} ${escHtml(item.status)}</span>`;
 
         // Date only: the exact second added nothing and its width forced the
         // table to scroll sideways on ordinary desktop windows. The full
@@ -173,19 +180,29 @@
         const hasOcrText = !!(item.ocr_text && String(item.ocr_text).trim());
         const canProcess =
           item.status === 'pending' || item.status === 'failed';
-        const canAnalyze = item.status === 'done' && hasOcrText;
+        // A row that failed at the AI step still carries the OCR text it paid
+        // for, and analysing it again costs one AI call. Tying this to 'done'
+        // alone left such a row with "Process" as its only offer, which runs
+        // the whole pipeline and buys the same text from the OCR provider a
+        // second time.
+        const canAnalyze =
+          hasOcrText && (item.status === 'done' || item.status === 'failed');
 
+        // Analyze wins the primary slot wherever both apply: it is the cheaper
+        // of the two and the one that moves the document forward. Re-running
+        // OCR stays reachable in the menu.
         let primaryBtn = '';
-        if (canProcess) {
-          primaryBtn = `<button class="zr-btn process-btn" data-id="${item.document_id}" title="Send to OCR provider"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process</button>`;
-        } else if (canAnalyze) {
+        if (canAnalyze) {
           primaryBtn = `<button class="zr-btn analyze-btn" data-id="${item.document_id}" title="Start AI analysis using existing OCR text"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-cpu"/></svg> Analyze</button>`;
+        } else if (canProcess) {
+          primaryBtn = `<button class="zr-btn process-btn" data-id="${item.document_id}" title="Send to OCR provider"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg> Process</button>`;
         }
 
-        // Process and Analyze never apply to the same row, so whichever is
-        // available is already the primary button and never repeats here.
         const menuId = `ocrRowMenu${item.document_id}`;
         const menuItems = [
+          canProcess && canAnalyze
+            ? `<button type="button" class="zr-menu__item process-btn" data-id="${item.document_id}" title="Discard the stored text and run the OCR provider again"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-play"/></svg>Run OCR again</button>`
+            : '',
           hasOcrText
             ? `<button type="button" class="zr-menu__item info-btn" data-id="${item.document_id}"><svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-info"/></svg>Show OCR output</button>`
             : '',
@@ -293,6 +310,11 @@
       setStatCount('statPendingCount', s.pending);
       setStatCount('statDoneCount', s.done);
       setStatCount('statFailedCount', s.failed);
+      setStatCount('statNotWrittenBackCount', s.notWrittenBack);
+      const notWrittenBack = document.getElementById('statNotWrittenBack');
+      if (notWrittenBack) {
+        notWrittenBack.classList.toggle('hidden', !s.notWrittenBack);
+      }
     } catch (error) {
       // Stats are decorative; keep the queue view usable if they fail to load.
       console.warn('Could not load OCR stats:', error);

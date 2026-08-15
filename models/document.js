@@ -339,6 +339,27 @@ const MIGRATIONS = [
       }
     },
   },
+  {
+    version: 10,
+    description: 'Add wrote_back column to ocr_queue',
+    up: (database) => {
+      // Records whether the OCR text reached Paperless-ngx. A finished item
+      // whose text was accepted is deleted from the queue, so from here on a
+      // surviving 'done' row means the text exists nowhere but here. Rows that
+      // completed before this migration keep NULL: their outcome was never
+      // recorded and cannot be reconstructed without asking Paperless-ngx for
+      // every one of them.
+      const queueColumns = database
+        .prepare("PRAGMA table_info('ocr_queue')")
+        .all();
+      const hasColumn = queueColumns.some((col) => col.name === 'wrote_back');
+      if (!hasColumn) {
+        database.exec(
+          'ALTER TABLE ocr_queue ADD COLUMN wrote_back INTEGER DEFAULT NULL'
+        );
+      }
+    },
+  },
 ];
 
 function runMigrations(database) {
@@ -1272,19 +1293,34 @@ module.exports = {
     }
   },
 
-  async updateOcrQueueStatus(documentId, status, ocrText = null) {
+  // wroteBack stays null when the caller has nothing to say about the
+  // write-back, which is every call that is not the end of an OCR run. COALESCE
+  // then keeps whatever the run before recorded instead of erasing it.
+  async updateOcrQueueStatus(
+    documentId,
+    status,
+    ocrText = null,
+    wroteBack = null
+  ) {
     try {
+      const wroteBackValue =
+        wroteBack === null || wroteBack === undefined
+          ? null
+          : wroteBack
+            ? 1
+            : 0;
       const result = db
         .prepare(
           `
         UPDATE ocr_queue SET
           status = ?,
           ocr_text = COALESCE(?, ocr_text),
+          wrote_back = COALESCE(?, wrote_back),
           processed_at = CASE WHEN ? IN ('done', 'failed') THEN CURRENT_TIMESTAMP ELSE processed_at END
         WHERE document_id = ?
       `
         )
-        .run(status, ocrText, status, documentId);
+        .run(status, ocrText, wroteBackValue, status, documentId);
       return result.changes > 0;
     } catch (error) {
       console.error('[ERROR] updating OCR queue status:', error);

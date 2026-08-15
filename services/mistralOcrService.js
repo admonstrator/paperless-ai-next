@@ -219,7 +219,7 @@ class MistralOcrService {
         console.error(
           `[TIMEOUT][OCR] Mistral OCR request timed out: ${error.message}`
         );
-        throw new Error(timeoutMessage);
+        throw new Error(timeoutMessage, { cause: error });
       }
       throw error;
     }
@@ -767,7 +767,9 @@ class MistralOcrService {
         ({ base64, mimeType } =
           await this.downloadDocumentAsBase64(normalizedDocumentId));
       } catch (dlErr) {
-        throw new Error(`Download failed: ${dlErr.message}`);
+        throw new Error(`Download failed: ${dlErr.message}`, {
+          cause: dlErr,
+        });
       }
       emit('download', `Download complete (${mimeType}).`);
 
@@ -787,7 +789,9 @@ class MistralOcrService {
           }
         );
       } catch (ocrErr) {
-        throw new Error(`${providerLabel} failed: ${ocrErr.message}`);
+        throw new Error(`${providerLabel} failed: ${ocrErr.message}`, {
+          cause: ocrErr,
+        });
       }
       const previewLen = Math.min(ocrText.length, 120);
       emit('ocr', `OCR complete. Extracted ${ocrText.length} characters.`, {
@@ -809,11 +813,14 @@ class MistralOcrService {
         );
       }
 
-      // Persist result in queue
+      // Persist the result before the AI step, not after: if the process dies
+      // mid-analysis, the startup recovery finds a 'done' row holding its text
+      // instead of a 'pending' one, and the retry costs no second OCR call.
       await documentModel.updateOcrQueueStatus(
         normalizedDocumentId,
         'done',
-        ocrText
+        ocrText,
+        wroteBack
       );
 
       let aiResult = null;
@@ -837,12 +844,33 @@ class MistralOcrService {
           const aiErrorMessage = isTimeoutError(aiErr)
             ? buildTimeoutErrorMessage('AI')
             : aiErr.message;
-          throw new Error(`AI analysis failed after OCR: ${aiErrorMessage}`);
+          throw new Error(`AI analysis failed after OCR: ${aiErrorMessage}`, {
+            cause: aiErr,
+          });
         }
       }
 
       if (!autoAnalyze || aiResult) {
         await documentModel.resetFailedDocument(normalizedDocumentId);
+      }
+
+      // The queue holds outstanding work, so a row that has none left is
+      // removed rather than kept as a receipt. Both conditions carry weight:
+      //
+      // - wroteBack: Paperless-ngx now holds the text, which makes the local
+      //   copy redundant. A refused write-back leaves this row as the only
+      //   place the text exists, so it stays and keeps saying so.
+      // - aiResult: the analysis is what puts the document into
+      //   processed_documents, and that record is what stops the scan loop
+      //   from queueing it for OCR a second time. Without it, deleting the row
+      //   would drop the only memory that this document was ever OCR'd, and an
+      //   AI error that keeps recurring would buy OCR again on every scan.
+      //
+      // An OCR-only run therefore keeps its row on purpose — the document has
+      // its text but still awaits analysis, which is outstanding work, and the
+      // row offers exactly that action.
+      if (wroteBack && aiResult) {
+        await documentModel.removeFromOcrQueue(normalizedDocumentId);
       }
 
       emit('done', 'Processing finished successfully.');
@@ -912,7 +940,7 @@ class MistralOcrService {
         ? buildTimeoutErrorMessage('AI')
         : error.message;
       emit('error', `AI analysis failed: ${aiErrorMessage}`);
-      throw new Error(aiErrorMessage);
+      throw new Error(aiErrorMessage, { cause: error });
     }
   }
 

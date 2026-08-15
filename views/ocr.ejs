@@ -19,6 +19,10 @@
                         <!-- Stats badges -->
                         <span id="statPending" class="zr-badge zr-badge--warn"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-clock"/></svg> <span id="statPendingCount">…</span> pending</span>
                         <span id="statDone" class="zr-badge zr-badge--ok"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-check"/></svg> <span id="statDoneCount">…</span> done</span>
+                        <!-- Hidden at zero: on a healthy instance this badge
+                             never shows, and an empty one would only teach
+                             people to ignore it. -->
+                        <span id="statNotWrittenBack" class="zr-badge zr-badge--warn hidden" title="Paperless-ngx did not accept the content. The OCR text of these documents exists only in the queue."><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-alert"/></svg> <span id="statNotWrittenBackCount">…</span> not written back</span>
                         <span id="statFailed" class="zr-badge zr-badge--danger"><svg class="zr-icon" aria-hidden="true"><use href="/icons.svg#i-x"/></svg> <span id="statFailedCount">…</span> failed</span>
                     </div>
                     <% } %>
@@ -86,7 +90,7 @@ MISTRAL_OCR_MODEL=mistral-ocr-latest</pre>
                         <span class="zr-grow"></span>
 
                         <label class="zr-row">
-                            <input type="checkbox" class="zr-toggle" id="autoAnalyzeToggle">
+                            <input type="checkbox" class="zr-toggle" id="autoAnalyzeToggle" <%= (typeof ocrAutoAnalyze !== 'undefined' && ocrAutoAnalyze) ? 'checked' : '' %>>
                             <span>AI analysis after OCR</span>
                         </label>
 
