@@ -1,0 +1,26 @@
+<!-- OCR run overlay. Driven by /js/ocr-progress.js, styled in css/pages/queues.css;
+     a page that includes this needs the script too. Shared by the OCR queue and
+     the history list, which both start the same SSE job. -->
+<div id="progressOverlay" style="display:none;">
+    <div id="progressBox">
+        <div class="zr-row zr-row--between">
+            <h3 id="progressTitle" class="zr-module__title">Processing…</h3>
+            <button id="progressCloseBtn" class="zr-btn" style="display:none;" aria-label="Close progress overlay">
+                <svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>
+            </button>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="zr-meter">
+            <div id="progressBar" class="zr-meter__fill" style="width:0%"></div>
+        </div>
+
+        <div id="progressLog"></div>
+
+        <div class="zr-row">
+            <button id="progressDoneBtn" class="zr-btn zr-btn--primary" style="display:none;">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
