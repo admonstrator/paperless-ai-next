@@ -2907,6 +2907,19 @@ router.get('/api/history/validate', isAuthenticated, async (req, res) => {
  *                   type: boolean
  *                 message:
  *                   type: string
+ *       400:
+ *         description: Setup has not been completed yet
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "Setup not completed"
  *       401:
  *         description: Unauthorized - authentication required
  *         content:
@@ -2940,14 +2953,10 @@ router.post('/api/scan/now', isAuthenticated, async (req, res) => {
       });
     }
 
-    const userId = await paperlessService.getOwnUserID();
-    if (!userId) {
-      return res.status(500).json({
-        success: false,
-        error: 'Failed to resolve Paperless user ID',
-      });
-    }
-
+    // No user-ID probe here on purpose: the scan runs with the configured API
+    // token and never needs the numeric user ID. The guard that used to sit
+    // here failed a scan with an unlogged 500 whenever PAPERLESS_USERNAME did
+    // not match a name in /api/users/ (issue #305).
     const triggerScanNow = global.__paperlessAiTriggerScanNow;
     if (typeof triggerScanNow !== 'function') {
       return res.status(503).json({
@@ -6039,12 +6048,10 @@ async function processQueue(customPrompt) {
       return;
     }
 
-    const userId = await paperlessService.getOwnUserID();
-    if (!userId) {
-      console.error('Failed to get own user ID. Abort scanning.');
-      return;
-    }
-
+    // The own user ID is resolved with the lists below and handed to
+    // processDocument(), which does not act on it. It must therefore not gate
+    // the queue: an unresolvable ID used to abort manual processing outright
+    // (issue #305).
     const [
       existingTags,
       existingCorrespondentList,

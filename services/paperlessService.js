@@ -2245,6 +2245,13 @@ class PaperlessService {
     }
   }
 
+  /* Resolving the own user ID used to hinge entirely on PAPERLESS_USERNAME
+     matching a name in the response, and returned null without a word when it
+     did not — a configured display name, a case difference or a token whose
+     user cannot list other users all ended in the same silent null. The
+     configured name still wins when it matches; a single-entry response is
+     taken at face value (that is what current_user=true asks for), and the
+     dead end says why. */
   async getOwnUserID() {
     this.initialize();
     try {
@@ -2255,17 +2262,44 @@ class PaperlessService {
         },
       });
 
-      if (response.data.results && response.data.results.length > 0) {
-        const userInfo = response.data.results;
-        //filter for username by process.env.PAPERLESS_USERNAME
-        const user = userInfo.find(
-          (user) => user.username === process.env.PAPERLESS_USERNAME
+      const users = Array.isArray(response?.data?.results)
+        ? response.data.results
+        : [];
+      if (users.length === 0) {
+        console.warn(
+          '[WARN] Could not resolve own user ID: Paperless-ngx returned no users.'
         );
-        if (user) {
-          console.log(`[DEBUG] Found own user ID: ${user.id}`);
-          return user.id;
-        }
+        return null;
       }
+
+      const configuredUsername = String(
+        process.env.PAPERLESS_USERNAME || ''
+      ).trim();
+      const matched = configuredUsername
+        ? users.find(
+            (user) =>
+              String(user?.username || '')
+                .trim()
+                .toLowerCase() === configuredUsername.toLowerCase()
+          )
+        : null;
+
+      if (matched?.id != null) {
+        console.log(`[DEBUG] Found own user ID: ${matched.id}`);
+        return matched.id;
+      }
+
+      if (users.length === 1 && users[0]?.id != null) {
+        console.log(
+          `[DEBUG] Found own user ID: ${users[0].id} (current user, no PAPERLESS_USERNAME match)`
+        );
+        return users[0].id;
+      }
+
+      console.warn(
+        `[WARN] Could not resolve own user ID: ${users.length} user(s) returned and none matches ` +
+          `PAPERLESS_USERNAME (${configuredUsername || 'not set'}).`
+      );
       return null;
     } catch (error) {
       console.error('[ERROR] fetching own user ID:', error.message);

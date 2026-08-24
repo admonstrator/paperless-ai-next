@@ -2420,6 +2420,26 @@
               }
             }
           },
+          "400": {
+            "description": "Setup has not been completed yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Setup not completed"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "401": {
             "description": "Unauthorized - authentication required",
             "content": {
