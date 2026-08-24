@@ -1020,8 +1020,9 @@
     },
     "/playground": {
       "get": {
-        "summary": "AI playground testing environment",
-        "description": "Renders the AI playground page for experimenting with document analysis.\n\nThis interactive environment allows users to test different AI providers and prompts\non document content without affecting the actual document processing workflow.\nUsers can paste document text, customize prompts, and see raw AI responses\nto better understand how the AI models analyze document content.\n\nThe playground is useful for fine-tuning prompts and testing AI capabilities\nbefore applying them to actual document processing.\n",
+        "deprecated": true,
+        "summary": "AI playground testing environment (deprecated)",
+        "description": "Renders the AI playground page for experimenting with document analysis.\n\nThis interactive environment allows users to test different AI providers and prompts\non document content without affecting the actual document processing workflow.\nUsers can paste document text, customize prompts, and see raw AI responses\nto better understand how the AI models analyze document content.\n\nThe playground is useful for fine-tuning prompts and testing AI capabilities\nbefore applying them to actual document processing.\n\nDeprecated: the page has been removed from the navigation and will be\nremoved entirely in a future release. Use /manual to try a prompt\nagainst a single document.\n",
         "tags": [
           "Navigation",
           "Documents"
@@ -1177,8 +1178,9 @@
     },
     "/api/playground/bootstrap": {
       "get": {
-        "summary": "Get playground bootstrap data",
-        "description": "Returns documents and metadata required to initialize the AI playground UI.",
+        "deprecated": true,
+        "summary": "Get playground bootstrap data (deprecated)",
+        "description": "Returns documents and metadata required to initialize the AI playground UI. Removed from the navigation and scheduled for removal.",
         "tags": [
           "Documents",
           "API"
@@ -4395,7 +4397,8 @@
     },
     "/manual/playground": {
       "post": {
-        "summary": "Process document using a custom prompt in playground mode",
+        "deprecated": true,
+        "summary": "Process document using a custom prompt in playground mode (deprecated)",
         "description": "Analyzes document content using a custom user-provided prompt.\nThis endpoint is primarily used for testing and experimenting with different prompts\nwithout affecting the actual document processing workflow.\n\nThe analysis is performed using the AI provider configured in the application settings,\nbut with a custom prompt that overrides the default system prompt.\n",
         "tags": [
           "Documents",

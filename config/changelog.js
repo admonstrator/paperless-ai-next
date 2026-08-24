@@ -95,6 +95,16 @@ const RELEASES = [
       'Improvement: The tag cache is rebuilt in two requests instead of one per 25 tags, which could stall startup for a minute on large libraries',
     ],
   },
+  {
+    version: 'v2026.08.04',
+    entries: [
+      'Fix: "Scan now" no longer fails with an unexplained error when the configured Paperless username does not match a Paperless-ngx login name &mdash; the scan never needed that user ID <a href="https://github.com/admonstrator/zettelrobbe/issues/305">(see here)</a>',
+      'Fix: Searching for a document by its Paperless-ngx ID finds it, instead of returning nothing unless the number happens to appear in the document text <a href="https://github.com/admonstrator/zettelrobbe/issues/304">(see here)</a>',
+      'Fix: OCR model detection offers every discovered model instead of only those whose name looks like a vision model, so models such as gpt-4o are selectable again; vision models are still grouped on top as a recommendation <a href="https://github.com/admonstrator/zettelrobbe/issues/308">(see here)</a>',
+      'Improvement: The Quickstart auto-detect block in Settings prefills the configured AI server URL, reuses a stored API key when the field is left empty, and states that its two fields drive the detection run only <a href="https://github.com/admonstrator/zettelrobbe/issues/306">(see here)</a>',
+      'Removed: The Playground is deprecated and gone from the navigation; it will be removed entirely in a future release. Saved prompts live in the browser only &mdash; copy anything you want to keep <a href="https://github.com/admonstrator/zettelrobbe/issues/307">(see here)</a>',
+    ],
+  },
 ];
 
 const latestRelease = RELEASES[RELEASES.length - 1];

@@ -1069,7 +1069,8 @@ router.get('/sampleData/:id', async (req, res) => {
  * @swagger
  * /playground:
  *   get:
- *     summary: AI playground testing environment
+ *     deprecated: true
+ *     summary: AI playground testing environment (deprecated)
  *     description: |
  *       Renders the AI playground page for experimenting with document analysis.
  *
@@ -1080,6 +1081,10 @@ router.get('/sampleData/:id', async (req, res) => {
  *
  *       The playground is useful for fine-tuning prompts and testing AI capabilities
  *       before applying them to actual document processing.
+ *
+ *       Deprecated: the page has been removed from the navigation and will be
+ *       removed entirely in a future release. Use /manual to try a prompt
+ *       against a single document.
  *     tags:
  *       - Navigation
  *       - Documents
@@ -1267,8 +1272,9 @@ router.get('/api/chat/documents', isAuthenticated, async (req, res) => {
  * @swagger
  * /api/playground/bootstrap:
  *   get:
- *     summary: Get playground bootstrap data
- *     description: Returns documents and metadata required to initialize the AI playground UI.
+ *     deprecated: true
+ *     summary: Get playground bootstrap data (deprecated)
+ *     description: Returns documents and metadata required to initialize the AI playground UI. Removed from the navigation and scheduled for removal.
  *     tags:
  *       - Documents
  *       - API
@@ -7549,7 +7555,8 @@ router.post('/manual/analyze', express.json(), async (req, res) => {
  * @swagger
  * /manual/playground:
  *   post:
- *     summary: Process document using a custom prompt in playground mode
+ *     deprecated: true
+ *     summary: Process document using a custom prompt in playground mode (deprecated)
  *     description: |
  *       Analyzes document content using a custom user-provided prompt.
  *       This endpoint is primarily used for testing and experimenting with different prompts

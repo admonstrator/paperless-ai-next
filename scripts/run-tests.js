@@ -48,6 +48,7 @@ const TESTS = {
   'form-control-styling': 'test-form-control-styling.js',
   'icon-sizing': 'test-icon-sizing.js',
   'mobile-toolbar-grid': 'test-mobile-toolbar-grid.js',
+  'playground-deprecation': 'test-playground-deprecation.js',
   'login-mfa-flow': 'test-login-mfa-flow.js',
   'ocr-fallback-ai-errors': 'test-ocr-fallback-ai-errors.js',
   'ocr-startup-recovery': 'test-ocr-startup-recovery.js',
@@ -150,6 +151,7 @@ const AREAS = {
     'form-control-styling',
     'icon-sizing',
     'mobile-toolbar-grid',
+    'playground-deprecation',
   ],
   processing: [
     'dashboard-stats-cache',
