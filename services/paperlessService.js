@@ -1718,39 +1718,11 @@ class PaperlessService {
     try {
       // Explicit ID mode: exact lookup via GET /documents/{id}/
       if (mode === 'id') {
-        const id = Number.parseInt(normalizedQuery, 10);
-        if (!Number.isInteger(id) || id < 1 || String(id) !== normalizedQuery) {
-          return [];
-        }
-
-        try {
-          // Request only the selector fields so the document content, which can
-          // be megabytes on scanned files, is not transferred.
-          const response = await this.client.get(`/documents/${id}/`, {
-            params: { fields: documentFields },
-          });
-          const doc = response?.data;
-          if (!doc || doc.id == null) {
-            return [];
-          }
-          return [
-            {
-              id: doc.id,
-              title: doc.title,
-              tags: doc.tags,
-              correspondent: doc.correspondent,
-              created: doc.created || doc.created_date || doc.added || null,
-            },
-          ];
-        } catch (error) {
-          if (error?.response?.status !== 404) {
-            console.error(
-              `[ERROR] searching document by id ${id}:`,
-              error.message
-            );
-          }
-          return [];
-        }
+        const doc = await this._findDocumentById(
+          normalizedQuery,
+          documentFields
+        );
+        return doc ? [doc] : [];
       }
 
       const params = {
@@ -1775,6 +1747,18 @@ class PaperlessService {
         params.query = normalizedQuery;
       }
 
+      // The default scope runs the Paperless-ngx full-text search, which reads
+      // titles and content but never the document ID — so typing an ID found
+      // nothing on every selector without an explicit ID scope. Look the ID up
+      // alongside the search whenever the term could be one, and put the exact
+      // hit first. The lookup is started here rather than awaited so it
+      // overlaps the search and costs no wall-clock time; it resolves to null
+      // instead of rejecting, so the search keeps its own error handling.
+      const idLookup =
+        mode === 'all'
+          ? this._findDocumentById(normalizedQuery, documentFields)
+          : null;
+
       let response;
       try {
         response = await this.client.get('/documents/', { params });
@@ -1798,14 +1782,61 @@ class PaperlessService {
         });
       }
 
-      if (!Array.isArray(response?.data?.results)) {
-        return [];
+      const results = Array.isArray(response?.data?.results)
+        ? response.data.results
+        : [];
+
+      const idMatch = idLookup ? await idLookup : null;
+      if (!idMatch) {
+        return results;
       }
 
-      return response.data.results;
+      // An exact ID hit is what the user asked for, so it leads — and it is
+      // filtered out of the search results rather than appearing twice.
+      return [
+        idMatch,
+        ...results.filter((doc) => doc?.id !== idMatch.id),
+      ].slice(0, safeLimit);
     } catch (error) {
       console.error('[ERROR] searching documents:', error.message);
       return [];
+    }
+  }
+
+  /* Exact document lookup shared by the ID scope and the default scope. Returns
+     null for anything that is not a plain positive integer without hitting
+     Paperless-ngx at all, and for a document that does not exist. A 404 is an
+     ordinary answer here — only a real transport or server failure is logged. */
+  async _findDocumentById(query, documentFields) {
+    const normalizedQuery = String(query || '').trim();
+    const id = Number.parseInt(normalizedQuery, 10);
+    if (!Number.isInteger(id) || id < 1 || String(id) !== normalizedQuery) {
+      return null;
+    }
+
+    try {
+      // Request only the selector fields so the document content, which can be
+      // megabytes on scanned files, is not transferred.
+      const response = await this.client.get(`/documents/${id}/`, {
+        params: { fields: documentFields },
+      });
+      const doc = response?.data;
+      if (!doc || doc.id == null) {
+        return null;
+      }
+
+      return {
+        id: doc.id,
+        title: doc.title,
+        tags: doc.tags,
+        correspondent: doc.correspondent,
+        created: doc.created || doc.created_date || doc.added || null,
+      };
+    } catch (error) {
+      if (error?.response?.status !== 404) {
+        console.error(`[ERROR] searching document by id ${id}:`, error.message);
+      }
+      return null;
     }
   }
 
