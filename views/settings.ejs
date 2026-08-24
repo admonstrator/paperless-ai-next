@@ -353,14 +353,20 @@
                                     <h2 class="zr-module__title">Quickstart auto-detect</h2>
                                 </div>
                                 <div class="zr-module__body zr-col zr-col--loose">
-                                <p class="zr-field__hint">Point at a local AI server (LM Studio, Ollama, or any OpenAI-compatible endpoint). Detection lists the running models and classifies them for AI analysis and OCR.</p>
+                                <p class="zr-field__hint">Point at a local AI server (LM Studio, Ollama, or any OpenAI-compatible endpoint). Detection lists the running models and classifies them for AI analysis and OCR. These two fields drive the detection run only &mdash; what gets saved is what you apply to the AI and OCR settings below.</p>
                                 <div class="zr-field zr-field--stacked">
                                     <label for="settingsQuickstartUrl" class="zr-field__name">AI server URL</label>
-                                    <input type="text" id="settingsQuickstartUrl" class="zr-input" placeholder="http://192.168.1.5:1234">
+                                    <input type="text" id="settingsQuickstartUrl" class="zr-input" value="<%= config.CUSTOM_BASE_URL || config.OLLAMA_API_URL || '' %>" placeholder="http://192.168.1.5:1234">
+                                    <% if (config.CUSTOM_BASE_URL || config.OLLAMA_API_URL) { %>
+                                        <p class="zr-field__hint">Prefilled from the configured AI server</p>
+                                    <% } %>
                                 </div>
                                 <div class="zr-field zr-field--stacked">
                                     <label for="settingsQuickstartApiKey" class="zr-field__name">API key (optional)</label>
-                                    <input type="password" id="settingsQuickstartApiKey" class="zr-input" placeholder="Optional">
+                                    <input type="password" id="settingsQuickstartApiKey" class="zr-input" placeholder="<%= (configuredSecrets.CUSTOM_API_KEY || configuredSecrets.OLLAMA_API_KEY) ? 'Configured' : 'Optional' %>">
+                                    <% if (configuredSecrets.CUSTOM_API_KEY || configuredSecrets.OLLAMA_API_KEY) { %>
+                                        <p class="zr-field__hint">Leave empty to use the stored key</p>
+                                    <% } %>
                                 </div>
                                 <div class="zr-row zr-row--wrap">
                                     <button type="button" id="settingsQuickstartDetectBtn" class="zr-btn">

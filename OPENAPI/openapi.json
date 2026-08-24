@@ -2929,7 +2929,8 @@
                     "example": "http://192.168.1.5:1234"
                   },
                   "apiKey": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Omit or leave empty to use the stored CUSTOM_API_KEY / OLLAMA_API_KEY"
                   },
                   "setupValidationTimeoutMs": {
                     "type": "integer"

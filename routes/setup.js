@@ -3958,6 +3958,22 @@ function normalizeDocumentIdList(input) {
   return [...new Set(ids)];
 }
 
+/* Quickstart detection on the settings page talks to the AI server that is
+   already configured, so an empty key field means "use the stored one" rather
+   than "no key" — the same rule the AI and OCR fields on that page follow. A
+   saved key is never echoed back into the password input, so only this side
+   can tell the two apart. Setup has no stored configuration to fall back on
+   and therefore does not use this. */
+function resolveSettingsQuickstartApiKey(apiKey) {
+  const normalizedApiKey = String(apiKey || '').trim();
+  return (
+    normalizedApiKey ||
+    process.env.CUSTOM_API_KEY ||
+    process.env.OLLAMA_API_KEY ||
+    ''
+  );
+}
+
 /* The key may be typed into the form, saved from an earlier save, or
    injected through the environment. Only this side can see the last two, which
    is why neither page refuses an empty field on its own. */
@@ -5297,6 +5313,7 @@ router.post(
  *                 example: http://192.168.1.5:1234
  *               apiKey:
  *                 type: string
+ *                 description: Omit or leave empty to use the stored CUSTOM_API_KEY / OLLAMA_API_KEY
  *               setupValidationTimeoutMs:
  *                 type: integer
  *     responses:
@@ -5315,7 +5332,9 @@ router.post(
     try {
       const result = await detectQuickstartForSetup({
         baseUrl: req.body?.baseUrl,
-        apiKey: req.body?.apiKey,
+        // An empty field means the stored key, not no key: the settings page
+        // never renders a saved secret back into the input.
+        apiKey: resolveSettingsQuickstartApiKey(req.body?.apiKey),
         setupValidationTimeoutMs: req.body?.setupValidationTimeoutMs,
       });
 
