@@ -2748,12 +2748,53 @@
     "/api/setup/ocr/models": {
       "post": {
         "summary": "Discover available OCR models during setup",
+        "description": "Returns every discovered model that is not embedding-only. Vision\nsupport is detected from the model name, which recognizes families\nsuch as llava or pixtral and misses OCR-capable models with\nunremarkable names, so it ranks the list instead of filtering it:\n`visionModels` and `suggestedModel` are hints for the UI, not a\nrestriction on what may be selected.\n",
         "tags": [
           "Setup"
         ],
         "responses": {
           "200": {
-            "description": "OCR model list returned"
+            "description": "OCR model list returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "models": {
+                      "type": "array",
+                      "description": "Every selectable OCR model (embedding-only models excluded)",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "visionModels": {
+                      "type": "array",
+                      "description": "Subset of models whose name indicates vision support; absent for providers without model classification",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "suggestedModel": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Recommended default; absent for providers without model classification"
+                    },
+                    "resolvedApiUrl": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Model discovery failed"
           }
         }
       }

@@ -4313,9 +4313,17 @@ async function discoverOcrModelsForSetup({
       const normalizedApiUrl = String(apiUrl || '').trim();
       const normalizedApiKey = String(apiKey || '').trim();
 
-      // For local providers, classify models via quickstart detection so the
-      // OCR dropdown only offers vision-capable models (metadata-first via
-      // LM Studio /api/v0/models or Ollama /api/show, heuristics otherwise).
+      // For local providers, classify models via quickstart detection so
+      // embedding-only models are excluded from the OCR dropdown
+      // (metadata-first via LM Studio /api/v0/models or Ollama /api/show,
+      // heuristics otherwise).
+      //
+      // Vision detection is a name heuristic, so it must rank the list rather
+      // than cut it: it recognizes llava, pixtral or *-vl and misses every
+      // OCR-capable model with an unremarkable name — gpt-4o among them. This
+      // used to return the vision subset as soon as it was non-empty, which on
+      // a router serving dozens of models hid nearly all of them. Vision hits
+      // are reported separately so the UI can recommend them.
       if (
         ['custom', 'ollama'].includes(normalizedProvider) &&
         normalizedApiUrl
@@ -4326,26 +4334,29 @@ async function discoverOcrModelsForSetup({
             apiKey: normalizedApiKey,
           });
 
-          if (classification.visionModels.length > 0) {
-            return {
-              success: true,
-              models: classification.visionModels,
-              resolvedApiUrl: classification.resolvedOcrApiUrl,
-              message: `Discovered ${classification.visionModels.length} vision-capable OCR model(s) out of ${classification.models.length} total.`,
-            };
-          }
+          const models = classification.textModels;
+          const visionModels = classification.visionModels;
+          const excludedCount = classification.models.length - models.length;
+          const details = [
+            visionModels.length > 0
+              ? `${visionModels.length} with detected vision support`
+              : null,
+            excludedCount > 0
+              ? `${excludedCount} embedding-only model(s) excluded`
+              : null,
+          ].filter(Boolean);
 
-          // Nothing classified as vision-capable: fall back to the full list so
-          // the user can still pick manually (classification may be incomplete
-          // for generic endpoints without model metadata).
-          const allModels = classification.models.map((model) => model.id);
           return {
             success: true,
-            models: allModels,
+            models,
+            visionModels,
+            suggestedModel: classification.suggestedOcrModel || null,
             resolvedApiUrl: classification.resolvedOcrApiUrl,
             message:
-              allModels.length > 0
-                ? `No vision-capable models detected; showing all ${allModels.length} model(s). OCR requires a vision model.`
+              models.length > 0
+                ? `Discovered ${models.length} OCR model(s)${
+                    details.length > 0 ? ` (${details.join(', ')})` : ''
+                  }.`
                 : 'No OCR models discovered for this provider.',
           };
         } catch {
@@ -4986,11 +4997,45 @@ router.post('/api/setup/ocr/test', express.json(), async (req, res) => {
  * /api/setup/ocr/models:
  *   post:
  *     summary: Discover available OCR models during setup
+ *     description: |
+ *       Returns every discovered model that is not embedding-only. Vision
+ *       support is detected from the model name, which recognizes families
+ *       such as llava or pixtral and misses OCR-capable models with
+ *       unremarkable names, so it ranks the list instead of filtering it:
+ *       `visionModels` and `suggestedModel` are hints for the UI, not a
+ *       restriction on what may be selected.
  *     tags:
  *       - Setup
  *     responses:
  *       200:
  *         description: OCR model list returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 models:
+ *                   type: array
+ *                   description: Every selectable OCR model (embedding-only models excluded)
+ *                   items:
+ *                     type: string
+ *                 visionModels:
+ *                   type: array
+ *                   description: Subset of models whose name indicates vision support; absent for providers without model classification
+ *                   items:
+ *                     type: string
+ *                 suggestedModel:
+ *                   type: string
+ *                   nullable: true
+ *                   description: Recommended default; absent for providers without model classification
+ *                 resolvedApiUrl:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Model discovery failed
  */
 router.post('/api/setup/ocr/models', express.json(), async (req, res) => {
   try {

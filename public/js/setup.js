@@ -525,31 +525,77 @@ class SetupWizard {
     this.finalizeSetupBtn.addEventListener('click', () => this.finalizeSetup());
   }
 
-  setModelSelectOptions(selectElement, values, emptyLabel = 'Select model') {
+  /* `grouping` is optional and only used by the OCR dropdown: it splits the
+     list into a recommended group and the rest, preselecting the first
+     recommended entry. Without it the select renders flat, exactly as before.
+     The recommendation is a hint, never a filter — vision support is detected
+     from model names, and a name says nothing certain about what a model can
+     read. */
+  setModelSelectOptions(
+    selectElement,
+    values,
+    emptyLabel = 'Select model',
+    grouping = null
+  ) {
     if (!selectElement) {
       return;
     }
 
+    const normalizeList = (list) =>
+      Array.from(
+        new Set(
+          (Array.isArray(list) ? list : [])
+            .map((value) => String(value || '').trim())
+            .filter(Boolean)
+        )
+      );
+
     selectElement.innerHTML = '';
-    const normalizedValues = (Array.isArray(values) ? values : [])
-      .map((value) => String(value || '').trim())
-      .filter(Boolean);
+    const unique = normalizeList(values);
 
     const emptyOption = document.createElement('option');
     emptyOption.value = '';
     emptyOption.textContent = emptyLabel;
-    emptyOption.selected = normalizedValues.length === 0;
+    emptyOption.selected = unique.length === 0;
     selectElement.appendChild(emptyOption);
 
-    const unique = Array.from(new Set(normalizedValues));
-    unique.forEach((value) => {
+    const appendOption = (parent, value) => {
       const option = document.createElement('option');
       option.value = value;
       option.textContent = value;
-      selectElement.appendChild(option);
-    });
+      parent.appendChild(option);
+    };
 
-    selectElement.value = unique.length > 0 ? unique[0] : '';
+    const recommended = grouping
+      ? normalizeList(grouping.recommended).filter((value) =>
+          unique.includes(value)
+        )
+      : [];
+    const rest = unique.filter((value) => !recommended.includes(value));
+
+    if (recommended.length > 0 && rest.length > 0) {
+      const recommendedGroup = document.createElement('optgroup');
+      recommendedGroup.label = grouping.recommendedLabel || 'Recommended';
+      recommended.forEach((value) => appendOption(recommendedGroup, value));
+      selectElement.appendChild(recommendedGroup);
+
+      const restGroup = document.createElement('optgroup');
+      restGroup.label = grouping.otherLabel || 'Other models';
+      rest.forEach((value) => appendOption(restGroup, value));
+      selectElement.appendChild(restGroup);
+    } else {
+      unique.forEach((value) => appendOption(selectElement, value));
+    }
+
+    const preferred = String(grouping?.preferred || '').trim();
+    if (preferred && unique.includes(preferred)) {
+      selectElement.value = preferred;
+      return;
+    }
+
+    const firstRecommended = recommended.length > 0 ? recommended[0] : null;
+    selectElement.value =
+      firstRecommended || (unique.length > 0 ? unique[0] : '');
   }
 
   showPopup(options = {}) {
@@ -1861,10 +1907,21 @@ class SetupWizard {
         this.ocrApiUrl.value = String(result.resolvedApiUrl).trim();
       }
 
+      // The list is offered whole; vision hits are grouped on top as a
+      // recommendation. Filtering on them hid models that read documents
+      // perfectly well but do not say "vision" in their name.
       this.setModelSelectOptions(
         this.mistralOcrModel,
         models,
-        'Select OCR model'
+        'Select OCR model',
+        {
+          recommended: Array.isArray(result.visionModels)
+            ? result.visionModels
+            : [],
+          recommendedLabel: 'Recommended (vision detected)',
+          otherLabel: 'Other models',
+          preferred: result.suggestedModel,
+        }
       );
 
       if (!silent) {
