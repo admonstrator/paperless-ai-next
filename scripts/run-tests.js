@@ -93,6 +93,7 @@ const TESTS = {
   'ocr-provider-lmstudio-compatible':
     'test-ocr-provider-lmstudio-compatible.js',
   'ocr-model-fetch-key': 'test-ocr-model-fetch-key.js',
+  'mistral-ocr-image-payload': 'test-mistral-ocr-image-payload.js',
   'ocr-model-discovery-unfiltered': 'test-ocr-model-discovery-unfiltered.js',
   'ocr-provider-ollama': 'test-ocr-provider-ollama.js',
   'ocr-pdf-render-multipage': 'test-ocr-pdf-render-multipage.js',
@@ -132,6 +133,7 @@ const AREAS = {
     'ocr-provider-lmstudio-compatible',
     'ocr-model-fetch-key',
     'ocr-model-discovery-unfiltered',
+    'mistral-ocr-image-payload',
     'ocr-provider-ollama',
     'ocr-pdf-render-multipage',
     'ocr-pdf-render-fallback',

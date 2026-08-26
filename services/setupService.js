@@ -1038,6 +1038,11 @@ class SetupService {
     return normalizedOutput.includes(normalizedExpected);
   }
 
+  /* The probe sends a PNG, so the document has to be declared as an image.
+     Mistral's /v1/ocr pairs `document_url` with PDF and office formats and
+     `image_url` with PNG/JPEG; handing it a data:image/png URL under
+     `document_url` is rejected, which failed the OCR connection test on every
+     correctly configured Mistral instance. */
   async runMistralOcrValidationRequest({
     apiUrl,
     apiKey,
@@ -1050,8 +1055,8 @@ class SetupService {
         {
           model,
           document: {
-            type: 'document_url',
-            document_url: imageDataUrl,
+            type: 'image_url',
+            image_url: imageDataUrl,
           },
           include_image_base64: false,
         },
@@ -1306,7 +1311,14 @@ class SetupService {
 
           return true;
         } catch (error) {
-          console.error('Mistral OCR validation error:', error.message);
+          // Naming the candidate matters: buildVersionedApiUrlCandidates also
+          // yields the bare host, and https://api.mistral.ai/models (no /v1)
+          // answers 404 every time, so an unattributed error read as the
+          // cause when it was only the last attempt.
+          console.error(
+            `Mistral OCR validation error (${apiUrl}):`,
+            error.message
+          );
         }
       }
 

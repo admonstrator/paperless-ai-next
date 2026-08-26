@@ -183,6 +183,17 @@ class MistralOcrService {
     return this.performOcrWithMistral(base64, mimeType);
   }
 
+  /* Mistral's /v1/ocr takes PDFs and office formats as `document_url` and
+     images as `image_url`. Everything went out as `document_url`, which is
+     correct for the PDF default but rejected for the image types the OCR
+     queue also feeds in (a page rendered by poppler, or a document stored as
+     PNG/JPEG in Paperless-ngx). */
+  buildMistralOcrDocument(dataUrl, mimeType) {
+    return /^image\//i.test(String(mimeType || ''))
+      ? { type: 'image_url', image_url: dataUrl }
+      : { type: 'document_url', document_url: dataUrl };
+  }
+
   async performOcrWithMistral(base64, mimeType = 'application/pdf') {
     if (!this.apiKey) {
       throw new Error('MISTRAL_API_KEY is not configured');
@@ -196,10 +207,7 @@ class MistralOcrService {
         `${this.apiBase}/ocr`,
         {
           model: this.model,
-          document: {
-            type: 'document_url',
-            document_url: documentUrl,
-          },
+          document: this.buildMistralOcrDocument(documentUrl, mimeType),
           include_image_base64: false,
         },
         {
