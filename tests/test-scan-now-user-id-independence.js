@@ -10,9 +10,15 @@
  * case difference, or a response the token user cannot fully see all ended in
  * the same silent null.
  *
- * The scan does not use the user ID (processDocument() takes it and ignores
- * it), so neither the endpoint nor the queue may gate on it. The route file is
- * read here rather than copied so the assertions cannot drift away from it.
+ * The scan does not use the user ID at all, so neither the endpoint nor the
+ * queue may gate on it — and since processDocument() never read the value it
+ * was handed, the plumbing is gone rather than merely ungated. That leaves
+ * getOwnUserID() with no caller in the processing path; it stays on the
+ * service as a general Paperless helper, hardened, and is covered below so a
+ * future caller inherits the fixed behaviour rather than the old one.
+ *
+ * The route file is read here rather than copied so the assertions cannot
+ * drift away from it.
  */
 
 const assert = require('assert');
@@ -55,6 +61,18 @@ assert.ok(
 assert.ok(
   !routeSource.includes('Failed to get own user ID. Abort scanning.'),
   'Queue processing must not abort when the user ID cannot be resolved — the same dead guard stopped manual processing outright'
+);
+
+// The ID was resolved, passed to processDocument() and never read there, so
+// the whole thread is gone: no request per queue run, and no warning logged
+// about a value nothing consumes.
+assert.ok(
+  !routeSource.includes('ownUserId'),
+  'routes/setup.js must not thread an own-user ID it never reads through processDocument()'
+);
+assert.ok(
+  !routeSource.includes('getOwnUserID'),
+  'No route may call getOwnUserID — nothing in the processing path uses the result'
 );
 
 // ── getOwnUserID() resolves the current user without a name match ────────────

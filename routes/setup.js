@@ -3058,7 +3058,6 @@ async function processDocument(
   existingTags,
   existingCorrespondentList,
   existingDocumentTypesList,
-  ownUserId,
   customPrompt = null
 ) {
   const isProcessed = await documentModel.isDocumentProcessed(doc.id);
@@ -3969,15 +3968,56 @@ function normalizeDocumentIdList(input) {
    than "no key" — the same rule the AI and OCR fields on that page follow. A
    saved key is never echoed back into the password input, so only this side
    can tell the two apart. Setup has no stored configuration to fall back on
-   and therefore does not use this. */
-function resolveSettingsQuickstartApiKey(apiKey) {
+   and therefore does not use this.
+
+   Two conditions, both necessary. The key belongs to the configured provider,
+   so it is resolved through resolveStoredAiToken() rather than by trying one
+   variable after another — a stale CUSTOM_API_KEY left over from a provider
+   switch must not be sent to an Ollama host. And it is only substituted when
+   the request targets that provider's own server: the settings page keeps
+   saved secrets out of the DOM on purpose, and an endpoint that forwards one
+   to any URL the caller names would hand it back out again. Typed keys are
+   always honoured, whatever the target. */
+function resolveSettingsQuickstartApiKey(baseUrl, apiKey) {
   const normalizedApiKey = String(apiKey || '').trim();
-  return (
-    normalizedApiKey ||
-    process.env.CUSTOM_API_KEY ||
-    process.env.OLLAMA_API_KEY ||
-    ''
-  );
+  if (normalizedApiKey) {
+    return normalizedApiKey;
+  }
+
+  const provider = String(process.env.AI_PROVIDER || '')
+    .trim()
+    .toLowerCase();
+  const configuredUrl =
+    provider === 'ollama'
+      ? process.env.OLLAMA_API_URL
+      : provider === 'custom'
+        ? process.env.CUSTOM_BASE_URL
+        : '';
+
+  return isSameQuickstartHost(baseUrl, configuredUrl)
+    ? resolveStoredAiToken(provider)
+    : '';
+}
+
+/* Compares the detection target with the configured AI server. The Quickstart
+   field is written by hand and normalizeBaseUrls() strips /v1 and trailing
+   slashes, so "http://host:1234/v1/" and "http://host:1234" are the same
+   server; anything that does not parse is not. */
+function isSameQuickstartHost(requestedUrl, configuredUrl) {
+  const normalize = (value) => {
+    const trimmed = String(value || '').trim();
+    if (!trimmed) return null;
+    try {
+      const parsed = new URL(trimmed);
+      return `${parsed.protocol}//${parsed.host}`.toLowerCase();
+    } catch {
+      return null;
+    }
+  };
+
+  const requested = normalize(requestedUrl);
+  const configured = normalize(configuredUrl);
+  return Boolean(requested && configured && requested === configured);
 }
 
 /* The key may be typed into the form, saved from an earlier save, or
@@ -5001,7 +5041,12 @@ router.post('/api/setup/ocr/test', express.json(), async (req, res) => {
       apiUrl: req.body?.apiUrl,
       apiKey: req.body?.apiKey,
       model: req.body?.model,
-      setupValidationTimeoutMs: req.body?.setupValidationTimeoutMs,
+      // The OCR helpers take setupOcrValidationTimeoutMs, which is also what
+      // the wizard sends; passing it under the AI key dropped the configured
+      // OCR timeout on the floor and fell back to the global default.
+      setupOcrValidationTimeoutMs:
+        req.body?.setupOcrValidationTimeoutMs ??
+        req.body?.setupValidationTimeoutMs,
     });
 
     return res.json(validation);
@@ -5071,7 +5116,13 @@ router.post('/api/setup/ocr/models', express.json(), async (req, res) => {
       // The wizard used to take the field at face value, so an operator whose
       // key already sat in the environment was told to supply one.
       apiKey: resolveOcrApiKey(req.body?.apiKey),
-      setupValidationTimeoutMs: req.body?.setupValidationTimeoutMs,
+      // Same key mismatch as in /api/setup/ocr/test above: the discovery
+      // helper takes setupOcrValidationTimeoutMs. It matters here because
+      // classifying an Ollama catalogue costs one /api/show per model and
+      // runs against a deadline derived from this timeout.
+      setupOcrValidationTimeoutMs:
+        req.body?.setupOcrValidationTimeoutMs ??
+        req.body?.setupValidationTimeoutMs,
     });
 
     return res.json(result);
@@ -5269,6 +5320,73 @@ router.get('/api/settings/ai/presets', isAuthenticated, async (_req, res) => {
   }
 });
 
+/**
+ * @swagger
+ * /api/settings/ocr/models:
+ *   post:
+ *     summary: Discover available OCR models from the settings page
+ *     description: |
+ *       Returns every discovered model that is not embedding-only. Vision
+ *       support is detected from the model name, which recognizes families
+ *       such as llava or pixtral and misses OCR-capable models with
+ *       unremarkable names, so it ranks the list instead of filtering it:
+ *       `visionModels` and `suggestedModel` are hints for the UI, not a
+ *       restriction on what may be selected.
+ *     tags:
+ *       - Settings
+ *     security:
+ *       - BearerAuth: []
+ *       - ApiKeyAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               provider:
+ *                 type: string
+ *                 enum: [mistral, custom, ollama]
+ *               apiUrl:
+ *                 type: string
+ *               apiKey:
+ *                 type: string
+ *                 description: Omit or leave empty to use the stored OCR_API_KEY / MISTRAL_API_KEY
+ *               setupOcrValidationTimeoutMs:
+ *                 type: integer
+ *     responses:
+ *       200:
+ *         description: OCR model list returned
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 models:
+ *                   type: array
+ *                   description: Every selectable OCR model (embedding-only models excluded)
+ *                   items:
+ *                     type: string
+ *                 visionModels:
+ *                   type: array
+ *                   description: Subset of models whose name indicates vision support; absent for providers without model classification
+ *                   items:
+ *                     type: string
+ *                 suggestedModel:
+ *                   type: string
+ *                   nullable: true
+ *                   description: Recommended default; absent for providers without model classification
+ *                 resolvedApiUrl:
+ *                   type: string
+ *                 message:
+ *                   type: string
+ *       400:
+ *         description: Model discovery failed
+ *       401:
+ *         description: Unauthorized
+ */
 router.post(
   '/api/settings/ocr/models',
   isAuthenticated,
@@ -5339,8 +5457,12 @@ router.post(
       const result = await detectQuickstartForSetup({
         baseUrl: req.body?.baseUrl,
         // An empty field means the stored key, not no key: the settings page
-        // never renders a saved secret back into the input.
-        apiKey: resolveSettingsQuickstartApiKey(req.body?.apiKey),
+        // never renders a saved secret back into the input. Only for the
+        // configured AI server, though — see the resolver.
+        apiKey: resolveSettingsQuickstartApiKey(
+          req.body?.baseUrl,
+          req.body?.apiKey
+        ),
         setupValidationTimeoutMs: req.body?.setupValidationTimeoutMs,
       });
 
@@ -6118,21 +6240,17 @@ async function processQueue(customPrompt) {
       return;
     }
 
-    // The own user ID is resolved with the lists below and handed to
-    // processDocument(), which does not act on it. It must therefore not gate
-    // the queue: an unresolvable ID used to abort manual processing outright
-    // (issue #305).
-    const [
-      existingTags,
-      existingCorrespondentList,
-      existingDocumentTypes,
-      ownUserId,
-    ] = await Promise.all([
-      paperlessService.getTags(),
-      paperlessService.listCorrespondentsNames(),
-      paperlessService.listDocumentTypesNames(),
-      paperlessService.getOwnUserID(),
-    ]);
+    // No own-user-ID lookup here: it was resolved, threaded through two call
+    // frames and dropped, since processDocument() never reads it. It also used
+    // to gate the queue — an unresolvable ID aborted manual processing
+    // outright (issue #305) — so this drops the guard, the request and the
+    // warning it would now log once per run.
+    const [existingTags, existingCorrespondentList, existingDocumentTypes] =
+      await Promise.all([
+        paperlessService.getTags(),
+        paperlessService.listCorrespondentsNames(),
+        paperlessService.listDocumentTypesNames(),
+      ]);
 
     // The paperlessService helpers return entity objects, so every list has to
     // be reduced to plain names before it reaches the AI services — otherwise
@@ -6150,7 +6268,6 @@ async function processQueue(customPrompt) {
           existingTagNames,
           existingCorrespondentNames,
           existingDocumentTypesList,
-          ownUserId,
           customPrompt
         );
         if (!result) continue;
