@@ -899,6 +899,16 @@ class SetupWizard {
         provider !== 'custom' || !enabled
       );
     }
+
+    // The recommended/other grouping in the model dropdown only exists on the
+    // classification path, which the Mistral provider does not take.
+    const ocrModelVisionHint = document.getElementById('ocrModelVisionHint');
+    if (ocrModelVisionHint) {
+      ocrModelVisionHint.classList.toggle(
+        'hidden',
+        provider !== 'custom' || !enabled
+      );
+    }
   }
 
   normalizeOcrApiUrlForProvider(provider, rawUrl) {

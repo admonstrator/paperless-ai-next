@@ -1759,32 +1759,45 @@ class PaperlessService {
           ? this._findDocumentById(normalizedQuery, documentFields)
           : null;
 
-      let response;
+      let results = [];
       try {
-        response = await this.client.get('/documents/', { params });
+        let response;
+        try {
+          response = await this.client.get('/documents/', { params });
+        } catch (error) {
+          // Full-text search needs the Paperless-ngx search index and rejects
+          // malformed query syntax. Keep the selector usable by retrying with a
+          // plain title filter instead of returning nothing.
+          if (mode !== 'all') {
+            throw error;
+          }
+
+          console.warn(
+            `[DEBUG] Full-text document search failed (${error.message}), retrying with a title filter`
+          );
+
+          const fallbackParams = { ...params };
+          delete fallbackParams.query;
+          fallbackParams.title__icontains = normalizedQuery;
+          response = await this.client.get('/documents/', {
+            params: fallbackParams,
+          });
+        }
+
+        results = Array.isArray(response?.data?.results)
+          ? response.data.results
+          : [];
       } catch (error) {
-        // Full-text search needs the Paperless-ngx search index and rejects
-        // malformed query syntax. Keep the selector usable by retrying with a
-        // plain title filter instead of returning nothing.
+        // A broken search index takes both attempts down with it. An exact ID
+        // hit does not depend on the index and is the answer the user asked
+        // for, so it must survive the failure rather than be discarded on the
+        // way out.
         if (mode !== 'all') {
           throw error;
         }
 
-        console.warn(
-          `[DEBUG] Full-text document search failed (${error.message}), retrying with a title filter`
-        );
-
-        const fallbackParams = { ...params };
-        delete fallbackParams.query;
-        fallbackParams.title__icontains = normalizedQuery;
-        response = await this.client.get('/documents/', {
-          params: fallbackParams,
-        });
+        console.error('[ERROR] searching documents:', error.message);
       }
-
-      const results = Array.isArray(response?.data?.results)
-        ? response.data.results
-        : [];
 
       const idMatch = idLookup ? await idLookup : null;
       if (!idMatch) {

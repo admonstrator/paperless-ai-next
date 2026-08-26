@@ -1040,6 +1040,16 @@ function initializeFormHandlers() {
       );
     }
 
+    // The recommended/other grouping in the model dropdown only exists on the
+    // classification path, which the Mistral provider does not take.
+    const ocrModelVisionHint = document.getElementById('ocrModelVisionHint');
+    if (ocrModelVisionHint) {
+      ocrModelVisionHint.classList.toggle(
+        'hidden',
+        !enabled || provider !== 'custom'
+      );
+    }
+
     // PDF page rendering only applies to local vision models; the Mistral
     // provider handles PDFs natively.
     const ocrPdfRenderContainer = document.getElementById(

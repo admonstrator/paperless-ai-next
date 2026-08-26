@@ -20,12 +20,18 @@ async function run() {
     // Search results returned for the full-text endpoint; individual assertions
     // reassign this to shape what /documents/ answers with.
     let searchResults = [];
+    // Flipped on to simulate an unusable Paperless-ngx search index, which
+    // fails the full-text query and its title fallback alike.
+    let searchThrows = false;
 
     paperlessService.client = {
       get: async (url, options) => {
         calls.push(url);
         if (url === '/documents/') {
           searchParams.push(options?.params || {});
+          if (searchThrows) {
+            throw new Error('search index is broken');
+          }
           return { data: { results: searchResults } };
         }
         if (url === '/documents/1431/') {
@@ -212,6 +218,41 @@ async function run() {
       ['/documents/'],
       'the title scope must not run an ID lookup'
     );
+
+    // A broken Paperless-ngx search index takes the full-text query and its
+    // title fallback down together. The ID lookup does not use the index, so
+    // its hit must survive rather than be discarded on the way out.
+    calls.length = 0;
+    errorLogs.length = 0;
+    searchThrows = true;
+    const indexDown = await paperlessService.searchDocuments(
+      '1431',
+      100,
+      'all'
+    );
+    assert.deepStrictEqual(
+      indexDown.map((doc) => doc.id),
+      [1431],
+      'an exact ID hit must survive a failing full-text search'
+    );
+    assert.ok(
+      errorLogs.some((line) => line.includes('search index is broken')),
+      'the search failure must still be logged'
+    );
+
+    // With nothing to fall back on, a failing search is still an empty result.
+    calls.length = 0;
+    const indexDownNoId = await paperlessService.searchDocuments(
+      'Rechnung',
+      100,
+      'all'
+    );
+    assert.deepStrictEqual(
+      indexDownNoId,
+      [],
+      'a failing search with no ID candidate still returns nothing'
+    );
+    searchThrows = false;
 
     console.log('PASS test-search-documents-exact-id');
   } finally {
