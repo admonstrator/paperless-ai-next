@@ -279,16 +279,30 @@ class FormManager {
 }
 
 // Tags Management
+/* The add button is addressed by id. It used to be found by walking up to a
+   `.space-y-2` ancestor — a Tailwind class that no view has carried since the
+   move to the zr system, so closest() returned null, addTagButton stayed
+   undefined and the guard below skipped initialize() entirely. That took the
+   whole field down with it: the Add button did nothing, Enter fell through to
+   the form and saved instead of adding a tag, and existing chips could not be
+   removed. Both the Tags and the Ignore Tags field were affected. */
 class TagsManager {
-  constructor(tagInputId, tagsContainerId, tagsHiddenInputId) {
+  constructor(
+    tagInputId,
+    tagsContainerId,
+    tagsHiddenInputId,
+    addButtonId = null
+  ) {
     this.tagInput = document.getElementById(tagInputId); //'tagInput'
     this.tagsContainer = document.getElementById(tagsContainerId); // tagsContainer
     this.tagsHiddenInput = document.getElementById(tagsHiddenInputId); // tagsHiddenInput
-    this.addTagButton = this.tagInput
-      ?.closest('.space-y-2')
-      ?.querySelector('button');
+    this.addTagButton = addButtonId
+      ? document.getElementById(addButtonId)
+      : null;
 
-    if (this.tagInput && this.tagsContainer && this.addTagButton) {
+    // The input and its chip list are what the field needs to work. A missing
+    // add button costs the button, not Enter and not chip removal.
+    if (this.tagInput && this.tagsContainer) {
       this.initialize();
 
       // Initialize existing tags with proper event handlers
@@ -384,7 +398,9 @@ class TagsManager {
 
     const removeButton = document.createElement('button');
     removeButton.type = 'button';
-    removeButton.className = '';
+    // Matches the server-rendered chips in settings.ejs; an added chip used to
+    // get an unstyled remove button next to styled ones.
+    removeButton.className = 'zr-link';
     removeButton.innerHTML =
       '<svg class="zr-icon zr-icon--sm" aria-hidden="true"><use href="/icons.svg#i-x"/></svg>';
 
@@ -469,8 +485,13 @@ For the language:
 
 function initializeCoreSettings() {
   new FormManager();
-  new TagsManager('tagInput', 'tagsContainer', 'tags');
-  new TagsManager('ignoreTagInput', 'ignoreTagsContainer', 'ignoreTags');
+  new TagsManager('tagInput', 'tagsContainer', 'tags', 'tagAddButton');
+  new TagsManager(
+    'ignoreTagInput',
+    'ignoreTagsContainer',
+    'ignoreTags',
+    'ignoreTagAddButton'
+  );
   new TagsManager('promptTagInput', 'promptTagsContainer', 'promptTags');
   new PromptManager();
 }
@@ -2866,9 +2887,10 @@ function initializeRuntimeOverridePills() {
       return;
     }
 
-    const container =
-      fieldElement.closest('.space-y-2') ||
-      fieldElement.parentElement?.closest('.space-y-2');
+    // `.space-y-2` was a Tailwind ancestor that no longer exists, so this
+    // returned null for every field and the pills never rendered. Settings
+    // rows are either a plain field or a switch row.
+    const container = fieldElement.closest('.zr-field, .zr-switchrow');
     if (!container) {
       return;
     }

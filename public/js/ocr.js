@@ -27,6 +27,52 @@
   const processAllBtn = document.getElementById('processAllBtn');
   const autoAnalyze = document.getElementById('autoAnalyzeToggle');
 
+  // ── AI-analysis toggle ─────────────────────────────────────────────────
+  /* The toggle decides whether the runs started on this page also analyze the
+     document; each run sends its current state along. It is not the stored
+     OCR_AUTO_ANALYZE setting, which the scheduled drain reads once at startup
+     and which Settings owns — writing that from here would leave the schedule
+     on the old value until a restart while manual runs already followed the
+     new one.
+
+     What it lacked was memory: nothing kept the choice, so leaving the page
+     and coming back silently put it back on the configured default. It is
+     remembered per browser now, the same way the theme is. Storage can be
+     unavailable (private windows, blocked site data), and a toggle is not
+     worth failing the page over, so both sides are guarded. */
+  const AUTO_ANALYZE_STORAGE_KEY = 'zr.ocr.autoAnalyze';
+
+  function readStoredAutoAnalyze() {
+    try {
+      const stored = window.localStorage.getItem(AUTO_ANALYZE_STORAGE_KEY);
+      if (stored === 'yes') return true;
+      if (stored === 'no') return false;
+    } catch {
+      // No stored preference available; the server-rendered default stands.
+    }
+    return null;
+  }
+
+  function initializeAutoAnalyzeToggle() {
+    if (!autoAnalyze) return;
+
+    const stored = readStoredAutoAnalyze();
+    if (stored !== null) {
+      autoAnalyze.checked = stored;
+    }
+
+    autoAnalyze.addEventListener('change', function () {
+      try {
+        window.localStorage.setItem(
+          AUTO_ANALYZE_STORAGE_KEY,
+          this.checked ? 'yes' : 'no'
+        );
+      } catch {
+        // Nothing to do: the toggle still governs the run being started.
+      }
+    });
+  }
+
   // ── Init ───────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
     const urlParams = new URLSearchParams(window.location.search);
@@ -41,6 +87,7 @@
 
     // The result filter reads queuedDocIds lazily, so the search must not wait
     // for that request - a stalled fetch would leave the search box dead.
+    initializeAutoAnalyzeToggle();
     initializeManualDocumentSearch();
     initializeSearchModeToggles();
     refreshQueuedIds();

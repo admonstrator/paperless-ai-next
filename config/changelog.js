@@ -105,6 +105,15 @@ const RELEASES = [
       'Removed: The Playground is deprecated and gone from the navigation; it will be removed entirely in a future release. Saved prompts live in the browser only &mdash; copy anything you want to keep <a href="https://github.com/admonstrator/zettelrobbe/issues/307">(see here)</a>',
     ],
   },
+  {
+    version: 'v2026.08.05',
+    entries: [
+      'Fix: The Add button and the Enter key work again in the Tags and Ignore Tags fields under Settings; pressing Enter added the tag instead of saving the configuration, and existing tags can be removed again <a href="https://github.com/admonstrator/zettelrobbe/issues/299">(see here)</a>',
+      'Fix: The "AI analysis after OCR" switch on the OCR queue keeps its position instead of resetting every time the page is opened. It applies to the runs started there and is remembered per browser; the scheduled queue drain still follows Settings &rarr; OCR <a href="https://github.com/admonstrator/zettelrobbe/issues/300">(see here)</a>',
+      'Fix: Mistral OCR receives images as images. The OCR connection test declared its test image a document, which Mistral rejects, so the test failed even with a valid API key and mistral-ocr-latest; OCR of image documents was affected the same way',
+      'Fix: Settings labels show their "set through the environment" and "runtime override" markers again',
+    ],
+  },
 ];
 
 const latestRelease = RELEASES[RELEASES.length - 1];
