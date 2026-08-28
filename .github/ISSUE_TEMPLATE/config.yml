@@ -1,5 +1,8 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Contributing guide
+    url: https://github.com/admonstrator/zettelrobbe/blob/main/CONTRIBUTING.md
+    about: How reports are handled, what to expect, and how to open a PR.
   - name: Documentation
     url: https://zettelrob.be/
     about: Read setup, configuration, and feature docs before opening an issue.

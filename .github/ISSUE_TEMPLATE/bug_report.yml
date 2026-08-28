@@ -7,8 +7,16 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thanks for reporting a bug.
-        Please provide enough detail so maintainers can reproduce the issue quickly.
+        Thanks for reporting a bug — a good report is the most useful thing you can send.
+
+        Zettelrobbe is maintained by one person in their spare time, so: no support
+        contract, no guaranteed response time, and no promise that a given bug gets
+        fixed. Issues are picked up when there is time and energy for them. A pull
+        request is always the fastest route.
+
+        Please read
+        [CONTRIBUTING.md](https://github.com/admonstrator/zettelrobbe/blob/main/CONTRIBUTING.md)
+        before opening an issue, and give enough detail to reproduce the problem.
 
   - type: input
     id: summary
