@@ -1,151 +1,151 @@
-name: "🐞 Bug report"
-description: "Report a reproducible bug in Zettelrobbe"
-title: "[Bug]: "
-labels: [ "bug", "triage" ]
+name: '🐞 Bug report'
+description: 'Report a reproducible bug in Zettelrobbe'
+title: '[Bug]: '
+labels: ['bug', 'triage']
 
 body:
-- type: markdown
-  attributes:
-    value: |
-      Thanks for reporting a bug.
-      Please provide enough detail so maintainers can reproduce the issue quickly.
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug.
+        Please provide enough detail so maintainers can reproduce the issue quickly.
 
-- type: input
-  id: summary
-  attributes:
-    label: Summary
-    description: One short sentence describing the problem.
-    placeholder: "Example: Dashboard fails to load when opening /dashboard"
-  validations:
-    required: true
-
-- type: textarea
-  id: steps
-  attributes:
-    label: Steps to reproduce
-    description: Provide exact steps in order.
-    placeholder: |
-      1. Go to ...
-      2. Click ...
-      3. Submit ...
-      4. Observe ...
-  validations:
-    required: true
-
-- type: textarea
-  id: expected
-  attributes:
-    label: Expected behavior
-    placeholder: "What should have happened?"
-  validations:
-    required: true
-
-- type: textarea
-  id: actual
-  attributes:
-    label: Actual behavior
-    placeholder: "What happened instead? Include visible errors."
-  validations:
-    required: true
-
-- type: textarea
-  id: logs
-  attributes:
-    label: Relevant logs
-    description: Paste Zettelrobbe logs (and Paperless-ngx logs if relevant).
-    render: shell
-    placeholder: |
-      docker logs zettelrobbe --tail=200
-      ...
-  validations:
-    required: true
-
-- type: textarea
-  id: traceback
-  attributes:
-    label: Browser console / stack trace (if applicable)
-    description: Paste JavaScript errors or stack traces.
-    render: shell
-
-- type: input
-  id: app_version
-  attributes:
-    label: Zettelrobbe version
-    description: Version shown in the app/footer or image tag used.
-    placeholder: "e.g. v2026.03.01"
-  validations:
-    required: true
-
-- type: input
-  id: app_commit
-  attributes:
-    label: Zettelrobbe commit
-    description: Commit SHA shown in About/footer (if available).
-    placeholder: "e.g. a1b2c3d4"
-
-- type: input
-  id: paperless_ngx_version
-  attributes:
-    label: Paperless-ngx version
-    placeholder: "e.g. 2.14.7"
-
-- type: dropdown
-  id: deployment
-  attributes:
-    label: Deployment type
-    options:
-    - Docker Compose
-    - Docker (manual)
-    - Bare metal / Node
-    - Other
-  validations:
-    required: true
-
-- type: dropdown
-  id: os
-  attributes:
-    label: Host OS
-    options:
-    - Linux
-    - macOS
-    - Windows
-    - Other
-  validations:
-    required: true
-
-- type: input
-  id: os_version
-  attributes:
-    label: Host OS version
-    placeholder: "e.g. Ubuntu 24.04"
-
-- type: input
-  id: browser
-  attributes:
-    label: Browser (if UI related)
-    placeholder: "e.g. Chrome 133"
-
-- type: textarea
-  id: config_notes
-  attributes:
-    label: Configuration notes
-    description: Share relevant settings only (no secrets).
-    placeholder: |
-      AI_PROVIDER=openai
-      MISTRAL_OCR_ENABLED=no
-
-- type: checkboxes
-  id: checks
-  attributes:
-    label: Pre-submission checklist
-    options:
-    - label: I searched existing issues and did not find a duplicate.
-      required: true
-    - label: I removed or masked secrets/tokens from logs and screenshots.
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One short sentence describing the problem.
+      placeholder: 'Example: Dashboard fails to load when opening /dashboard'
+    validations:
       required: true
 
-- type: textarea
-  id: extra
-  attributes:
-    label: Additional context
-    description: Anything else that might help.
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Provide exact steps in order.
+      placeholder: |
+        1. Go to ...
+        2. Click ...
+        3. Submit ...
+        4. Observe ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: 'What should have happened?'
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: 'What happened instead? Include visible errors.'
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: Paste Zettelrobbe logs (and Paperless-ngx logs if relevant).
+      render: shell
+      placeholder: |
+        docker logs zettelrobbe --tail=200
+        ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: traceback
+    attributes:
+      label: Browser console / stack trace (if applicable)
+      description: Paste JavaScript errors or stack traces.
+      render: shell
+
+  - type: input
+    id: app_version
+    attributes:
+      label: Zettelrobbe version
+      description: Version shown in the app/footer or image tag used.
+      placeholder: 'e.g. v2026.03.01'
+    validations:
+      required: true
+
+  - type: input
+    id: app_commit
+    attributes:
+      label: Zettelrobbe commit
+      description: Commit SHA shown in About/footer (if available).
+      placeholder: 'e.g. a1b2c3d4'
+
+  - type: input
+    id: paperless_ngx_version
+    attributes:
+      label: Paperless-ngx version
+      placeholder: 'e.g. 2.14.7'
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Deployment type
+      options:
+        - Docker Compose
+        - Docker (manual)
+        - Bare metal / Node
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Host OS
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: os_version
+    attributes:
+      label: Host OS version
+      placeholder: 'e.g. Ubuntu 24.04'
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser (if UI related)
+      placeholder: 'e.g. Chrome 133'
+
+  - type: textarea
+    id: config_notes
+    attributes:
+      label: Configuration notes
+      description: Share relevant settings only (no secrets).
+      placeholder: |
+        AI_PROVIDER=openai
+        MISTRAL_OCR_ENABLED=no
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Pre-submission checklist
+      options:
+        - label: I searched existing issues and did not find a duplicate.
+          required: true
+        - label: I removed or masked secrets/tokens from logs and screenshots.
+          required: true
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Anything else that might help.
